@@ -1,0 +1,177 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id                    String    @id @default(cuid())
+  name                  String?
+  email                 String    @unique
+  emailVerified         DateTime?
+  image                 String?
+  phone                 String?
+  passportVerified      Boolean   @default(false)
+  stripeIdentityVerified Boolean  @default(false)
+  realEstateAgentLicense String?
+  isLicensedAgent       Boolean   @default(false)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  accounts Account[]
+  sessions Session[]
+  listings Listing[]
+  documents Document[]
+  agentRequests AgentRequest[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Document {
+  id        String   @id @default(cuid())
+  userId    String
+  filename  String
+  filepath  String
+  fileType  String
+  purpose   String   // "passport", "license", "identity"
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Listing {
+  id          String      @id @default(cuid())
+  userId      String
+  title       String
+  description String      @db.Text
+  category    ListingCategory
+  type        ListingType
+  status      ListingStatus @default(ACTIVE)
+  price       Float?
+  currency    String      @default("EUR")
+  location    String
+  county      String
+  coordinates Json?       // {lat, lng}
+  images      String[]    @default([])
+  features    Json?       // Flexible JSON for category-specific features
+  contactInfo Json?       // Contact details
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recommendations ListingRecommendation[] @relation("SourceListing")
+  recommendedFor  ListingRecommendation[] @relation("RecommendedListing")
+}
+
+model ListingRecommendation {
+  id                  String @id @default(cuid())
+  sourceListingId     String
+  recommendedListingId String
+  relevanceScore      Float  @default(1.0)
+  createdAt           DateTime @default(now())
+
+  sourceListing     Listing @relation("SourceListing", fields: [sourceListingId], references: [id], onDelete: Cascade)
+  recommendedListing Listing @relation("RecommendedListing", fields: [recommendedListingId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceListingId, recommendedListingId])
+}
+
+model AgentRequest {
+  id          String    @id @default(cuid())
+  userId      String    // Property owner requesting agent
+  listingData Json      // Temporary listing data
+  county      String    // For matching local agents
+  status      AgentRequestStatus @default(PENDING)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum ListingCategory {
+  PROPERTY
+  SERVICE
+  LEISURE
+}
+
+enum ListingType {
+  // Property types
+  RESIDENTIAL_SALE
+  RESIDENTIAL_RENT
+  COMMERCIAL_SALE
+  COMMERCIAL_RENT
+  APARTMENT_SALE
+  APARTMENT_RENT
+  STUDIO_SALE
+  STUDIO_RENT
+  TIMESHARE
+  LUXURY_SALE
+  LUXURY_RENT
+  SHORT_TERM_RENTAL
+  
+  // Service types
+  CONTRACTOR
+  PROFESSIONAL_SERVICE
+  FREELANCER
+  CONSULTANT
+  
+  // Leisure types
+  EVENT
+  TOUR
+  EXPERIENCE
+  ENTERTAINMENT
+  DINING
+}
+
+enum ListingStatus {
+  ACTIVE
+  INACTIVE
+  PENDING
+  SOLD
+  RENTED
+  COMPLETED
+}
+
+enum AgentRequestStatus {
+  PENDING
+  MATCHED
+  COMPLETED
+  CANCELLED
+}

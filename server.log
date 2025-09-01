@@ -1,0 +1,196 @@
+
+> ireland-listings@0.1.0 dev
+> next dev --turbopack
+
+ ⚠ Port 3000 is in use by an unknown process, using available port 3001 instead.
+   ▲ Next.js 15.5.2 (Turbopack)
+   - Local:        http://localhost:3001
+   - Network:      http://169.254.0.21:3001
+   - Environments: .env
+
+ ✓ Starting...
+ ✓ Ready in 2.3s
+ ○ Compiling / ...
+ ✓ Compiled / in 8.1s
+ GET / 200 in 9861ms
+ GET / 200 in 4332ms
+ ⚠ Cross origin request detected from greia.lindy.site to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+ ○ Compiling /favicon.ico ...
+ GET /favicon.ico?favicon.bf3c9292.ico 200 in 1348ms
+ ✓ Compiled /favicon.ico in 2.1s
+ GET /api/auth/session 200 in 3587ms
+ GET /api/auth/session 200 in 4038ms
+ ○ Compiling /browse ...
+ ✓ Compiled /browse in 2.1s
+ GET /browse 200 in 2266ms
+ ○ Compiling /_not-found/page ...
+ ✓ Compiled /_not-found/page in 680ms
+ GET /api/placeholder/400/300 404 in 891ms
+ GET /favicon.ico 200 in 318ms
+ ✓ Compiled in 553ms
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ GET /browse 200 in 810ms
+ GET /api/placeholder/400/300 404 in 210ms
+ GET /favicon.ico?favicon.bf3c9292.ico 200 in 506ms
+ GET /api/auth/session 200 in 389ms
+ ✓ Compiled in 336ms
+ GET /browse 200 in 562ms
+ GET /api/placeholder/400/300 404 in 337ms
+ GET /favicon.ico?favicon.bf3c9292.ico 200 in 553ms
+ GET /api/auth/session 200 in 382ms
+ GET / 200 in 298ms
+ GET /api/auth/session 200 in 320ms
+ GET / 200 in 4526ms
+ GET /favicon.ico?favicon.bf3c9292.ico 200 in 483ms
+ GET /api/auth/session 200 in 534ms
+ GET /browse 200 in 183ms
+ GET /browse 200 in 119ms
+ GET /api/placeholder/400/300 404 in 161ms
+ GET /api/placeholder/400/300 404 in 151ms
+ ✓ Compiled in 1884ms
+ ✓ Compiled / in 72ms
+ ⨯ Error: Event handlers cannot be passed to Client Component props.
+  <input type="text" placeholder=... className=... onKeyDown={function onKeyDown}>
+                                                             ^^^^^^^^^^^^^^^^^^^^
+If you need interactivity, consider converting part of this to a Client Component.
+    at stringify (<anonymous>)
+    at stringify (<anonymous>) {
+  digest: '1469166182'
+}
+ GET / 500 in 1637ms
+ GET /favicon.ico 200 in 391ms
+ ✓ Compiled in 715ms
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ✓ Compiled / in 59ms
+ GET / 200 in 686ms
+ GET /favicon.ico?favicon.bf3c9292. ✓ Compiled in 1155ms
+pi/auth/session 200 in 398ms
+ GET / 200 in 297ms
+ GET /favicon.ico?favicon.bf3c9292.ico 200 in 265ms
+ GET /api/auth/session 200 in 313ms
+ GET /browse 200 in 128ms
+ GET /api/placeholder/400/300 404 in 235ms
+ GET / 200 in 259ms
+ GET /api/auth/session 200 in 330ms
+ GET /browse?search=apartment+dublin 200 in 141ms
+ GET /api/placeholder/400/300 404 in 248ms
+ GET /browse 200 in 370ms
+ GET /api/placeholder/400/300 404 in 164ms
+ GET /favicon.ico?favicon.bf3c9292.ico 200 in 299ms
+ GET /api/auth/session 200 in 364ms
+ GET /api/placeholder/400/300 404 in 195ms
+ GET /favicon.ico 200 in 366ms
+ GET /api/auth/session 200 in 296ms
+ GET /favicon.ico?favicon.bf3c9292.ico 200 in 282ms
+ GET / 200 in 220ms
+ ✓ Compiled in 1040ms
+ ✓ Compiled / in 59ms
+ GET / 200 in 332ms
+ ✓ Compiled in 817ms
+ GET / 200 in 980ms
+ GET /api/auth/session 200 in 341ms
+ GET /browse?search=dublin+apartment 200 in 163ms
+ GET /api/placeholder/400/300 404 in 231ms
+ GET / 200 in 356ms
+ GET /api/auth/session 200 in 350ms
+ GET /browse?category=PROPERTY 200 in 150ms
+ GET /api/placeholder/400/300 404 in 515ms
+ GET / 200 in 280ms
+ GET /favicon.ico?favicon.bf3c9292.ico 200 in 280ms
+ GET /api/auth/session 200 in 324ms
+ GET /browse?category=PROPERTY 200 in 112ms
+ GET /api/placeholder/400/300 404 in 169ms
+ GET / 200 in 146ms
+ ✓ Compiled in 452ms
+ GET /browse?category=PROPERTY 200 in 227ms
+ GET / 200 in 190ms
+ ✓ Compiled in 829ms
+ GET /api/placeholder/400/300 404 in 471ms
+ ○ Compiling /listing/[id] ...
+ ✓ Compiled /listing/[id] in 753ms
+Error: Route "/listing/[id]" used `params.id`. `params` should be awaited before using its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at ListingDetailPage (app/listing/[id]/page.tsx:39:39)
+  37 |
+  38 | export default function ListingDetailPage({ params }: PageProps) {
+> 39 |   const listing = mockListings[params.id as keyof typeof mockListings]
+     |                                       ^
+  40 |   
+  41 |   if (!listing) {
+  42 |     notFound()
+ GET /listing/1 200 in 1797ms
+ GET /api/placeholder/800/600 404 in 142ms
+ GET / 200 in 462ms
+ GET /favicon.ico?favicon.bf3c9292.ico 200 in 338ms
+ GET /api/auth/session 200 in 487ms
+ ✓ Compiled in 427ms
+Error: Route "/listing/[id]" used `params.id`. `params` should be awaited before using its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at ListingDetailPage (app/listing/[id]/page.tsx:39:39)
+  37 |
+  38 | export default function ListingDetailPage({ params }: PageProps) {
+> 39 |   const listing = mockListings[params.id as keyof typeof mockListings]
+     |                                       ^
+  40 |   
+  41 |   if (!listing) {
+  42 |     notFound()
+ GET /listing/1 200 in 592ms
+ GET / 200 in 379ms
+ ✓ Compiled in 444ms
+ ✓ Compiled /listing/[id] in 54ms
+Error: Route "/listing/[id]" used `params.id`. `params` should be awaited before using its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at ListingDetailPage (app/listing/[id]/page.tsx:39:39)
+  37 |
+  38 | export default function ListingDetailPage({ params }: PageProps) {
+> 39 |   const listing = mockListings[params.id as keyof typeof mockListings]
+     |                                       ^
+  40 |   
+  41 |   if (!listing) {
+  42 |     notFound()
+ GET /listing/1 200 in 526ms
+ GET / 200 in 637ms
+ ○ Compiling /profile/[id] ...
+ ✓ Compiled /profile/[id] in 676ms
+Error: Route "/profile/[id]" used `params.id`. `params` should be awaited before using its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at ProfilePage (app/profile/[id]/page.tsx:57:33)
+  55 |
+  56 | export default function ProfilePage({ params }: PageProps) {
+> 57 |   const user = mockUsers[params.id as keyof typeof mockUsers]
+     |                                 ^
+  58 |   
+  59 |   if (!user) {
+  60 |     notFound()
+ GET /profile/user1 200 in 1703ms
+ GET /api/placeholder/400/300 404 in 488ms
+ ✓ Compiled in 486ms
+Error: Route "/profile/[id]" used `params.id`. `params` should be awaited before using its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at ProfilePage (app/profile/[id]/page.tsx:57:33)
+  55 |
+  56 | export default function ProfilePage({ params }: PageProps) {
+> 57 |   const user = mockUsers[params.id as keyof typeof mockUsers]
+     |                                 ^
+  58 |   
+  59 |   if (!user) {
+  60 |     notFound()
+ GET /profile/user1 200 in 444ms
+ GET / 200 in 244ms
+ ○ Compiling /settings ...
+ ✓ Compiled /settings in 933ms
+ GET /settings 200 in 1520ms
+ GET /api/auth/session 200 in 445ms
+ ✓ Compiled in 548ms
+ GET /settings 200 in 374ms
+ GET / 200 in 279ms
+ GET /settings 200 in 176ms
+ GET / 200 in 197ms
+ ○ Compiling /help ...
+ ✓ Compiled /help in 684ms
+ GET /help 200 in 1407ms
+ GET /api/auth/session 200 in 447ms
+ GET / 200 in 369ms
+ GET /favicon.ico?favicon.bf3c9292.ico 200 in 361ms
+ GET /api/auth/session 200 in 395ms
+ GET /browse?category=SERVICE 200 in 275ms
+ GET /api/placeholder/400/300 404 in 486ms
+ GET /settings 200 in 357ms
+ GET /api/auth/session 200 in 334ms
+ GET / 200 in 179ms
