@@ -1,3 +1,6 @@
+// This is your Prisma schema file for GREIA Platform
+// Learn more about Prisma: https://pris.ly/d/prisma-schema
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,6 +10,37 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// User and Authentication Models
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  role          UserRole  @default(USER)
+  
+  // Properties Marketplace Relations
+  propertyListings    PropertyListing[]    // Properties listed by the user
+  propertyViews       PropertyView[]       // Properties viewed by the user
+  propertyFavorites   PropertyFavorite[]   // Properties favorited by the user
+  propertyEnquiries   PropertyEnquiry[]    // Property enquiries made by the user
+  propertyOffers      PropertyOffer[]      // Offers made on properties
+  agentProfile        AgentProfile?        // Optional agent profile for verified agents
+  
+  // Auth Relations
+  accounts      Account[]
+  sessions      Session[]
+}
+
+enum UserRole {
+  USER
+  AGENT
+  ADMIN
+}
+
+// NextAuth Models
 model Account {
   id                String  @id @default(cuid())
   userId            String
@@ -34,27 +68,6 @@ model Session {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-model User {
-  id                    String    @id @default(cuid())
-  name                  String?
-  email                 String    @unique
-  emailVerified         DateTime?
-  image                 String?
-  phone                 String?
-  passportVerified      Boolean   @default(false)
-  stripeIdentityVerified Boolean  @default(false)
-  realEstateAgentLicense String?
-  isLicensedAgent       Boolean   @default(false)
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-
-  accounts Account[]
-  sessions Session[]
-  listings Listing[]
-  documents Document[]
-  agentRequests AgentRequest[]
-}
-
 model VerificationToken {
   identifier String
   token      String   @unique
@@ -63,115 +76,140 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-model Document {
-  id        String   @id @default(cuid())
-  userId    String
-  filename  String
-  filepath  String
-  fileType  String
-  purpose   String   // "passport", "license", "identity"
-  verified  Boolean  @default(false)
-  createdAt DateTime @default(now())
+// Properties Marketplace Models
+model PropertyListing {
+  id            String          @id @default(cuid())
+  title         String
+  description   String         @db.Text
+  price         Decimal        @db.Decimal(10, 2)
+  currency      String         @default("GBP")
+  location      String
+  propertyType  PropertyType
+  listingType   ListingType
+  status        ListingStatus  @default(ACTIVE)
+  bedrooms      Int?
+  bathrooms     Int?
+  features      String[]       // Array of property features
+  amenities     String[]       // Array of nearby amenities
+  images        PropertyImage[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  
+  // Relations
+  userId        String         // Owner/Agent who created the listing
+  user          User           @relation(fields: [userId], references: [id])
+  views         PropertyView[]
+  favorites     PropertyFavorite[]
+  enquiries     PropertyEnquiry[]
+  offers        PropertyOffer[]
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([propertyType])
+  @@index([listingType])
+  @@index([status])
 }
 
-model Listing {
-  id          String      @id @default(cuid())
-  userId      String
-  title       String
-  description String      @db.Text
-  category    ListingCategory
-  type        ListingType
-  status      ListingStatus @default(ACTIVE)
-  price       Float?
-  currency    String      @default("EUR")
-  location    String
-  county      String
-  coordinates Json?       // {lat, lng}
-  images      String[]    @default([])
-  features    Json?       // Flexible JSON for category-specific features
-  contactInfo Json?       // Contact details
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  recommendations ListingRecommendation[] @relation("SourceListing")
-  recommendedFor  ListingRecommendation[] @relation("RecommendedListing")
-}
-
-model ListingRecommendation {
-  id                  String @id @default(cuid())
-  sourceListingId     String
-  recommendedListingId String
-  relevanceScore      Float  @default(1.0)
-  createdAt           DateTime @default(now())
-
-  sourceListing     Listing @relation("SourceListing", fields: [sourceListingId], references: [id], onDelete: Cascade)
-  recommendedListing Listing @relation("RecommendedListing", fields: [recommendedListingId], references: [id], onDelete: Cascade)
-
-  @@unique([sourceListingId, recommendedListingId])
-}
-
-model AgentRequest {
-  id          String    @id @default(cuid())
-  userId      String    // Property owner requesting agent
-  listingData Json      // Temporary listing data
-  county      String    // For matching local agents
-  status      AgentRequestStatus @default(PENDING)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-enum ListingCategory {
-  PROPERTY
-  SERVICE
-  LEISURE
+enum PropertyType {
+  HOUSE
+  APARTMENT
+  COMMERCIAL
+  LAND
 }
 
 enum ListingType {
-  // Property types
-  RESIDENTIAL_SALE
-  RESIDENTIAL_RENT
-  COMMERCIAL_SALE
-  COMMERCIAL_RENT
-  APARTMENT_SALE
-  APARTMENT_RENT
-  STUDIO_SALE
-  STUDIO_RENT
-  TIMESHARE
-  LUXURY_SALE
-  LUXURY_RENT
-  SHORT_TERM_RENTAL
-  
-  // Service types
-  CONTRACTOR
-  PROFESSIONAL_SERVICE
-  FREELANCER
-  CONSULTANT
-  
-  // Leisure types
-  EVENT
-  TOUR
-  EXPERIENCE
-  ENTERTAINMENT
-  DINING
+  SALE
+  RENT
 }
 
 enum ListingStatus {
+  DRAFT
   ACTIVE
-  INACTIVE
-  PENDING
+  UNDER_OFFER
   SOLD
   RENTED
-  COMPLETED
+  INACTIVE
 }
 
-enum AgentRequestStatus {
+model PropertyImage {
+  id              String         @id @default(cuid())
+  url             String
+  propertyId      String
+  property        PropertyListing @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  isPrimary       Boolean        @default(false)
+  createdAt       DateTime       @default(now())
+
+  @@index([propertyId])
+}
+
+model PropertyView {
+  id          String         @id @default(cuid())
+  propertyId  String
+  userId      String
+  viewedAt    DateTime       @default(now())
+  property    PropertyListing @relation(fields: [propertyId], references: [id])
+  user        User           @relation(fields: [userId], references: [id])
+
+  @@unique([propertyId, userId])
+}
+
+model PropertyFavorite {
+  id          String         @id @default(cuid())
+  propertyId  String
+  userId      String
+  createdAt   DateTime       @default(now())
+  property    PropertyListing @relation(fields: [propertyId], references: [id])
+  user        User           @relation(fields: [userId], references: [id])
+
+  @@unique([propertyId, userId])
+}
+
+model PropertyEnquiry {
+  id          String         @id @default(cuid())
+  propertyId  String
+  userId      String
+  message     String         @db.Text
+  status      EnquiryStatus @default(PENDING)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  property    PropertyListing @relation(fields: [propertyId], references: [id])
+  user        User           @relation(fields: [userId], references: [id])
+}
+
+enum EnquiryStatus {
   PENDING
-  MATCHED
-  COMPLETED
-  CANCELLED
+  RESPONDED
+  CLOSED
+}
+
+model PropertyOffer {
+  id          String         @id @default(cuid())
+  propertyId  String
+  userId      String
+  amount      Decimal        @db.Decimal(10, 2)
+  currency    String         @default("GBP")
+  status      OfferStatus    @default(PENDING)
+  message     String?        @db.Text
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  property    PropertyListing @relation(fields: [propertyId], references: [id])
+  user        User           @relation(fields: [userId], references: [id])
+}
+
+enum OfferStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+}
+
+model AgentProfile {
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  user            User      @relation(fields: [userId], references: [id])
+  company         String?
+  licenseNumber   String?
+  phone           String?
+  bio            String?    @db.Text
+  verifiedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }
