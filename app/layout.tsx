@@ -1,15 +1,11 @@
-import type { Metadata } from 'next'
+'use client'
+
 import { Inter } from 'next/font/google'
+import { AuthProvider } from '@/components/providers/auth-provider'
+import { Toaster } from 'sonner'
 import './globals.css'
-import { Providers } from './providers'
-import { Toaster } from '@/components/ui/sonner'
 
 const inter = Inter({ subsets: ['latin'] })
-
-export const metadata: Metadata = {
-  title: 'Ireland Listings - Unified Marketplace',
-  description: 'Properties, services, and experiences - all in one place. The unified marketplace for Ireland.',
-}
 
 export default function RootLayout({
   children,
@@ -19,10 +15,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <Providers>
+        <AuthProvider>
           {children}
           <Toaster />
-        </Providers>
+        </AuthProvider>
       </body>
     </html>
   )
