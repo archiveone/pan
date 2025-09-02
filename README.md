@@ -1,122 +1,162 @@
-# Ireland Listings - Unified Marketplace
+# GREIA - Life's Operating System
 
-A unified platform combining properties, services, and experiences - like Zillow + Airbnb + Thumbtack + Eventbrite for Ireland.
+GREIA is a comprehensive platform that unifies Properties (buy/rent/sell), Services (trades/professional), Leisure (rentals/experiences), and Connect (social + CRM) with a freemium model.
 
-## Features
+## Current Development Status (as of September 2, 2025)
 
-### Core Concept
-- **Unified Listings**: Properties, services, and experiences in one platform
-- **Smart Cross-Recommendations**: Ryanair-style upselling across categories
-- **Ireland-Focused**: Starting with the Irish market
+### ✅ Properties Marketplace - Core Implementation
+1. **Database Schema**
+   - User & Auth models with roles (USER/AGENT/ADMIN)
+   - Property listings with rich metadata
+   - Views, favorites, enquiries tracking
+   - Agent profiles and verification
 
-### Property Management
-- All property types: residential, commercial, apartments, studios, timeshares, luxury
-- **Licensed Agent Requirement**: Only licensed real estate agents can list residential properties for sale/rent
-- **Private Marketplace**: Unlicensed property owners connect with local licensed agents
-- Commercial properties: direct upload (no license required)
+2. **API Routes**
+   - `GET /api/properties` - List with filters/pagination
+   - `POST /api/properties` - Create new listing
+   - `GET/PUT/DELETE /api/properties/[id]` - Single property operations
 
-### User Verification
-- **Stripe Identity**: Passport verification for all users
-- **Document Upload**: Simple system for license verification
-- **Role-Based Permissions**: Different access levels based on verification status
+3. **React Components**
+   - PropertyCard & PropertyGrid components
+   - PropertyListingForm with validation
+   - Property details page with image gallery
+   - Responsive design implementation
 
-### Smart Recommendations
-Examples of cross-category suggestions:
-- Wedding venue → photographers, caterers, florists
-- Apartment rental → moving services, utilities, local experiences
-- Event planning → venues, catering, entertainment
+### ✅ Authentication System
+1. **NextAuth Integration**
+   - Google OAuth provider
+   - Credentials provider with bcrypt
+   - JWT session handling
+   - Role-based access control
+
+2. **User Management**
+   - Registration API with validation
+   - Login/Signup pages
+   - Protected routes middleware
+   - Error handling pages
+
+### 🔄 Next Development Priorities
+
+1. **Image Upload System**
+   - AWS S3 integration
+   - Image optimization
+   - Gallery management
+   - Upload progress tracking
+
+2. **Real-time Features**
+   - Pusher integration
+   - Property view tracking
+   - Live notifications
+   - Chat functionality
+
+3. **Services Marketplace**
+   - Service provider profiles
+   - Service listing components
+   - Booking system
+   - Review system
 
 ## Tech Stack
 
-- **Frontend**: Next.js 14, React, TypeScript
-- **Styling**: Tailwind CSS, shadcn/ui components
-- **Authentication**: NextAuth.js with credentials provider
-- **Database**: PostgreSQL with Prisma ORM
-- **Verification**: Stripe Identity for document verification
-- **File Upload**: Sharp for image processing
-- **UI Components**: Lucide React icons, Sonner for notifications
+- **Frontend**: Next.js 13 (App Router), TypeScript, Tailwind CSS
+- **UI Components**: shadcn/ui, Radix UI, Lucide Icons
+- **Backend**: Prisma + PostgreSQL
+- **Authentication**: NextAuth (Google + Credentials)
+- **Payments**: Stripe (Identity + Payments)
+- **Real-time**: Pusher
+- **Storage**: AWS S3 (pending)
 
 ## Getting Started
 
 ### Prerequisites
 - Node.js 18+
-- PostgreSQL database
-- Stripe account (for identity verification)
-
-### Installation
-
-1. Clone the repository
-2. Install dependencies:
-   ```bash
-   bun install
-   ```
-
-3. Set up environment variables:
-   ```bash
-   cp .env.example .env
-   ```
-   Fill in your database URL, NextAuth secret, and Stripe keys.
-
-4. Set up the database:
-   ```bash
-   bunx prisma migrate dev
-   ```
-
-5. Start the development server:
-   ```bash
-   bun dev
-   ```
+- PostgreSQL
+- Google OAuth credentials
+- Stripe account
+- AWS account (for S3)
+- Pusher account
 
 ### Environment Variables
+Create a `.env` file with:
 
-- `DATABASE_URL`: PostgreSQL connection string
-- `NEXTAUTH_SECRET`: Secret for NextAuth.js sessions
-- `NEXTAUTH_URL`: Your app's URL
-- `STRIPE_SECRET_KEY`: Stripe secret key for identity verification
-- `STRIPE_PUBLISHABLE_KEY`: Stripe publishable key
-- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`: Public Stripe key for frontend
+\`\`\`env
+# Database
+DATABASE_URL=
 
-## Database Schema
+# Authentication
+NEXTAUTH_URL=
+NEXTAUTH_SECRET=
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
 
-### Key Models
-- **User**: Authentication, verification status, agent licensing
-- **Listing**: Unified model for properties, services, and experiences
-- **Document**: File uploads for verification
-- **ListingRecommendation**: Cross-category recommendations
-- **AgentRequest**: Connects unlicensed property owners with agents
+# Stripe
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+STRIPE_PRICE_ID=
 
-### Listing Categories
-- **PROPERTY**: All property types with agent licensing rules
-- **SERVICE**: Contractors, professionals, freelancers, consultants
-- **LEISURE**: Events, tours, experiences, entertainment, dining
+# Pusher (for real-time)
+PUSHER_APP_ID=
+PUSHER_KEY=
+PUSHER_SECRET=
+PUSHER_CLUSTER=
 
-## Key Features
+# AWS S3 (for image upload)
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_REGION=
+S3_BUCKET_NAME=
+\`\`\`
 
-### Unified Upload Flow
-- Single form for all listing types
-- Smart tagging system for categorization
-- Image upload with automatic processing
-- County-based agent matching for properties
+### Database Setup
 
-### Verification System
-- Stripe Identity integration for passport verification
-- Document upload for real estate licenses
-- Role-based access control
-- Automatic verification status updates
+1. Run Prisma migrations:
+\`\`\`bash
+npx prisma migrate dev
+\`\`\`
 
-### Smart Recommendations
-- Cross-category suggestion engine
-- Relevance scoring system
-- Ryanair-style upselling flow
-- Location-based matching
+2. Seed initial data:
+\`\`\`bash
+npx prisma db seed
+\`\`\`
 
-## Deployment
+## Development Guidelines
 
-The app is designed to work with:
-- Vercel (recommended for Next.js)
-- Railway or Heroku for PostgreSQL
-- Stripe for identity verification
+### Code Structure
+- `/app` - Next.js 13 app directory
+- `/components` - Reusable React components
+- `/lib` - Utility functions and configurations
+- `/hooks` - Custom React hooks
+- `/types` - TypeScript type definitions
+- `/prisma` - Database schema and migrations
+
+### API Routes
+- `/api/properties/*` - Property marketplace endpoints
+- `/api/auth/*` - Authentication endpoints
+- `/api/upload/*` - Image upload endpoints (pending)
+- `/api/services/*` - Service marketplace endpoints (pending)
+
+### Component Guidelines
+- Use TypeScript for all components
+- Implement proper error boundaries
+- Follow accessibility guidelines
+- Include loading states
+- Add proper documentation
+
+## Contributing
+
+This project is being developed using a GitHub-only approach. All code changes are made directly through GitHub's API to ensure proper version control and backup.
+
+### Development Process
+1. Create feature branch
+2. Implement changes via GitHub API
+3. Create pull request
+4. Review and merge
+
+### Code Style
+- Follow TypeScript best practices
+- Use ESLint configuration
+- Format with Prettier
+- Write meaningful commit messages
 
 ## License
 
-All rights reserved.
+Copyright © 2025 GREIA. All rights reserved.
