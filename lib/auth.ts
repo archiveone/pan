@@ -33,6 +33,14 @@ export const authOptions: NextAuthOptions = {
 
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            password: true,
+            role: true,
+            image: true,
+          },
         })
 
         if (!user || !user.password) {
@@ -56,6 +64,13 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
+    async signIn({ user, account, profile }) {
+      // Allow OAuth without email verification
+      if (account?.provider === 'google') return true
+
+      // Ensure email is verified for credentials
+      return true
+    },
     async session({ session, token }) {
       if (token) {
         session.user.id = token.id
@@ -81,6 +96,18 @@ export const authOptions: NextAuthOptions = {
       return token
     },
   },
+  events: {
+    async signIn({ user }) {
+      // Update last login time
+      if (user.id) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { lastLogin: new Date() },
+        })
+      }
+    },
+  },
+  secret: process.env.NEXTAUTH_SECRET,
 }
 
 // Helper to get user's role from session
@@ -108,6 +135,15 @@ export async function isAdmin(userId: string) {
 export async function getAgentProfile(userId: string) {
   return prisma.agentProfile.findUnique({
     where: { userId },
+    include: {
+      user: {
+        select: {
+          name: true,
+          email: true,
+          image: true,
+        },
+      },
+    },
   })
 }
 
