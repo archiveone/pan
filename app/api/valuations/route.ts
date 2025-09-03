@@ -4,7 +4,7 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { prisma } from '@/lib/prisma'
 import { pusher } from '@/lib/pusher'
 
-// Create Valuation Request
+// Create valuation request with Dublin agent routing
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions)
@@ -13,18 +13,51 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json()
-    const { propertyDetails } = body
+    const { 
+      propertyType,
+      location,
+      specifications,
+      images,
+      description,
+      urgency, // HIGH, MEDIUM, LOW
+      contactPreferences,
+      timeline,
+    } = body
 
-    if (!propertyDetails || !propertyDetails.location) {
-      return new NextResponse('Invalid property details', { status: 400 })
-    }
-
-    // Create valuation request
-    const request = await prisma.valuationRequest.create({
+    // Create valuation request with Dublin-specific tracking
+    const valuation = await prisma.valuationRequest.create({
       data: {
-        propertyDetails,
-        status: 'PENDING',
         userId: session.user.id,
+        propertyType,
+        location: {
+          address: location.address,
+          area: location.area,
+          county: 'Dublin',
+          eircode: location.eircode,
+          coordinates: location.coordinates,
+          dublinRegion: location.dublinRegion, // North/South/Central/West Dublin
+        },
+        specifications,
+        images,
+        description,
+        urgency,
+        contactPreferences,
+        timeline,
+        status: 'PENDING',
+        currency: 'EUR',
+        // Track valuation activity
+        activities: {
+          create: {
+            type: 'VALUATION_REQUESTED',
+            userId: session.user.id,
+            description: 'Valuation request created',
+            metadata: {
+              propertyType,
+              dublinRegion: location.dublinRegion,
+              urgency,
+            },
+          }
+        },
       },
       include: {
         user: {
@@ -32,69 +65,125 @@ export async function POST(req: Request) {
             name: true,
             email: true,
           }
-        }
-      }
+        },
+      },
     })
 
-    // Find verified agents in the area
-    const areaAgents = await prisma.user.findMany({
+    // Find qualified Dublin agents based on experience and ratings
+    const qualifiedAgents = await prisma.user.findMany({
       where: {
         role: 'AGENT',
         isVerified: true,
-        // TODO: Add location-based filtering
+        agentProfile: {
+          isActive: true,
+          areasServed: {
+            has: location.dublinRegion,
+          },
+          totalValuations: {
+            gte: 5, // Minimum valuation experience
+          },
+          rating: {
+            gte: 4, // Minimum rating requirement
+          },
+          // Ensure Dublin coverage
+          OR: [
+            { areasServed: { has: 'Dublin' } },
+            { areasServed: { has: location.dublinRegion } },
+          ],
+        },
       },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-      }
+      include: {
+        agentProfile: {
+          select: {
+            rating: true,
+            totalValuations: true,
+            successRate: true,
+            dublinExperience: true,
+            areasServed: true,
+          },
+        },
+      },
+      orderBy: [
+        { agentProfile: { rating: 'desc' } },
+        { agentProfile: { totalValuations: 'desc' } },
+      ],
+      take: 5, // Limit to top 5 agents
     })
 
-    // Notify agents via Pusher
-    for (const agent of areaAgents) {
-      await pusher.trigger(`private-user-${agent.id}`, 'new-valuation-request', {
-        requestId: request.id,
-        propertyDetails: {
-          ...request.propertyDetails,
-          // Exclude sensitive information
-          ownerDetails: undefined,
-        },
-        timestamp: new Date().toISOString(),
-      })
-
-      // Create notification
-      await prisma.notification.create({
-        data: {
-          userId: agent.id,
-          type: 'VALUATION_REQUEST',
-          title: 'New Valuation Request',
-          content: `New valuation request for property in ${propertyDetails.location}`,
-          metadata: {
-            requestId: request.id,
-            propertyType: propertyDetails.type,
-            location: propertyDetails.location,
+    // Create leads and notifications for qualified agents
+    const agentNotifications = qualifiedAgents.map(agent =>
+      Promise.all([
+        // Create lead
+        prisma.lead.create({
+          data: {
+            userId: agent.id,
+            title: `Valuation Lead - ${propertyType} in ${location.dublinRegion}`,
+            type: 'VALUATION',
+            status: 'NEW',
+            priority: urgency,
+            source: 'VALUATION_REQUEST',
+            currency: 'EUR',
+            metadata: {
+              valuationId: valuation.id,
+              propertyType,
+              location,
+              timeline,
+              dublinRegion: location.dublinRegion,
+            },
           },
-        }
-      })
-    }
+        }),
+        // Create notification
+        prisma.notification.create({
+          data: {
+            userId: agent.id,
+            type: 'VALUATION_REQUEST',
+            title: 'New Dublin Valuation Request',
+            content: `Valuation needed for ${propertyType} in ${location.dublinRegion}`,
+            metadata: {
+              valuationId: valuation.id,
+              propertyType,
+              location,
+              urgency,
+              timeline,
+              dublinRegion: location.dublinRegion,
+            },
+          },
+        }),
+        // Send real-time notification
+        pusher.trigger(
+          `private-user-${agent.id}`,
+          'valuation-request',
+          {
+            valuationId: valuation.id,
+            propertyType,
+            location,
+            urgency,
+            timeline,
+            dublinRegion: location.dublinRegion,
+            timestamp: new Date().toISOString(),
+          }
+        ),
+      ])
+    )
+
+    await Promise.all(agentNotifications)
 
     return NextResponse.json({
       success: true,
-      request: {
-        id: request.id,
-        status: request.status,
-        createdAt: request.createdAt,
-        agentCount: areaAgents.length,
-      }
+      valuation: {
+        id: valuation.id,
+        status: valuation.status,
+        agentsNotified: qualifiedAgents.length,
+      },
     })
 
   } catch (error) {
-    console.error('[VALUATION_REQUEST_ERROR]', error)
+    console.error('[CREATE_VALUATION_ERROR]', error)
     return new NextResponse('Internal Error', { status: 500 })
   }
 }
 
-// Submit Valuation Offer (Agents)
+// Submit valuation bid (for Dublin agents)
 export async function PUT(req: Request) {
   try {
     const session = await getServerSession(authOptions)
@@ -103,77 +192,176 @@ export async function PUT(req: Request) {
     }
 
     const body = await req.json()
-    const { requestId, amount, message } = body
+    const { 
+      valuationId,
+      estimatedValue,
+      confidence, // HIGH, MEDIUM, LOW
+      methodology,
+      availability,
+      notes,
+      fee, // Optional valuation fee
+    } = body
 
-    // Verify agent status
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+    // Verify Dublin agent status
+    const agent = await prisma.user.findUnique({
+      where: {
+        id: session.user.id,
+        role: 'AGENT',
+        isVerified: true,
+        agentProfile: {
+          isActive: true,
+          areasServed: {
+            hasSome: ['Dublin', 'North Dublin', 'South Dublin', 'Central Dublin', 'West Dublin'],
+          },
+        },
+      },
+      include: {
+        agentProfile: true,
+      },
     })
 
-    if (user?.role !== 'AGENT' || !user?.isVerified) {
-      return new NextResponse('Unauthorized - Verified agents only', { status: 403 })
+    if (!agent) {
+      return new NextResponse('Only verified active Dublin agents can submit valuations', { status: 403 })
     }
 
-    // Create valuation offer
-    const offer = await prisma.valuationOffer.create({
-      data: {
-        requestId,
-        userId: session.user.id,
-        amount,
-        message,
-        status: 'PENDING',
-      },
+    // Get valuation request details
+    const valuation = await prisma.valuationRequest.findUnique({
+      where: { id: valuationId },
       include: {
         user: {
           select: {
+            id: true,
             name: true,
             email: true,
           }
         },
-        request: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-              }
-            }
-          }
-        }
-      }
+      },
     })
 
-    // Notify property owner via Pusher
-    await pusher.trigger(
-      `private-user-${offer.request.user.id}`,
-      'valuation-offer',
-      {
-        offerId: offer.id,
-        agentName: offer.user.name,
-        amount: offer.amount,
-        message: offer.message,
-        timestamp: new Date().toISOString(),
-      }
-    )
+    if (!valuation) {
+      return new NextResponse('Valuation request not found', { status: 404 })
+    }
+
+    // Create or update valuation bid
+    const bid = await prisma.valuationBid.upsert({
+      where: {
+        valuationId_agentId: {
+          valuationId,
+          agentId: session.user.id,
+        },
+      },
+      create: {
+        valuationId,
+        agentId: session.user.id,
+        estimatedValue,
+        confidence,
+        methodology,
+        availability,
+        notes,
+        fee,
+        status: 'PENDING',
+        currency: 'EUR',
+        activities: {
+          create: {
+            type: 'BID_SUBMITTED',
+            userId: session.user.id,
+            description: 'Valuation bid submitted',
+            metadata: {
+              estimatedValue,
+              confidence,
+              fee,
+              agentRating: agent.agentProfile.rating,
+              totalValuations: agent.agentProfile.totalValuations,
+              dublinExperience: agent.agentProfile.dublinExperience,
+            },
+          }
+        },
+      },
+      update: {
+        estimatedValue,
+        confidence,
+        methodology,
+        availability,
+        notes,
+        fee,
+        status: 'UPDATED',
+        activities: {
+          create: {
+            type: 'BID_UPDATED',
+            userId: session.user.id,
+            description: 'Valuation bid updated',
+            metadata: {
+              estimatedValue,
+              confidence,
+              fee,
+              agentRating: agent.agentProfile.rating,
+              totalValuations: agent.agentProfile.totalValuations,
+              dublinExperience: agent.agentProfile.dublinExperience,
+            },
+          }
+        },
+      },
+      include: {
+        agent: {
+          select: {
+            name: true,
+            email: true,
+            agentProfile: true,
+          }
+        },
+      },
+    })
+
+    // Notify property owner
+    await Promise.all([
+      pusher.trigger(
+        `private-user-${valuation.userId}`,
+        'valuation-bid',
+        {
+          valuationId,
+          agentName: agent.name,
+          agentRating: agent.agentProfile.rating,
+          totalValuations: agent.agentProfile.totalValuations,
+          dublinExperience: agent.agentProfile.dublinExperience,
+          estimatedValue,
+          confidence,
+          fee,
+          availability,
+          timestamp: new Date().toISOString(),
+        }
+      ),
+      prisma.notification.create({
+        data: {
+          userId: valuation.userId,
+          type: 'VALUATION_BID',
+          title: 'New Valuation Bid',
+          content: `${agent.name} has submitted a valuation bid for your property`,
+          metadata: {
+            valuationId,
+            agentId: agent.id,
+            estimatedValue,
+            confidence,
+            fee,
+            agentRating: agent.agentProfile.rating,
+            totalValuations: agent.agentProfile.totalValuations,
+            dublinExperience: agent.agentProfile.dublinExperience,
+          },
+        },
+      }),
+    ])
 
     return NextResponse.json({
       success: true,
-      offer: {
-        id: offer.id,
-        status: offer.status,
-        amount: offer.amount,
-        createdAt: offer.createdAt,
-      }
+      bid,
     })
 
   } catch (error) {
-    console.error('[VALUATION_OFFER_ERROR]', error)
+    console.error('[SUBMIT_VALUATION_ERROR]', error)
     return new NextResponse('Internal Error', { status: 500 })
   }
 }
 
-// Get Valuation Requests (Agents)
+// Get valuation requests with Dublin-specific filtering
 export async function GET(req: Request) {
   try {
     const session = await getServerSession(authOptions)
@@ -181,37 +369,154 @@ export async function GET(req: Request) {
       return new NextResponse('Unauthorized', { status: 401 })
     }
 
-    // Verify agent status
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-    })
+    const { searchParams } = new URL(req.url)
+    const status = searchParams.get('status')
+    const propertyType = searchParams.get('propertyType')
+    const dublinRegion = searchParams.get('dublinRegion')
+    const urgency = searchParams.get('urgency')
+    const minValue = searchParams.get('minValue')
+    const maxValue = searchParams.get('maxValue')
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '10')
 
-    if (user?.role !== 'AGENT' || !user?.isVerified) {
-      return new NextResponse('Unauthorized - Verified agents only', { status: 403 })
+    // Build filter conditions
+    const where = {
+      ...(session.user.role === 'AGENT'
+        ? {
+            OR: [
+              { userId: session.user.id },
+              {
+                bids: {
+                  some: { agentId: session.user.id },
+                },
+              },
+            ],
+          }
+        : { userId: session.user.id }
+      ),
+      ...(status && { status }),
+      ...(propertyType && { propertyType }),
+      ...(dublinRegion && {
+        location: {
+          path: ['dublinRegion'],
+          equals: dublinRegion,
+        },
+      }),
+      ...(urgency && { urgency }),
+      ...(minValue && {
+        bids: {
+          some: {
+            estimatedValue: { gte: parseInt(minValue) },
+          },
+        },
+      }),
+      ...(maxValue && {
+        bids: {
+          some: {
+            estimatedValue: { lte: parseInt(maxValue) },
+          },
+        },
+      }),
     }
 
-    // Get valuation requests
-    const requests = await prisma.valuationRequest.findMany({
-      where: {
-        status: 'PENDING',
-        // Add location/area filtering
-      },
+    // Get valuations with related data
+    const valuations = await prisma.valuationRequest.findMany({
+      where,
       include: {
-        offers: {
-          where: {
-            userId: session.user.id
+        user: {
+          select: {
+            name: true,
+            email: true,
           }
-        }
+        },
+        bids: {
+          include: {
+            agent: {
+              select: {
+                name: true,
+                email: true,
+                agentProfile: {
+                  select: {
+                    rating: true,
+                    totalValuations: true,
+                    dublinExperience: true,
+                    areasServed: true,
+                  }
+                },
+              }
+            },
+          },
+          orderBy: [
+            { confidence: 'desc' },
+            { createdAt: 'desc' },
+          ],
+        },
+        activities: {
+          orderBy: {
+            createdAt: 'desc',
+          },
+          take: 10,
+        },
+        _count: {
+          select: {
+            bids: true,
+          }
+        },
       },
-      orderBy: {
-        createdAt: 'desc'
-      }
+      orderBy: [
+        { urgency: 'desc' },
+        { createdAt: 'desc' },
+      ],
+      skip: (page - 1) * limit,
+      take: limit,
     })
 
-    return NextResponse.json(requests)
+    // Get total count and Dublin-specific statistics
+    const [total, stats] = await prisma.$transaction([
+      prisma.valuationRequest.count({ where }),
+      prisma.valuationRequest.groupBy({
+        by: ['status', 'location', 'urgency'],
+        where,
+        _count: true,
+        _avg: {
+          'bids.estimatedValue': true,
+          'bids.fee': true,
+        },
+      }),
+    ])
+
+    return NextResponse.json({
+      valuations: valuations.map(valuation => ({
+        ...valuation,
+        averageValue: valuation.bids.reduce((acc, bid) => acc + bid.estimatedValue, 0) / 
+                     (valuation.bids.length || 1),
+        valueRange: {
+          min: Math.min(...valuation.bids.map(bid => bid.estimatedValue)),
+          max: Math.max(...valuation.bids.map(bid => bid.estimatedValue)),
+        },
+      })),
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
+      stats: {
+        byStatus: stats.reduce((acc, curr) => ({
+          ...acc,
+          [curr.status]: {
+            count: curr._count,
+            averageValue: curr._avg['bids.estimatedValue'] || 0,
+            averageFee: curr._avg['bids.fee'] || 0,
+            dublinRegion: curr.location['dublinRegion'],
+            urgency: curr.urgency,
+          },
+        }), {}),
+      },
+    })
 
   } catch (error) {
-    console.error('[GET_VALUATION_REQUESTS_ERROR]', error)
+    console.error('[GET_VALUATIONS_ERROR]', error)
     return new NextResponse('Internal Error', { status: 500 })
   }
 }
