@@ -1,11 +1,13 @@
-'use client'
-
-import { Inter } from 'next/font/google'
-import { AuthProvider } from '@/components/providers/auth-provider'
-import { Toaster } from 'sonner'
 import './globals.css'
+import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
 
 const inter = Inter({ subsets: ['latin'] })
+
+export const metadata: Metadata = {
+  title: 'GREIA - Life\'s Operating System',
+  description: 'Your unified platform for Properties, Services, Leisure, and Networking',
+}
 
 export default function RootLayout({
   children,
@@ -15,10 +17,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <AuthProvider>
-          {children}
-          <Toaster />
-        </AuthProvider>
+        {children}
       </body>
     </html>
   )
