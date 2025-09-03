@@ -4,7 +4,7 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { prisma } from '@/lib/prisma'
 import { pusher } from '@/lib/pusher'
 
-// Create property submission with 5% commission routing
+// Create property submission with Dublin-focused agent routing
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions)
@@ -14,58 +14,40 @@ export async function POST(req: Request) {
 
     const body = await req.json()
     const { 
-      propertyDetails,
-      location,
       propertyType, // RESIDENTIAL, COMMERCIAL, LUXURY
-      listingType, // SALE, RENT
+      listingType, // SALE, RENTAL
+      location,
       price,
-      bedrooms,
-      bathrooms,
-      totalArea,
-      features,
-      description,
-      contactPreference, // EMAIL, PHONE, BOTH
-      urgency, // ASAP, WITHIN_WEEK, WITHIN_MONTH
+      specifications,
       images,
-      documents,
-      expectedCommission, // Optional override of standard 5%
+      description,
+      availability,
+      contactPreferences,
     } = body
 
-    // Calculate commission (5% standard or custom)
-    const commissionRate = expectedCommission || 5
-    const potentialCommission = price * (commissionRate / 100)
-
-    // Create property submission with commission tracking
+    // Create property submission with Dublin-specific tracking
     const submission = await prisma.propertySubmission.create({
       data: {
         userId: session.user.id,
+        propertyType,
+        listingType,
+        location: {
+          address: location.address,
+          area: location.area,
+          county: 'Dublin',
+          eircode: location.eircode,
+          coordinates: location.coordinates,
+          dublinRegion: location.dublinRegion, // North/South/Central/West Dublin
+        },
+        price,
+        specifications,
+        images,
+        description,
+        availability,
+        contactPreferences,
         status: 'PENDING',
-        propertyDetails: {
-          location,
-          propertyType,
-          listingType,
-          price,
-          bedrooms,
-          bathrooms,
-          totalArea,
-          features,
-          description,
-        },
-        contactPreference,
-        urgency,
-        images: images || [],
-        documents: documents || [],
-        commissionRate,
-        potentialCommission,
-        // Create commission tracking
-        commissionTracking: {
-          create: {
-            standardRate: commissionRate,
-            potentialValue: potentialCommission,
-            status: 'PENDING',
-            referralSplit: 20, // 20% referral split if applicable
-          }
-        },
+        commissionRate: 5, // 5% standard commission
+        currency: 'EUR',
         // Track submission activity
         activities: {
           create: {
@@ -74,11 +56,9 @@ export async function POST(req: Request) {
             description: 'Property submission created',
             metadata: {
               propertyType,
-              location,
               listingType,
               price,
-              commissionRate,
-              potentialCommission,
+              dublinRegion: location.dublinRegion,
             },
           }
         },
@@ -90,27 +70,27 @@ export async function POST(req: Request) {
             email: true,
           }
         },
-        commissionTracking: true,
       },
     })
 
-    // Find verified agents in the area with matching expertise
-    const areaAgents = await prisma.user.findMany({
+    // Find matching Dublin agents based on region and property type
+    const matchingAgents = await prisma.user.findMany({
       where: {
         role: 'AGENT',
         isVerified: true,
         agentProfile: {
           isActive: true,
           areasServed: {
-            contains: location,
-            mode: 'insensitive',
+            has: location.dublinRegion,
           },
-          propertyTypes: {
+          specializations: {
             has: propertyType,
           },
-          priceRangeExperience: {
-            has: getPriceRange(price),
-          },
+          // Ensure Dublin coverage
+          OR: [
+            { areasServed: { has: 'Dublin' } },
+            { areasServed: { has: location.dublinRegion } },
+          ],
         },
       },
       include: {
@@ -119,91 +99,100 @@ export async function POST(req: Request) {
             rating: true,
             totalDeals: true,
             successRate: true,
-            specializations: true,
+            areasServed: true,
+            dublinExperience: true,
           },
         },
       },
       orderBy: [
         { agentProfile: { rating: 'desc' } },
-        { agentProfile: { successRate: 'desc' } },
+        { agentProfile: { totalDeals: 'desc' } },
       ],
-      take: 10, // Limit to top 10 matching agents
+      take: 10, // Limit to top 10 agents
     })
 
-    // Notify matched agents via Pusher
-    for (const agent of areaAgents) {
-      const matchScore = calculateAgentMatchScore(agent, {
-        propertyType,
-        location,
-        price,
-        listingType,
-      })
+    // Calculate potential commission
+    const potentialCommission = price * 0.05 // 5% commission
 
-      // Send real-time notification
-      await pusher.trigger(
-        `private-user-${agent.id}`,
-        'new-property-submission',
-        {
-          submissionId: submission.id,
-          propertyType,
-          location,
-          listingType,
-          price,
-          commissionRate,
-          potentialCommission,
-          matchScore,
-          timestamp: new Date().toISOString(),
-        }
-      )
-
-      // Create database notification
-      await prisma.notification.create({
-        data: {
-          userId: agent.id,
-          type: 'PROPERTY_SUBMISSION',
-          title: 'New Property Lead Available',
-          content: `New ${propertyType} ${listingType.toLowerCase()} in ${location} - ${commissionRate}% commission`,
-          metadata: {
+    // Create leads and notifications for matching agents
+    const agentNotifications = matchingAgents.map(agent =>
+      Promise.all([
+        // Create lead
+        prisma.lead.create({
+          data: {
+            userId: agent.id,
+            title: `Property Lead - ${propertyType} in ${location.dublinRegion}`,
+            type: 'PROPERTY',
+            status: 'NEW',
+            value: potentialCommission,
+            source: 'PROPERTY_SUBMISSION',
+            currency: 'EUR',
+            metadata: {
+              submissionId: submission.id,
+              propertyType,
+              listingType,
+              location,
+              price,
+              dublinRegion: location.dublinRegion,
+            },
+          },
+        }),
+        // Create notification
+        prisma.notification.create({
+          data: {
+            userId: agent.id,
+            type: 'PROPERTY_LEAD',
+            title: 'New Dublin Property Lead',
+            content: `New ${propertyType} ${listingType.toLowerCase()} in ${location.dublinRegion}`,
+            metadata: {
+              submissionId: submission.id,
+              propertyType,
+              listingType,
+              location,
+              price,
+              commission: potentialCommission,
+              currency: 'EUR',
+              dublinRegion: location.dublinRegion,
+            },
+          },
+        }),
+        // Send real-time notification
+        pusher.trigger(
+          `private-user-${agent.id}`,
+          'property-lead',
+          {
             submissionId: submission.id,
             propertyType,
+            listingType,
             location,
             price,
-            commissionRate,
-            potentialCommission,
-            matchScore,
-          },
-        },
-      })
+            commission: potentialCommission,
+            currency: 'EUR',
+            dublinRegion: location.dublinRegion,
+            timestamp: new Date().toISOString(),
+          }
+        ),
+      ])
+    )
 
-      // Track agent notification and matching
-      await prisma.propertySubmissionAgent.create({
-        data: {
-          submissionId: submission.id,
-          agentId: agent.id,
-          status: 'NOTIFIED',
-          matchScore,
-          commissionRate,
-          potentialCommission,
-        },
-      })
-    }
+    await Promise.all(agentNotifications)
 
     // Create CRM lead for property owner
     await prisma.lead.create({
       data: {
         userId: session.user.id,
-        title: `Property ${listingType} - ${location}`,
+        title: `My Property Submission - ${propertyType} in ${location.dublinRegion}`,
+        type: 'MY_PROPERTY',
         status: 'NEW',
-        type: 'PROPERTY',
         value: price,
-        source: 'PROPERTY_SUBMISSION',
-        notes: `Property submission created with ${areaAgents.length} matched agents`,
+        source: 'SELF_SUBMISSION',
+        currency: 'EUR',
         metadata: {
           submissionId: submission.id,
           propertyType,
+          listingType,
           location,
-          commissionRate,
-          matchedAgents: areaAgents.length,
+          dublinRegion: location.dublinRegion,
         },
       },
     })
@@ -213,20 +202,19 @@ export async function POST(req: Request) {
       submission: {
         id: submission.id,
         status: submission.status,
-        commissionRate,
+        agentsNotified: matchingAgents.length,
         potentialCommission,
-        matchedAgents: areaAgents.length,
-        createdAt: submission.createdAt,
+        currency: 'EUR',
       },
     })
 
   } catch (error) {
-    console.error('[PROPERTY_SUBMISSION_ERROR]', error)
+    console.error('[CREATE_SUBMISSION_ERROR]', error)
     return new NextResponse('Internal Error', { status: 500 })
   }
 }
 
-// Express interest in property (Verified Agents only)
+// Express interest in property (for Dublin agents)
 export async function PUT(req: Request) {
   try {
     const session = await getServerSession(authOptions)
@@ -234,206 +222,352 @@ export async function PUT(req: Request) {
       return new NextResponse('Unauthorized', { status: 401 })
     }
 
-    // Verify agent status and eligibility
+    const body = await req.json()
+    const { 
+      submissionId,
+      action, // EXPRESS_INTEREST, WITHDRAW_INTEREST
+      availability,
+      message,
+    } = body
+
+    // Verify Dublin agent status
     const agent = await prisma.user.findUnique({
-      where: { 
+      where: {
         id: session.user.id,
         role: 'AGENT',
         isVerified: true,
+        agentProfile: {
+          isActive: true,
+          areasServed: {
+            hasSome: ['Dublin', 'North Dublin', 'South Dublin', 'Central Dublin', 'West Dublin'],
+          },
+        },
       },
       include: {
         agentProfile: true,
       },
     })
 
-    if (!agent || !agent.agentProfile?.isActive) {
-      return new NextResponse('Only verified active agents can express interest', { status: 403 })
+    if (!agent) {
+      return new NextResponse('Only verified active Dublin agents can express interest', { status: 403 })
     }
 
-    const body = await req.json()
-    const { 
-      submissionId,
-      message,
-      availability, // IMMEDIATE, NEXT_24H, NEXT_WEEK
-      preferredContact, // EMAIL, PHONE, IN_PERSON
-      proposedStrategy, // Optional marketing/sales strategy
-    } = body
-
-    // Create agent interest with tracking
-    const interest = await prisma.agentInterest.create({
-      data: {
-        submissionId,
-        agentId: session.user.id,
-        message,
-        availability,
-        preferredContact,
-        proposedStrategy,
-        status: 'PENDING',
-        // Track interest activity
-        activities: {
-          create: {
-            type: 'INTEREST_EXPRESSED',
-            userId: session.user.id,
-            description: 'Agent expressed interest',
-            metadata: {
-              availability,
-              preferredContact,
-              hasStrategy: !!proposedStrategy,
-            },
-          }
-        },
-      },
+    // Get submission details
+    const submission = await prisma.propertySubmission.findUnique({
+      where: { id: submissionId },
       include: {
-        agent: {
+        user: {
           select: {
+            id: true,
             name: true,
             email: true,
-            agentProfile: {
-              select: {
-                rating: true,
-                totalDeals: true,
-                successRate: true,
-                specializations: true,
-              }
-            },
-          }
-        },
-        submission: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-              }
-            },
-            propertyDetails: true,
-            commissionTracking: true,
           }
         },
       },
     })
 
-    // Update agent's engagement metrics
-    await prisma.agentProfile.update({
-      where: { userId: session.user.id },
-      data: {
-        totalInterests: { increment: 1 },
-        lastInterestAt: new Date(),
-      },
-    })
+    if (!submission) {
+      return new NextResponse('Submission not found', { status: 404 })
+    }
 
-    // Notify property owner with comprehensive agent details
-    await pusher.trigger(
-      `private-user-${interest.submission.user.id}`,
-      'agent-interest',
-      {
-        interestId: interest.id,
-        submissionId,
-        agent: {
-          name: interest.agent.name,
-          rating: interest.agent.agentProfile?.rating,
-          totalDeals: interest.agent.agentProfile?.totalDeals,
-          successRate: interest.agent.agentProfile?.successRate,
-          specializations: interest.agent.agentProfile?.specializations,
+    if (action === 'EXPRESS_INTEREST') {
+      // Create or update agent interest
+      const interest = await prisma.agentInterest.upsert({
+        where: {
+          submissionId_agentId: {
+            submissionId,
+            agentId: session.user.id,
+          },
         },
-        message,
-        availability,
-        hasStrategy: !!proposedStrategy,
-        commissionDetails: {
-          rate: interest.submission.commissionRate,
-          potential: interest.submission.commissionTracking?.potentialValue,
-        },
-        timestamp: new Date().toISOString(),
-      }
-    )
-
-    // Create notification for property owner
-    await prisma.notification.create({
-      data: {
-        userId: interest.submission.user.id,
-        type: 'AGENT_INTEREST',
-        title: 'Agent Interested in Your Property',
-        content: `${interest.agent.name} (${interest.agent.agentProfile?.rating}★) wants to handle your property`,
-        metadata: {
-          interestId: interest.id,
+        create: {
           submissionId,
           agentId: session.user.id,
-          agentRating: interest.agent.agentProfile?.rating,
-          agentDeals: interest.agent.agentProfile?.totalDeals,
+          status: 'PENDING',
           availability,
-          hasStrategy: !!proposedStrategy,
+          message,
+          // Track interest activity
+          activities: {
+            create: {
+              type: 'INTEREST_EXPRESSED',
+              userId: session.user.id,
+              description: 'Agent expressed interest',
+              metadata: {
+                availability,
+                agentRating: agent.agentProfile.rating,
+                totalDeals: agent.agentProfile.totalDeals,
+                dublinExperience: agent.agentProfile.dublinExperience,
+              },
+            }
+          },
         },
-      },
-    })
-
-    // Update CRM lead status
-    await prisma.lead.updateMany({
-      where: {
-        userId: interest.submission.user.id,
-        metadata: {
-          path: ['submissionId'],
-          equals: submissionId,
+        update: {
+          status: 'PENDING',
+          availability,
+          message,
+          activities: {
+            create: {
+              type: 'INTEREST_UPDATED',
+              userId: session.user.id,
+              description: 'Agent updated interest',
+              metadata: {
+                availability,
+                agentRating: agent.agentProfile.rating,
+                totalDeals: agent.agentProfile.totalDeals,
+                dublinExperience: agent.agentProfile.dublinExperience,
+              },
+            }
+          },
         },
-      },
-      data: {
-        status: 'QUALIFIED',
-        updatedAt: new Date(),
-      },
-    })
+        include: {
+          agent: {
+            select: {
+              name: true,
+              email: true,
+              agentProfile: true,
+            }
+          },
+        },
+      })
 
-    return NextResponse.json({
-      success: true,
-      interest: {
-        id: interest.id,
-        status: interest.status,
-        createdAt: interest.createdAt,
-      },
-    })
+      // Notify property owner
+      await Promise.all([
+        pusher.trigger(
+          `private-user-${submission.userId}`,
+          'agent-interest',
+          {
+            submissionId,
+            agentName: agent.name,
+            agentRating: agent.agentProfile.rating,
+            totalDeals: agent.agentProfile.totalDeals,
+            dublinExperience: agent.agentProfile.dublinExperience,
+            availability,
+            timestamp: new Date().toISOString(),
+          }
+        ),
+        prisma.notification.create({
+          data: {
+            userId: submission.userId,
+            type: 'AGENT_INTEREST',
+            title: 'Dublin Agent Interested',
+            content: `${agent.name} has expressed interest in your ${submission.propertyType.toLowerCase()}`,
+            metadata: {
+              submissionId,
+              agentId: agent.id,
+              agentRating: agent.agentProfile.rating,
+              totalDeals: agent.agentProfile.totalDeals,
+              dublinExperience: agent.agentProfile.dublinExperience,
+            },
+          },
+        }),
+      ])
+
+      return NextResponse.json({
+        success: true,
+        interest,
+      })
+
+    } else if (action === 'WITHDRAW_INTEREST') {
+      // Withdraw interest
+      await prisma.agentInterest.update({
+        where: {
+          submissionId_agentId: {
+            submissionId,
+            agentId: session.user.id,
+          },
+        },
+        data: {
+          status: 'WITHDRAWN',
+          activities: {
+            create: {
+              type: 'INTEREST_WITHDRAWN',
+              userId: session.user.id,
+              description: 'Agent withdrew interest',
+              metadata: {
+                previousAvailability: availability,
+              },
+            }
+          },
+        },
+      })
+
+      // Notify property owner
+      await Promise.all([
+        pusher.trigger(
+          `private-user-${submission.userId}`,
+          'agent-withdrew',
+          {
+            submissionId,
+            agentName: agent.name,
+            timestamp: new Date().toISOString(),
+          }
+        ),
+        prisma.notification.create({
+          data: {
+            userId: submission.userId,
+            type: 'AGENT_WITHDREW',
+            title: 'Agent Withdrew Interest',
+            content: `${agent.name} has withdrawn interest in your ${submission.propertyType.toLowerCase()}`,
+            metadata: {
+              submissionId,
+              agentId: agent.id,
+            },
+          },
+        }),
+      ])
+
+      return NextResponse.json({ success: true })
+    }
+
+    return new NextResponse('Invalid action', { status: 400 })
 
   } catch (error) {
-    console.error('[EXPRESS_INTEREST_ERROR]', error)
+    console.error('[UPDATE_SUBMISSION_ERROR]', error)
     return new NextResponse('Internal Error', { status: 500 })
   }
 }
 
-// Helper function to calculate agent match score
-function calculateAgentMatchScore(agent: any, property: any): number {
-  let score = 0
+// Get property submissions with Dublin-specific filtering
+export async function GET(req: Request) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user) {
+      return new NextResponse('Unauthorized', { status: 401 })
+    }
 
-  // Property type expertise (30 points)
-  if (agent.agentProfile?.propertyTypes?.includes(property.propertyType)) {
-    score += 30
+    const { searchParams } = new URL(req.url)
+    const status = searchParams.get('status')
+    const propertyType = searchParams.get('propertyType')
+    const listingType = searchParams.get('listingType')
+    const dublinRegion = searchParams.get('dublinRegion')
+    const minPrice = searchParams.get('minPrice')
+    const maxPrice = searchParams.get('maxPrice')
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '10')
+
+    // Build filter conditions
+    const where = {
+      ...(session.user.role === 'AGENT'
+        ? {
+            OR: [
+              { userId: session.user.id },
+              {
+                agentInterests: {
+                  some: { agentId: session.user.id },
+                },
+              },
+            ],
+          }
+        : { userId: session.user.id }
+      ),
+      ...(status && { status }),
+      ...(propertyType && { propertyType }),
+      ...(listingType && { listingType }),
+      ...(dublinRegion && {
+        location: {
+          path: ['dublinRegion'],
+          equals: dublinRegion,
+        },
+      }),
+      ...(minPrice && { price: { gte: parseInt(minPrice) } }),
+      ...(maxPrice && { price: { lte: parseInt(maxPrice) } }),
+    }
+
+    // Get submissions with related data
+    const submissions = await prisma.propertySubmission.findMany({
+      where,
+      include: {
+        user: {
+          select: {
+            name: true,
+            email: true,
+          }
+        },
+        agentInterests: {
+          include: {
+            agent: {
+              select: {
+                name: true,
+                email: true,
+                agentProfile: {
+                  select: {
+                    rating: true,
+                    totalDeals: true,
+                    dublinExperience: true,
+                    areasServed: true,
+                  }
+                },
+              }
+            },
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+        },
+        activities: {
+          orderBy: {
+            createdAt: 'desc',
+          },
+          take: 10,
+        },
+        _count: {
+          select: {
+            agentInterests: true,
+          }
+        },
+      },
+      orderBy: [
+        { status: 'asc' },
+        { createdAt: 'desc' },
+      ],
+      skip: (page - 1) * limit,
+      take: limit,
+    })
+
+    // Get total count and Dublin-specific statistics
+    const [total, stats] = await prisma.$transaction([
+      prisma.propertySubmission.count({ where }),
+      prisma.propertySubmission.groupBy({
+        by: ['status', 'location'],
+        where,
+        _count: true,
+        _sum: {
+          price: true,
+        },
+        _avg: {
+          price: true,
+          commissionRate: true,
+        },
+      }),
+    ])
+
+    return NextResponse.json({
+      submissions: submissions.map(submission => ({
+        ...submission,
+        potentialCommission: submission.price * 0.05,
+        currency: 'EUR',
+      })),
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
+      stats: {
+        byStatus: stats.reduce((acc, curr) => ({
+          ...acc,
+          [curr.status]: {
+            count: curr._count,
+            totalValue: curr._sum.price || 0,
+            averageValue: curr._avg.price || 0,
+            averageCommission: (curr._avg.price || 0) * 0.05,
+            dublinRegion: curr.location['dublinRegion'],
+          },
+        }), {}),
+      },
+    })
+
+  } catch (error) {
+    console.error('[GET_SUBMISSIONS_ERROR]', error)
+    return new NextResponse('Internal Error', { status: 500 })
   }
-
-  // Location expertise (30 points)
-  if (agent.agentProfile?.areasServed?.toLowerCase()
-        .includes(property.location.toLowerCase())) {
-    score += 30
-  }
-
-  // Price range experience (20 points)
-  const priceRange = getPriceRange(property.price)
-  if (agent.agentProfile?.priceRangeExperience?.includes(priceRange)) {
-    score += 20
-  }
-
-  // Success rate bonus (up to 10 points)
-  score += Math.min(10, (agent.agentProfile?.successRate || 0) / 10)
-
-  // Recent activity bonus (up to 10 points)
-  const daysSinceLastDeal = agent.agentProfile?.lastDealAt
-    ? Math.floor((Date.now() - new Date(agent.agentProfile.lastDealAt).getTime()) / (1000 * 60 * 60 * 24))
-    : 365
-  score += Math.min(10, Math.max(0, 10 - (daysSinceLastDeal / 30)))
-
-  return Math.min(100, Math.round(score))
-}
-
-// Helper function to determine price range
-function getPriceRange(price: number): string {
-  if (price < 100000) return 'BUDGET'
-  if (price < 500000) return 'MID_RANGE'
-  if (price < 1000000) return 'PREMIUM'
-  return 'LUXURY'
 }
