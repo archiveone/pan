@@ -14,34 +14,8 @@ export async function POST(req: Request) {
 
     // Verify referring agent status
     const referringAgent = await prisma.user.findUnique({
-      where: { 
-        id: session.user.id,
-        role: 'AGENT',
-        isVerified: true,
-      },
-      include: {
-        agentProfile: true,
-      },
-    })
-
-    if (!referringAgent || !referringAgent.agentProfile?.isActive) {
-      return new NextResponse('Only verified active agents can create referrals', { status: 403 })
-    }
-
-    const body = await req.json()
-    const { 
-      propertyId,
-      referredAgentId,
-      propertyValue,
-      referralType, // SALE, RENTAL, VALUATION
-      notes,
-      expectedCommission, // Optional override of standard commission
-    } = body
-
-    // Verify referred agent
-    const referredAgent = await prisma.user.findUnique({
       where: {
-        id: referredAgentId,
+        id: session.user.id,
         role: 'AGENT',
         isVerified: true,
         agentProfile: {
@@ -53,28 +27,60 @@ export async function POST(req: Request) {
       },
     })
 
-    if (!referredAgent) {
-      return new NextResponse('Referred agent must be verified and active', { status: 400 })
+    if (!referringAgent) {
+      return new NextResponse('Only verified active agents can create referrals', { status: 403 })
     }
 
-    // Calculate potential commissions
-    const standardCommission = propertyValue * 0.05 // 5% standard commission
-    const commissionAmount = expectedCommission || standardCommission
-    const referralSplit = commissionAmount * 0.20 // 20% referral split
+    const body = await req.json()
+    const { 
+      type, // SALE, RENTAL, VALUATION
+      propertyDetails,
+      clientDetails,
+      referredAgentId,
+      notes,
+    } = body
+
+    // Verify referred agent status and Dublin coverage
+    const referredAgent = await prisma.user.findUnique({
+      where: {
+        id: referredAgentId,
+        role: 'AGENT',
+        isVerified: true,
+        agentProfile: {
+          isActive: true,
+          areasServed: {
+            hasSome: ['Dublin', 'North Dublin', 'South Dublin', 'Central Dublin', 'West Dublin'],
+          },
+        },
+      },
+      include: {
+        agentProfile: true,
+      },
+    })
+
+    if (!referredAgent) {
+      return new NextResponse('Referred agent must be verified and active in Dublin', { status: 400 })
+    }
 
     // Create referral with commission tracking
     const referral = await prisma.agentReferral.create({
       data: {
         referringAgentId: session.user.id,
         referredAgentId,
-        propertyId,
+        type,
         status: 'PENDING',
-        referralType,
-        propertyValue,
-        standardCommission,
-        expectedCommission: expectedCommission || null,
-        referralSplit,
+        propertyDetails: {
+          ...propertyDetails,
+          location: {
+            ...propertyDetails.location,
+            county: 'Dublin',
+            dublinRegion: propertyDetails.location.dublinRegion,
+          },
+        },
+        clientDetails,
         notes,
+        commissionSplit: 20, // 20% standard referral commission
+        currency: 'EUR',
         // Track referral activity
         activities: {
           create: {
@@ -82,10 +88,11 @@ export async function POST(req: Request) {
             userId: session.user.id,
             description: 'Agent referral created',
             metadata: {
-              propertyValue,
-              referralType,
-              standardCommission,
-              referralSplit,
+              referralType: type,
+              propertyLocation: propertyDetails.location,
+              referringAgentRating: referringAgent.agentProfile.rating,
+              referredAgentRating: referredAgent.agentProfile.rating,
+              dublinRegion: propertyDetails.location.dublinRegion,
             },
           }
         },
@@ -108,94 +115,74 @@ export async function POST(req: Request) {
       },
     })
 
-    // Create commission tracking records
-    await prisma.commissionTracking.create({
-      data: {
-        referralId: referral.id,
-        agentId: session.user.id,
-        type: 'REFERRAL',
-        status: 'PENDING',
-        standardRate: 20, // 20% of the standard commission
-        potentialValue: referralSplit,
-        metadata: {
-          propertyValue,
-          standardCommission,
-          referralSplit,
-        },
-      },
-    })
-
-    // Notify referred agent via Pusher
-    await pusher.trigger(
-      `private-user-${referredAgentId}`,
-      'new-referral',
-      {
-        referralId: referral.id,
-        referringAgent: {
-          name: referral.referringAgent.name,
-          rating: referral.referringAgent.agentProfile?.rating,
-          totalDeals: referral.referringAgent.agentProfile?.totalDeals,
-        },
-        propertyValue,
-        referralType,
-        standardCommission,
-        referralSplit,
-        timestamp: new Date().toISOString(),
-      }
-    )
-
-    // Create notification for referred agent
-    await prisma.notification.create({
-      data: {
-        userId: referredAgentId,
-        type: 'AGENT_REFERRAL',
-        title: 'New Agent Referral',
-        content: `${referral.referringAgent.name} has referred a ${referralType.toLowerCase()} opportunity to you`,
-        metadata: {
-          referralId: referral.id,
-          referringAgentId: session.user.id,
-          propertyValue,
-          standardCommission,
-          referralSplit,
-        },
-      },
-    })
-
     // Create CRM leads for both agents
-    await prisma.$transaction([
-      // Referring agent lead
+    await Promise.all([
+      // Lead for referring agent
       prisma.lead.create({
         data: {
           userId: session.user.id,
-          title: `Referral to ${referral.referredAgent.name}`,
-          status: 'NEW',
+          title: `Dublin Referral to ${referredAgent.name} - ${type}`,
           type: 'REFERRAL',
-          value: referralSplit,
+          status: 'NEW',
           source: 'AGENT_REFERRAL',
-          notes: `Referral created for ${referralType} opportunity`,
+          value: 0, // Will be updated when deal completes
+          currency: 'EUR',
           metadata: {
             referralId: referral.id,
+            type,
+            propertyDetails,
             referredAgentId,
-            propertyValue,
-            referralType,
+            dublinRegion: propertyDetails.location.dublinRegion,
           },
         },
       }),
-      // Referred agent lead
+      // Lead for referred agent
       prisma.lead.create({
         data: {
           userId: referredAgentId,
-          title: `Referral from ${referral.referringAgent.name}`,
-          status: 'NEW',
+          title: `Dublin Referral from ${referringAgent.name} - ${type}`,
           type: 'REFERRAL',
-          value: commissionAmount - referralSplit,
+          status: 'NEW',
           source: 'AGENT_REFERRAL',
-          notes: `Referral received for ${referralType} opportunity`,
+          value: 0, // Will be updated when deal completes
+          currency: 'EUR',
           metadata: {
             referralId: referral.id,
+            type,
+            propertyDetails,
+            clientDetails,
+            dublinRegion: propertyDetails.location.dublinRegion,
+          },
+        },
+      }),
+    ])
+
+    // Send notifications to referred agent
+    await Promise.all([
+      pusher.trigger(
+        `private-user-${referredAgentId}`,
+        'referral-received',
+        {
+          referralId: referral.id,
+          type,
+          referringAgentName: referringAgent.name,
+          propertyDetails,
+          dublinRegion: propertyDetails.location.dublinRegion,
+          timestamp: new Date().toISOString(),
+        }
+      ),
+      prisma.notification.create({
+        data: {
+          userId: referredAgentId,
+          type: 'REFERRAL_RECEIVED',
+          title: 'New Dublin Referral',
+          content: `${referringAgent.name} has referred a ${type.toLowerCase()} client in ${propertyDetails.location.dublinRegion}`,
+          metadata: {
+            referralId: referral.id,
+            type,
+            propertyDetails,
             referringAgentId: session.user.id,
-            propertyValue,
-            referralType,
+            dublinRegion: propertyDetails.location.dublinRegion,
           },
         },
       }),
@@ -203,14 +190,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      referral: {
-        id: referral.id,
-        status: referral.status,
-        propertyValue,
-        standardCommission,
-        referralSplit,
-        createdAt: referral.createdAt,
-      },
+      referral,
     })
 
   } catch (error) {
@@ -219,7 +199,7 @@ export async function POST(req: Request) {
   }
 }
 
-// Update referral status
+// Update referral status and handle commission
 export async function PUT(req: Request) {
   try {
     const session = await getServerSession(authOptions)
@@ -231,13 +211,12 @@ export async function PUT(req: Request) {
     const { 
       referralId,
       status, // ACCEPTED, REJECTED, COMPLETED
-      finalValue, // Final property value if different
-      actualCommission, // Actual commission earned
+      dealValue,
       notes,
     } = body
 
-    // Verify referral access
-    const existingReferral = await prisma.agentReferral.findUnique({
+    // Get referral details
+    const referral = await prisma.agentReferral.findUnique({
       where: { id: referralId },
       include: {
         referringAgent: {
@@ -245,6 +224,7 @@ export async function PUT(req: Request) {
             id: true,
             name: true,
             email: true,
+            agentProfile: true,
           }
         },
         referredAgent: {
@@ -252,120 +232,83 @@ export async function PUT(req: Request) {
             id: true,
             name: true,
             email: true,
+            agentProfile: true,
           }
         },
       },
     })
 
-    if (!existingReferral || 
-        (existingReferral.referringAgentId !== session.user.id && 
-         existingReferral.referredAgentId !== session.user.id)) {
-      return new NextResponse('Not found', { status: 404 })
+    if (!referral) {
+      return new NextResponse('Referral not found', { status: 404 })
     }
 
-    // Calculate final commissions if completed
-    const finalCommission = status === 'COMPLETED' 
-      ? (actualCommission || ((finalValue || existingReferral.propertyValue) * 0.05))
-      : existingReferral.standardCommission
+    // Verify user is involved in referral
+    if (referral.referredAgentId !== session.user.id && 
+        referral.referringAgentId !== session.user.id) {
+      return new NextResponse('Unauthorized access to referral', { status: 403 })
+    }
 
-    const finalReferralSplit = status === 'COMPLETED'
-      ? finalCommission * 0.20
-      : existingReferral.referralSplit
+    // Calculate commissions if deal completed
+    let referringAgentCommission = 0
+    let referredAgentCommission = 0
+    
+    if (status === 'COMPLETED' && dealValue) {
+      const standardCommission = dealValue * 0.05 // 5% standard commission
+      referringAgentCommission = standardCommission * 0.20 // 20% referral split
+      referredAgentCommission = standardCommission * 0.80 // 80% main agent split
+    }
 
     // Update referral status
     const updatedReferral = await prisma.agentReferral.update({
       where: { id: referralId },
       data: {
         status,
-        propertyValue: finalValue || existingReferral.propertyValue,
-        standardCommission: finalCommission,
-        referralSplit: finalReferralSplit,
-        completedAt: status === 'COMPLETED' ? new Date() : null,
-        notes: notes || null,
-        // Track status change
+        dealValue: status === 'COMPLETED' ? dealValue : undefined,
+        referringAgentCommission,
+        referredAgentCommission,
+        completedAt: status === 'COMPLETED' ? new Date() : undefined,
         activities: {
           create: {
-            type: 'REFERRAL_STATUS_UPDATED',
+            type: `REFERRAL_${status}`,
             userId: session.user.id,
-            description: `Referral status updated to ${status}`,
+            description: `Referral ${status.toLowerCase()}`,
             metadata: {
-              oldStatus: existingReferral.status,
-              newStatus: status,
-              finalValue,
-              actualCommission,
+              dealValue,
+              referringAgentCommission,
+              referredAgentCommission,
+              currency: 'EUR',
             },
           }
         },
       },
     })
 
-    // Update commission tracking if completed
+    // Update agent profiles if completed
     if (status === 'COMPLETED') {
-      await prisma.commissionTracking.updateMany({
-        where: { referralId },
-        data: {
-          status: 'COMPLETED',
-          actualValue: finalReferralSplit,
-          completedAt: new Date(),
-        },
-      })
-
-      // Update agent statistics
-      await prisma.$transaction([
-        // Referring agent
+      await Promise.all([
+        // Update referring agent stats
         prisma.agentProfile.update({
-          where: { userId: existingReferral.referringAgentId },
+          where: { userId: referral.referringAgentId },
           data: {
             totalReferrals: { increment: 1 },
-            totalReferralCommission: { increment: finalReferralSplit },
+            successfulReferrals: { increment: 1 },
+            totalReferralCommission: { increment: referringAgentCommission },
+            dublinReferrals: { increment: 1 },
           },
         }),
-        // Referred agent
+        // Update referred agent stats
         prisma.agentProfile.update({
-          where: { userId: existingReferral.referredAgentId },
+          where: { userId: referral.referredAgentId },
           data: {
             totalDeals: { increment: 1 },
-            totalCommission: { increment: finalCommission - finalReferralSplit },
+            totalCommission: { increment: referredAgentCommission },
+            dublinDeals: { increment: 1 },
           },
         }),
       ])
     }
 
-    // Send notifications to both agents
-    const [referringAgentNotification, referredAgentNotification] = await Promise.all([
-      // Notify referring agent
-      pusher.trigger(
-        `private-user-${existingReferral.referringAgentId}`,
-        'referral-update',
-        {
-          referralId,
-          status,
-          finalValue,
-          finalCommission,
-          finalReferralSplit,
-          timestamp: new Date().toISOString(),
-        }
-      ),
-      // Notify referred agent
-      pusher.trigger(
-        `private-user-${existingReferral.referredAgentId}`,
-        'referral-update',
-        {
-          referralId,
-          status,
-          finalValue,
-          finalCommission,
-          finalReferralSplit,
-          timestamp: new Date().toISOString(),
-        }
-      ),
-    ])
-
     // Update CRM leads
-    const leadStatus = status === 'ACCEPTED' ? 'QUALIFIED' :
-                      status === 'COMPLETED' ? 'WON' :
-                      status === 'REJECTED' ? 'LOST' : 'NEW'
-
     await prisma.lead.updateMany({
       where: {
         metadata: {
@@ -374,13 +317,54 @@ export async function PUT(req: Request) {
         },
       },
       data: {
-        status: leadStatus,
-        value: status === 'COMPLETED' 
-          ? finalReferralSplit // For referring agent
-          : finalCommission - finalReferralSplit, // For referred agent
+        status: status === 'COMPLETED' ? 'WON' :
+                status === 'REJECTED' ? 'LOST' : 'QUALIFIED',
+        value: status === 'COMPLETED' ? dealValue : 0,
         updatedAt: new Date(),
       },
     })
+
+    // Send notifications
+    const recipientId = session.user.id === referral.referringAgentId
+      ? referral.referredAgentId
+      : referral.referringAgentId
+
+    await Promise.all([
+      pusher.trigger(
+        `private-user-${recipientId}`,
+        'referral-update',
+        {
+          referralId,
+          status,
+          dealValue,
+          updatedBy: session.user.name,
+          commission: recipientId === referral.referringAgentId
+            ? referringAgentCommission
+            : referredAgentCommission,
+          currency: 'EUR',
+          timestamp: new Date().toISOString(),
+        }
+      ),
+      prisma.notification.create({
+        data: {
+          userId: recipientId,
+          type: 'REFERRAL_UPDATE',
+          title: `Dublin Referral ${status.toLowerCase()}`,
+          content: status === 'COMPLETED'
+            ? `Referral completed with deal value €${dealValue}`
+            : `Referral ${status.toLowerCase()} by ${session.user.name}`,
+          metadata: {
+            referralId,
+            status,
+            dealValue,
+            commission: recipientId === referral.referringAgentId
+              ? referringAgentCommission
+              : referredAgentCommission,
+            currency: 'EUR',
+          },
+        },
+      }),
+    ])
 
     return NextResponse.json({
       success: true,
@@ -393,7 +377,7 @@ export async function PUT(req: Request) {
   }
 }
 
-// Get agent referrals with filtering
+// Get referrals with Dublin-specific filtering
 export async function GET(req: Request) {
   try {
     const session = await getServerSession(authOptions)
@@ -403,19 +387,33 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url)
     const status = searchParams.get('status')
-    const type = searchParams.get('type') // 'given' or 'received'
-    const referralType = searchParams.get('referralType')
+    const type = searchParams.get('type')
+    const role = searchParams.get('role') // 'referring' or 'referred'
+    const dublinRegion = searchParams.get('dublinRegion')
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '10')
 
     // Build filter conditions
     const where = {
       ...(status && { status }),
-      ...(referralType && { referralType }),
-      ...(type === 'given'
+      ...(type && { type }),
+      ...(role === 'referring'
         ? { referringAgentId: session.user.id }
-        : { referredAgentId: session.user.id }
+        : role === 'referred'
+        ? { referredAgentId: session.user.id }
+        : {
+            OR: [
+              { referringAgentId: session.user.id },
+              { referredAgentId: session.user.id },
+            ],
+          }
       ),
+      ...(dublinRegion && {
+        propertyDetails: {
+          path: ['location', 'dublinRegion'],
+          equals: dublinRegion,
+        },
+      }),
     }
 
     // Get referrals with related data
@@ -429,7 +427,9 @@ export async function GET(req: Request) {
             agentProfile: {
               select: {
                 rating: true,
-                totalDeals: true,
+                totalReferrals: true,
+                successfulReferrals: true,
+                dublinReferrals: true,
               }
             },
           }
@@ -442,6 +442,8 @@ export async function GET(req: Request) {
               select: {
                 rating: true,
                 totalDeals: true,
+                successRate: true,
+                dublinDeals: true,
               }
             },
           }
@@ -450,30 +452,28 @@ export async function GET(req: Request) {
           orderBy: {
             createdAt: 'desc',
           },
+          take: 10,
         },
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: [
+        { status: 'asc' },
+        { createdAt: 'desc' },
+      ],
       skip: (page - 1) * limit,
       take: limit,
     })
 
-    // Get total count and statistics
+    // Get total count and Dublin-specific statistics
     const [total, stats] = await prisma.$transaction([
       prisma.agentReferral.count({ where }),
       prisma.agentReferral.groupBy({
-        by: ['status'],
-        where: {
-          OR: [
-            { referringAgentId: session.user.id },
-            { referredAgentId: session.user.id },
-          ],
-        },
+        by: ['status', 'type', 'propertyDetails'],
+        where,
         _count: true,
         _sum: {
-          referralSplit: true,
-          standardCommission: true,
+          dealValue: true,
+          referringAgentCommission: true,
+          referredAgentCommission: true,
         },
       }),
     ])
@@ -491,8 +491,11 @@ export async function GET(req: Request) {
           ...acc,
           [curr.status]: {
             count: curr._count,
-            totalReferralSplit: curr._sum.referralSplit || 0,
-            totalCommission: curr._sum.standardCommission || 0,
+            totalDealValue: curr._sum.dealValue || 0,
+            totalReferringCommission: curr._sum.referringAgentCommission || 0,
+            totalReferredCommission: curr._sum.referredAgentCommission || 0,
+            type: curr.type,
+            dublinRegion: curr.propertyDetails['location']['dublinRegion'],
           },
         }), {}),
       },
