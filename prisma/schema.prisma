@@ -1,4 +1,6 @@
 // This is your Prisma schema file
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,120 +10,267 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Base User Models
 model User {
-  id            String       @id @default(cuid())
-  name          String?
-  email         String?      @unique
-  emailVerified DateTime?
-  image         String?
-  role          UserRole     @default(USER)
-  isVerified    Boolean      @default(false)
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-  accounts      Account[]
-  sessions      Session[]
-  properties    Property[]   // Properties owned by user
-  commissions   Commission[] // Commissions received (for agents)
-  notifications Notification[]
+  id                String    @id @default(cuid())
+  name             String?
+  email            String?    @unique
+  emailVerified    DateTime?
+  image            String?
+  password         String?
+  role             String     @default("USER") // USER, AGENT, ADMIN
+  verified         Boolean    @default(false)
+  verifiedAt       DateTime?
+  
+  // Stripe Integration
+  stripeCustomerId       String?   @unique
+  stripeSubscriptionId   String?
+  stripePriceId          String?
+  stripeCurrentPeriodEnd DateTime?
+  
+  // Profile & Verification
+  profile           Profile?
+  agentProfile      AgentProfile?
+  identityVerification IdentityVerification?
+  
+  // Listings & Related
+  listings          Listing[]
+  savedListings     SavedListing[]
+  reviews          Review[]
+  bookings         Booking[]
+  
+  // CRM
+  contacts         Contact[]
+  leads            Lead[]
+  tasks            Task[]
+  
+  // Messaging & Social
+  conversations    Conversation[]    @relation("UserConversations")
+  messages         Message[]
+  posts            Post[]
+  comments         Comment[]
+  reactions        Reaction[]
+  
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 }
 
-model Account {
-  id                String  @id @default(cuid())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String? @db.Text
-  session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
+model Profile {
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio             String?
+  phone           String?
+  address         String?
+  city            String?
+  country         String?
+  website         String?
+  social          Json?     // Store social media links
+  preferences     Json?     // Store user preferences
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }
 
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+model AgentProfile {
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company         String?
+  license         String?
+  specialties     String[]
+  experience      Int?      // Years of experience
+  areas           String[]  // Service areas
+  kycVerified     Boolean   @default(false)
+  kycVerifiedAt   DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }
 
-model Property {
-  id          String       @id @default(cuid())
-  title       String
-  description String?      @db.Text
-  address     String
-  price       Float
-  type        PropertyType
-  status      PropertyStatus @default(ACTIVE)
-  ownerId     String
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  owner       User        @relation(fields: [ownerId], references: [id])
-  commissions Commission[]
+model IdentityVerification {
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status          String    // PENDING, VERIFIED, REJECTED
+  type            String    // PASSPORT, ID_CARD, DRIVING_LICENSE
+  provider        String    // STRIPE, etc.
+  providerId      String    // External provider ID
+  documentNumber  String?   // Last 4 digits only
+  expiryDate      DateTime?
+  country         String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }
 
-model Commission {
-  id             String           @id @default(cuid())
-  propertyId     String
-  agentId        String
-  saleAmount     Float
-  totalCommission Float
-  platformFee    Float
-  agentCommission Float
-  status         CommissionStatus @default(PENDING)
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  property       Property        @relation(fields: [propertyId], references: [id])
-  agent          User           @relation(fields: [agentId], references: [id])
+// Unified Listing Models
+model Listing {
+  id              String    @id @default(cuid())
+  type            String    // PROPERTY, SERVICE, LEISURE
+  title           String
+  description     String
+  status          String    // DRAFT, PENDING, ACTIVE, etc.
+  
+  // Location
+  address         String?
+  city            String
+  state           String?
+  country         String
+  postcode        String
+  latitude        Float?
+  longitude       Float?
+  
+  // Pricing
+  price           Float
+  currency        String    @default("GBP")
+  period          String?   // HOUR, DAY, WEEK, MONTH, YEAR
+  negotiable      Boolean   @default(false)
+  minimumStay     Int?
+  
+  // Common Fields
+  features        String[]
+  amenities       String[]
+  rules           String[]
+  verified        Boolean   @default(false)
+  featured        Boolean   @default(false)
+  views           Int       @default(0)
+  rating          Float?
+  
+  // Property Specific
+  propertyType    String?   // HOUSE, APARTMENT, etc.
+  propertyStatus  String?   // FOR_SALE, FOR_RENT, etc.
+  size            Int?      // in square feet/meters
+  sizeUnit        String?   // sqft, sqm
+  bedrooms        Int?
+  bathrooms       Int?
+  parking         Int?
+  yearBuilt       Int?
+  furnished       Boolean?
+  pets            Boolean?
+  utilities       Boolean?
+  availableFrom   DateTime?
+  minimumTerm     Int?
+  maximumTerm     Int?
+  deposit         Float?
+  virtualTour     String?
+  floorPlan       String?
+  energyRating    String?
+  
+  // Service Specific
+  serviceType     String?   // PLUMBER, ELECTRICIAN, etc.
+  availability    String?   // AVAILABLE, BUSY, etc.
+  experience      Int?      // years
+  qualifications  String[]
+  insurance       Boolean?
+  coverageRadius  Int?
+  coverageUnit    String?   // km, miles
+  responseTime    Int?
+  responseUnit    String?   // minutes, hours, days
+  workingHours    Json?
+  emergencyService Boolean?
+  minimumCharge   Float?
+  callOutFee      Float?
+  
+  // Leisure Specific
+  leisureType     String?   // CAR_RENTAL, BOAT_RENTAL, etc.
+  capacityMin     Int?
+  capacityMax     Int?
+  duration        Int?
+  durationUnit    String?   // minutes, hours, days
+  schedule        Json?
+  cancellation    Json?
+  requirements    String[]
+  included        String[]
+  excluded        String[]
+  seasonalStart   DateTime?
+  seasonalEnd     DateTime?
+  
+  // Relations
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agentId         String?
+  media           ListingMedia[]
+  reviews         Review[]
+  bookings        Booking[]
+  savedBy         SavedListing[]
+  
+  // Timestamps
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  publishedAt     DateTime?
+  expiresAt       DateTime?
+
+  @@index([type])
+  @@index([status])
+  @@index([city])
+  @@index([propertyType])
+  @@index([serviceType])
+  @@index([leisureType])
 }
 
-model Notification {
-  id        String   @id @default(cuid())
-  userId    String
-  type      NotificationType
-  title     String
-  message   String   @db.Text
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+model ListingMedia {
+  id              String    @id @default(cuid())
+  listingId       String
+  listing         Listing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  url             String
+  type            String    // IMAGE, VIDEO, DOCUMENT
+  title           String?
+  description     String?
+  isPrimary       Boolean   @default(false)
+  order           Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([listingId])
 }
 
-enum UserRole {
-  USER
-  AGENT
-  ADMIN
+model SavedListing {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listingId       String
+  listing         Listing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([userId, listingId])
+  @@index([userId])
+  @@index([listingId])
 }
 
-enum PropertyType {
-  HOUSE
-  APARTMENT
-  COMMERCIAL
-  LAND
+model Review {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listingId       String
+  listing         Listing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  rating          Int
+  comment         String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([listingId])
 }
 
-enum PropertyStatus {
-  ACTIVE
-  PENDING
-  SOLD
-  WITHDRAWN
-}
+model Booking {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listingId       String
+  listing         Listing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  status          String    // PENDING, CONFIRMED, CANCELLED
+  startDate       DateTime
+  endDate         DateTime?
+  guests          Int?
+  totalPrice      Float
+  currency        String    @default("GBP")
+  paymentStatus   String    // PENDING, PAID, REFUNDED
+  paymentId       String?   // Stripe payment ID
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-enum CommissionStatus {
-  PENDING
-  APPROVED
-  PAID
-  REJECTED
-}
-
-enum NotificationType {
-  COMMISSION
-  PROPERTY
-  SYSTEM
+  @@index([userId])
+  @@index([listingId])
+  @@index([status])
 }
