@@ -28,13 +28,22 @@ model User {
   role                 String    @default("USER") // USER, AGENT, ADMIN
   userType             String?   // LANDLORD, TENANT, AGENT, BUSINESS
   
+  // Agent specific fields
+  agentLicense         String?
+  agentBrokerage       String?
+  serviceAreas         String[]  // Array of postcodes/areas
+  
   // Relationships
   accounts             Account[]
   listings             Listing[]
   messages             Message[]
   conversations        Conversation[]
   properties           Property[]
-  
+  privateListings      PrivateListing[] // Properties submitted to private marketplace
+  agentInterests       AgentInterest[]  // Agent's interest in private listings
+  referrals            Referral[]       // Referrals received
+  referralsGiven       Referral[]       @relation("ReferringAgent")
+
   @@map("users")
 }
 
@@ -64,6 +73,7 @@ model Property {
   description String?  @db.Text
   price       Float
   location    String
+  postcode    String   // For area matching
   type        String   // HOUSE, APARTMENT, COMMERCIAL, etc.
   status      String   // AVAILABLE, PENDING, SOLD, RENTED
   createdAt   DateTime @default(now())
@@ -76,8 +86,72 @@ model Property {
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   listings    Listing[]
+  privateListing PrivateListing?
 
   @@map("properties")
+}
+
+model PrivateListing {
+  id            String   @id @default(cuid())
+  status        String   // PENDING, ASSIGNED, COMPLETED
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Property details
+  propertyId    String   @unique
+  property      Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  
+  // Owner details
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  
+  // Agent assignment
+  assignedAgentId String?
+  commission      Float?  // Agreed commission rate
+  
+  // Agent interests
+  agentInterests  AgentInterest[]
+
+  @@map("private_listings")
+}
+
+model AgentInterest {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  
+  // Relationships
+  privateListing  PrivateListing @relation(fields: [privateListingId], references: [id])
+  privateListingId String
+  
+  // Agent details
+  agentId        String
+  agent          User    @relation(fields: [agentId], references: [id])
+  
+  // Interest details
+  proposedCommission Float
+  message           String?
+  status            String   // PENDING, ACCEPTED, REJECTED
+
+  @@map("agent_interests")
+}
+
+model Referral {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  status          String   // PENDING, COMPLETED
+  commission      Float    // 20% of the original commission
+  
+  // Relationships
+  agentId         String   // Agent receiving referral
+  agent           User     @relation(fields: [agentId], references: [id])
+  
+  referringAgentId String  // Agent giving referral
+  referringAgent   User    @relation("ReferringAgent", fields: [referringAgentId], references: [id])
+  
+  privateListingId String?
+  notes           String?
+
+  @@map("referrals")
 }
 
 model Listing {
