@@ -15,8 +15,13 @@ export class CommissionService {
     agentId: string
   ): Promise<Commission> {
     const listingPrice = Number(inquiry.listing.price);
-    const commissionRate = 0.05; // 5% commission
-    const commissionAmount = listingPrice * commissionRate;
+    const agentCommissionRate = 0.05; // Agent's 5% commission
+    const agentCommissionAmount = listingPrice * agentCommissionRate;
+    const greiaCommissionRate = 0.05; // GREIA's 5% of agent's commission
+    const greiaCommissionAmount = agentCommissionAmount * greiaCommissionRate;
+
+    // Calculate the final amount the agent receives
+    const agentFinalAmount = agentCommissionAmount - greiaCommissionAmount;
 
     // Set due date to 30 days from now
     const dueDate = new Date();
@@ -24,11 +29,18 @@ export class CommissionService {
 
     return await prisma.commission.create({
       data: {
-        amount: commissionAmount,
+        amount: agentFinalAmount, // Amount agent receives
+        greiaAmount: greiaCommissionAmount, // Amount GREIA receives
+        totalAmount: agentCommissionAmount, // Total commission amount
         dueDate,
         agentId,
         listingId: inquiry.listingId,
         inquiryId: inquiry.id,
+        metadata: {
+          listingPrice,
+          agentCommissionRate,
+          greiaCommissionRate,
+        },
       },
     });
   }
@@ -54,18 +66,16 @@ export class CommissionService {
     }
 
     try {
-      // Create a payment intent
-      const paymentIntent = await stripe.paymentIntents.create({
+      // Create a transfer to the agent's Stripe account
+      const transfer = await stripe.transfers.create({
         amount: Math.round(Number(commission.amount) * 100), // Convert to cents
         currency: 'gbp',
-        payment_method_types: ['card'],
-        transfer_data: {
-          destination: commission.agent.stripeAccountId,
-        },
+        destination: commission.agent.stripeAccountId,
         metadata: {
           commissionId: commission.id,
           listingId: commission.listingId,
           agentId: commission.agentId,
+          type: 'agent_commission',
         },
       });
 
@@ -74,7 +84,7 @@ export class CommissionService {
         where: { id: commissionId },
         data: {
           status: 'PROCESSING',
-          stripePaymentId: paymentIntent.id,
+          stripePaymentId: transfer.id,
         },
       });
     } catch (error) {
@@ -94,16 +104,16 @@ export class CommissionService {
    * Handle successful payment webhook from Stripe
    */
   static async handlePaymentSuccess(
-    paymentIntent: Stripe.PaymentIntent
+    transfer: Stripe.Transfer
   ): Promise<Commission> {
-    const { commissionId } = paymentIntent.metadata;
+    const { commissionId } = transfer.metadata;
 
     return await prisma.commission.update({
       where: { id: commissionId },
       data: {
         status: 'PAID',
         paidDate: new Date(),
-        transactionRef: paymentIntent.id,
+        transactionRef: transfer.id,
       },
     });
   }
@@ -112,7 +122,7 @@ export class CommissionService {
    * Get commission summary for an agent
    */
   static async getAgentCommissionSummary(agentId: string) {
-    const [pending, processing, paid, total] = await Promise.all([
+    const [pending, processing, paid, total, greiaTotal] = await Promise.all([
       prisma.commission.count({
         where: {
           agentId,
@@ -137,7 +147,16 @@ export class CommissionService {
           status: 'PAID',
         },
         _sum: {
-          amount: true,
+          amount: true, // Agent's amount
+        },
+      }),
+      prisma.commission.aggregate({
+        where: {
+          agentId,
+          status: 'PAID',
+        },
+        _sum: {
+          greiaAmount: true, // GREIA's amount
         },
       }),
     ]);
@@ -147,6 +166,7 @@ export class CommissionService {
       processing,
       paid,
       totalEarned: total._sum.amount || 0,
+      totalGreiaCommission: greiaTotal._sum.greiaAmount || 0,
     };
   }
 
@@ -183,7 +203,17 @@ export class CommissionService {
     ]);
 
     return {
-      commissions,
+      commissions: commissions.map(commission => ({
+        ...commission,
+        breakdown: {
+          totalCommission: commission.totalAmount,
+          agentAmount: commission.amount,
+          greiaAmount: commission.greiaAmount,
+          listingPrice: commission.metadata.listingPrice,
+          agentRate: commission.metadata.agentCommissionRate,
+          greiaRate: commission.metadata.greiaCommissionRate,
+        },
+      })),
       pagination: {
         total,
         pages: Math.ceil(total / limit),
@@ -200,11 +230,15 @@ export class CommissionService {
     const [totalPaid, totalPending, monthlyStats] = await Promise.all([
       prisma.commission.aggregate({
         where: { status: 'PAID' },
-        _sum: { amount: true },
+        _sum: {
+          greiaAmount: true, // Only GREIA's portion
+        },
       }),
       prisma.commission.aggregate({
         where: { status: 'PENDING' },
-        _sum: { amount: true },
+        _sum: {
+          greiaAmount: true, // Only GREIA's portion
+        },
       }),
       prisma.commission.groupBy({
         by: ['status'],
@@ -215,15 +249,38 @@ export class CommissionService {
         },
         _count: true,
         _sum: {
-          amount: true,
+          greiaAmount: true, // Only GREIA's portion
         },
       }),
     ]);
 
     return {
-      totalPaid: totalPaid._sum.amount || 0,
-      totalPending: totalPending._sum.amount || 0,
+      totalPaid: totalPaid._sum.greiaAmount || 0,
+      totalPending: totalPending._sum.greiaAmount || 0,
       monthlyStats,
+    };
+  }
+
+  /**
+   * Calculate commission breakdown for a listing
+   */
+  static calculateCommissionBreakdown(listingPrice: number) {
+    const agentCommissionRate = 0.05; // 5%
+    const greiaCommissionRate = 0.05; // 5% of agent's commission
+
+    const agentCommissionAmount = listingPrice * agentCommissionRate;
+    const greiaCommissionAmount = agentCommissionAmount * greiaCommissionRate;
+    const agentFinalAmount = agentCommissionAmount - greiaCommissionAmount;
+
+    return {
+      listingPrice,
+      totalCommission: agentCommissionAmount,
+      agentAmount: agentFinalAmount,
+      greiaAmount: greiaCommissionAmount,
+      rates: {
+        agent: agentCommissionRate,
+        greia: greiaCommissionRate,
+      },
     };
   }
 }
