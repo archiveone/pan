@@ -1,181 +1,196 @@
-'use client';
+import { Metadata } from 'next';
+import { notFound } from 'next/navigation';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
-import { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PropertyType, Property, User } from '@prisma/client';
-import { toast } from 'sonner';
+import { PropertyGallery } from '@/components/properties/property-gallery';
+import { PropertyInfo } from '@/components/properties/property-info';
+import { PropertyFeatures } from '@/components/properties/property-features';
+import { PropertyLocation } from '@/components/properties/property-location';
+import { PropertyContact } from '@/components/properties/property-contact';
+import { PropertyAgent } from '@/components/properties/property-agent';
+import { SimilarProperties } from '@/components/properties/similar-properties';
 
-interface PropertyWithOwner extends Property {
-  owner: Pick<User, 'id' | 'name' | 'email' | 'image'>;
+interface PropertyPageProps {
+  params: {
+    id: string;
+  };
 }
 
-export default function PropertyDetailPage({ params }: { params: { id: string } }) {
-  const { data: session } = useSession();
-  const [property, setProperty] = useState<PropertyWithOwner | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isContactingAgent, setIsContactingAgent] = useState(false);
-
-  useEffect(() => {
-    fetchPropertyDetails();
-  }, [params.id]);
-
-  const fetchPropertyDetails = async () => {
-    try {
-      const response = await fetch(`/api/properties/${params.id}`);
-      if (!response.ok) throw new Error('Failed to fetch property details');
-      const data = await response.json();
-      setProperty(data);
-    } catch (error) {
-      console.error('Error fetching property:', error);
-      toast.error('Failed to load property details');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleContactAgent = async () => {
-    if (!session) {
-      toast.error('Please sign in to contact the agent');
-      return;
-    }
-
-    setIsContactingAgent(true);
-    try {
-      const response = await fetch('/api/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+export async function generateMetadata(
+  { params }: PropertyPageProps
+): Promise<Metadata> {
+  const property = await prisma.listing.findUnique({
+    where: { id: params.id },
+    include: {
+      propertyListing: true,
+      user: {
+        select: {
+          name: true,
         },
-        body: JSON.stringify({
-          recipientId: property?.owner.id,
-          propertyId: property?.id,
-          message: `Interested in property: ${property?.title}`,
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to send message');
-      
-      toast.success('Message sent to agent successfully!');
-    } catch (error) {
-      console.error('Error contacting agent:', error);
-      toast.error('Failed to send message to agent');
-    } finally {
-      setIsContactingAgent(false);
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
-          <div className="h-64 bg-gray-200 rounded mb-4"></div>
-          <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-          <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
-        </div>
-      </div>
-    );
-  }
+      },
+    },
+  });
 
   if (!property) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-2xl font-bold text-red-600">Property not found</h1>
-      </div>
-    );
+    return {
+      title: 'Property Not Found | GREIA',
+    };
   }
 
+  return {
+    title: `${property.title} | GREIA`,
+    description: property.description,
+    openGraph: {
+      title: property.title,
+      description: property.description,
+      images: property.propertyListing.images.map((image) => ({
+        url: image,
+        width: 1200,
+        height: 630,
+        alt: property.title,
+      })),
+    },
+  };
+}
+
+export default async function PropertyPage({ params }: PropertyPageProps) {
+  const session = await getServerSession(authOptions);
+  
+  // Fetch the property with all related data
+  const property = await prisma.listing.findUnique({
+    where: { id: params.id },
+    include: {
+      propertyListing: true,
+      user: {
+        select: {
+          id: true,
+          name: true,
+          image: true,
+          email: true,
+          phone: true,
+          rating: true,
+          createdAt: true,
+          _count: {
+            select: {
+              listings: true,
+              reviews: true,
+            },
+          },
+        },
+      },
+      _count: {
+        select: {
+          favorites: true,
+          views: true,
+        },
+      },
+    },
+  });
+
+  if (!property) {
+    notFound();
+  }
+
+  // Increment view count
+  if (session?.user.id !== property.user.id) {
+    await prisma.listing.update({
+      where: { id: params.id },
+      data: {
+        views: {
+          create: {
+            userId: session?.user.id,
+          },
+        },
+      },
+    });
+  }
+
+  // Fetch similar properties
+  const similarProperties = await prisma.listing.findMany({
+    where: {
+      id: { not: params.id },
+      propertyListing: {
+        type: property.propertyListing.type,
+        price: {
+          gte: property.propertyListing.price * 0.8,
+          lte: property.propertyListing.price * 1.2,
+        },
+      },
+    },
+    take: 4,
+    include: {
+      propertyListing: true,
+      user: {
+        select: {
+          id: true,
+          name: true,
+          image: true,
+        },
+      },
+      _count: {
+        select: {
+          favorites: true,
+          views: true,
+        },
+      },
+    },
+  });
+
+  // Check if the current user has favorited this property
+  const isFavorited = session?.user ? await prisma.favorite.findUnique({
+    where: {
+      userId_listingId: {
+        userId: session.user.id,
+        listingId: params.id,
+      },
+    },
+  }) : null;
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {/* Main Content */}
-        <div className="md:col-span-2">
-          <h1 className="text-3xl font-bold mb-4">{property.title}</h1>
-          
-          {/* Property Images */}
-          <div className="aspect-video bg-gray-200 rounded-lg mb-6">
-            {/* Image placeholder - will be implemented in next phase */}
-            <div className="h-full flex items-center justify-center text-gray-500">
-              Property Images Coming Soon
-            </div>
+    <div className="min-h-screen bg-gray-50">
+      {/* Property Gallery */}
+      <PropertyGallery 
+        images={property.propertyListing.images}
+        title={property.title}
+      />
+
+      <div className="container mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-8">
+            <PropertyInfo
+              property={property}
+              isFavorited={!!isFavorited}
+              currentUser={session?.user}
+            />
+            
+            <PropertyFeatures
+              features={property.propertyListing.features}
+              specifications={property.propertyListing.specifications}
+            />
+            
+            <PropertyLocation
+              location={property.propertyListing.location}
+              coordinates={property.propertyListing.coordinates}
+            />
           </div>
 
-          {/* Property Details */}
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>Property Details</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-500">Type</p>
-                  <p className="font-medium">{property.type}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Price</p>
-                  <p className="font-medium">£{property.price.toLocaleString()}</p>
-                </div>
-                <div className="col-span-2">
-                  <p className="text-sm text-gray-500">Address</p>
-                  <p className="font-medium">{property.address}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Description */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Description</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="whitespace-pre-wrap">{property.description}</p>
-            </CardContent>
-          </Card>
+          {/* Sidebar */}
+          <div className="space-y-8">
+            <PropertyContact
+              agent={property.user}
+              propertyId={property.id}
+              currentUser={session?.user}
+            />
+            
+            <PropertyAgent agent={property.user} />
+          </div>
         </div>
 
-        {/* Sidebar */}
-        <div>
-          <Card className="sticky top-4">
-            <CardHeader>
-              <CardTitle>Contact Agent</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="mb-4">
-                <div className="flex items-center gap-3 mb-4">
-                  {property.owner.image ? (
-                    <img
-                      src={property.owner.image}
-                      alt={property.owner.name || 'Agent'}
-                      className="w-12 h-12 rounded-full"
-                    />
-                  ) : (
-                    <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
-                  )}
-                  <div>
-                    <p className="font-medium">{property.owner.name}</p>
-                    <p className="text-sm text-gray-500">{property.owner.email}</p>
-                  </div>
-                </div>
-                
-                <Button
-                  className="w-full"
-                  onClick={handleContactAgent}
-                  disabled={isContactingAgent || !session}
-                >
-                  {isContactingAgent ? 'Sending...' : 'Contact Agent'}
-                </Button>
-                
-                {!session && (
-                  <p className="text-sm text-gray-500 mt-2 text-center">
-                    Please sign in to contact the agent
-                  </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+        {/* Similar Properties */}
+        <div className="mt-16">
+          <SimilarProperties properties={similarProperties} />
         </div>
       </div>
     </div>
