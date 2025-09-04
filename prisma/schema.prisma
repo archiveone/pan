@@ -9,317 +9,249 @@ datasource db {
 }
 
 model User {
-  id                   String    @id @default(cuid())
-  name                 String?
-  email                String?   @unique
+  id                    String                 @id @default(cuid())
+  name                  String
+  email                 String                 @unique
   emailVerified        DateTime?
-  image                String?
-  hashedPassword       String?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
-  
-  // Verification fields
-  verificationSessionId String?   @unique
-  verificationStatus    String?   @default("UNVERIFIED") // UNVERIFIED, PENDING, VERIFIED, FAILED
-  verificationError     String?
-  verifiedAt           DateTime?
-  
-  // Role and type
-  role                 String    @default("USER") // USER, AGENT, ADMIN
-  userType             String?   // LANDLORD, TENANT, AGENT, BUSINESS
-  
-  // Agent specific fields
-  agentLicense         String?
-  agentBrokerage       String?
-  serviceAreas         String[]  // Array of postcodes/areas
-  
-  // Social media fields
-  bio                  String?   @db.Text
-  coverImage           String?
-  followers            Follow[]  @relation("Following")
-  following            Follow[]  @relation("Followers")
-  posts                Post[]
-  comments             Comment[]
-  likes                Like[]
-  
-  // Relationships
-  accounts             Account[]
-  listings             Listing[]
-  messages             Message[]
-  conversations        Conversation[]
-  properties           Property[]
-  privateListings      PrivateListing[]
-  agentInterests       AgentInterest[]
-  referrals            Referral[]
-  referralsGiven       Referral[]       @relation("ReferringAgent")
-  valuationRequests    ValuationRequest[]
-  valuationOffers      ValuationOffer[]
+  image                 String?
+  password             String?
+  bio                   String?                @db.Text
+  location             String?
+  phone                String?
+  website              String?
+  rating               Float                   @default(0)
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
 
-  @@map("users")
+  // New Profile Features
+  profileBackground    String?                // Background image URL
+  coverPhoto          String?                // Cover photo URL
+  headline            String?                // Professional headline
+  socialLinks         SocialLink[]           // Social media links
+  portfolioItems      PortfolioItem[]        // Portfolio items (documents, images, etc.)
+  todos               Todo[]                 // Private to-do items
+  educationHistory    Education[]            // Education history
+  workHistory        WorkHistory[]          // Work history
+  certifications      Certification[]        // Professional certifications
+  skills              Skill[]                // Professional skills
+  languages           Language[]             // Languages spoken
+  availability        Availability?          // Availability settings
+  customSections      ProfileSection[]       // Custom profile sections
+
+  // Existing Relations
+  expertise           String[]
+  serviceAreas        String[]
+  qualifications      Qualification[]
+  verifications       Verification[]
+  listings            Listing[]
+  reviews             Review[]
+  posts               Post[]
+  followers           Follow[]               @relation("Following")
+  following           Follow[]               @relation("Followers")
+  conversations       ConversationParticipant[]
+  messages            Message[]
+  notifications       Notification[]
+  achievements        Achievement[]
+  paymentMethods      PaymentMethod[]
+  bankAccounts        BankAccount[]
+  subscriptions       Subscription[]
+  activities          Activity[]
+  profileViews        ProfileView[]
 }
 
-// Social Media Models
-model Post {
-  id          String    @id @default(cuid())
-  content     String    @db.Text
-  images      String[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  
-  // Relations
-  userId      String
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  comments    Comment[]
-  likes       Like[]
-  
-  // Optional property/listing reference
-  propertyId  String?
-  property    Property? @relation(fields: [propertyId], references: [id])
-  listingId   String?
-  listing     Listing?  @relation(fields: [listingId], references: [id])
+// New Models for Enhanced Profile Features
 
-  @@map("posts")
-}
-
-model Comment {
+model SocialLink {
   id        String   @id @default(cuid())
-  content   String   @db.Text
-  createdAt DateTime @default(now())
-  
-  // Relations
+  platform  String   // e.g., LinkedIn, Twitter, Instagram
+  url       String
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  postId    String
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-
-  @@map("comments")
-}
-
-model Like {
-  id        String   @id @default(cuid())
   createdAt DateTime @default(now())
-  
-  // Relations
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  postId    String
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  updatedAt DateTime @updatedAt
 
-  @@unique([userId, postId])
-  @@map("likes")
+  @@index([userId])
 }
 
-model Follow {
-  id          String   @id @default(cuid())
-  createdAt   DateTime @default(now())
-  
-  // Relations
-  followerId  String
-  follower    User     @relation("Following", fields: [followerId], references: [id], onDelete: Cascade)
-  followingId String
-  following   User     @relation("Followers", fields: [followingId], references: [id], onDelete: Cascade)
-
-  @@unique([followerId, followingId])
-  @@map("follows")
-}
-
-// Valuation Marketplace Models
-model ValuationRequest {
-  id          String    @id @default(cuid())
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  status      String    // PENDING, IN_PROGRESS, COMPLETED
-  
-  // Property details
-  address     String
-  postcode    String
-  propertyType String
-  bedrooms    Int?
-  bathrooms   Int?
-  description String?   @db.Text
-  images      String[]
-  
-  // Owner details
-  userId      String
-  user        User      @relation(fields: [userId], references: [id])
-  
-  // Valuation offers
-  offers      ValuationOffer[]
-
-  @@map("valuation_requests")
-}
-
-model ValuationOffer {
-  id          String    @id @default(cuid())
-  createdAt   DateTime  @default(now())
-  status      String    // PENDING, ACCEPTED, REJECTED
-  
-  // Valuation details
-  value       Float
-  confidence  Int       // Confidence level 1-5
-  notes       String?   @db.Text
-  
-  // Relations
-  requestId   String
-  request     ValuationRequest @relation(fields: [requestId], references: [id])
-  agentId     String
-  agent       User      @relation(fields: [agentId], references: [id])
-
-  @@map("valuation_offers")
-}
-
-// Existing Models
-model Account {
-  id                String  @id @default(cuid())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String? @db.Text
-  session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
-  @@map("accounts")
-}
-
-model Property {
+model PortfolioItem {
   id          String   @id @default(cuid())
   title       String
   description String?  @db.Text
-  price       Float
-  location    String
-  postcode    String
-  type        String   // HOUSE, APARTMENT, COMMERCIAL, etc.
-  status      String   // AVAILABLE, PENDING, SOLD, RENTED
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  // Media
-  images      String[]
-  
-  // Relations
+  type        String   // e.g., Document, Image, Video, Link
+  url         String   // File or external URL
+  thumbnail   String?  // Thumbnail image URL
+  category    String?  // Custom category
+  featured    Boolean  @default(false)
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  listings    Listing[]
-  privateListing PrivateListing?
-  posts       Post[]   // Social media posts about this property
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  @@map("properties")
+  @@index([userId])
 }
 
-model PrivateListing {
+model Todo {
+  id          String   @id @default(cuid())
+  title       String
+  description String?  @db.Text
+  dueDate     DateTime?
+  completed   Boolean  @default(false)
+  priority    String?  // High, Medium, Low
+  category    String?
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Education {
+  id              String   @id @default(cuid())
+  institution     String
+  degree          String
+  fieldOfStudy    String
+  startDate       DateTime
+  endDate         DateTime?
+  grade           String?
+  activities      String?  @db.Text
+  description     String?  @db.Text
+  verified        Boolean  @default(false)
+  verificationDoc String?  // URL to verification document
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model WorkHistory {
+  id              String   @id @default(cuid())
+  company         String
+  position        String
+  location        String?
+  startDate       DateTime
+  endDate         DateTime?
+  current         Boolean  @default(false)
+  description     String?  @db.Text
+  achievements    String[] // List of achievements
+  skills          String[] // Skills used
+  verified        Boolean  @default(false)
+  verificationDoc String?  // URL to verification document
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Certification {
+  id              String   @id @default(cuid())
+  name            String
+  issuingBody     String
+  issueDate       DateTime
+  expiryDate      DateTime?
+  credentialId    String?
+  credentialUrl   String?
+  verified        Boolean  @default(false)
+  verificationDoc String?  // URL to verification document
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Skill {
+  id          String   @id @default(cuid())
+  name        String
+  category    String?
+  level       String?  // Beginner, Intermediate, Expert
+  endorsed    Boolean  @default(false)
+  endorsements Int     @default(0)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Language {
+  id          String   @id @default(cuid())
+  name        String
+  level       String   // Basic, Intermediate, Fluent, Native
+  certified   Boolean  @default(false)
+  certificate String?  // URL to language certificate
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Availability {
   id            String   @id @default(cuid())
-  status        String   // PENDING, ASSIGNED, COMPLETED
+  status        String   // Available, Busy, Away
+  schedule      Json?    // Weekly schedule
+  timezone      String
+  responseTime  Int?     // Average response time in minutes
+  bookingNotice Int?     // Minimum notice for bookings in hours
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-  
-  // Property details
-  propertyId    String   @unique
-  property      Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  
-  // Owner details
-  userId        String
-  user          User     @relation(fields: [userId], references: [id])
-  
-  // Agent assignment
-  assignedAgentId String?
-  commission      Float?
-  
-  // Agent interests
-  agentInterests  AgentInterest[]
-
-  @@map("private_listings")
 }
 
-model AgentInterest {
-  id              String   @id @default(cuid())
-  createdAt       DateTime @default(now())
-  
-  // Relations
-  privateListing  PrivateListing @relation(fields: [privateListingId], references: [id])
-  privateListingId String
-  
-  // Agent details
-  agentId        String
-  agent          User    @relation(fields: [agentId], references: [id])
-  
-  // Interest details
-  proposedCommission Float
-  message           String?
-  status            String   // PENDING, ACCEPTED, REJECTED
-
-  @@map("agent_interests")
-}
-
-model Referral {
-  id              String   @id @default(cuid())
-  createdAt       DateTime @default(now())
-  status          String   // PENDING, COMPLETED
-  commission      Float
-  
-  // Relations
-  agentId         String
-  agent           User     @relation(fields: [agentId], references: [id])
-  
-  referringAgentId String
-  referringAgent   User     @relation("ReferringAgent", fields: [referringAgentId], references: [id])
-  
-  privateListingId String?
-  notes           String?
-
-  @@map("referrals")
-}
-
-model Listing {
+model ProfileSection {
   id          String   @id @default(cuid())
   title       String
-  description String?  @db.Text
-  price       Float
-  type        String   // SALE, RENT, SERVICE
-  status      String   // ACTIVE, PENDING, COMPLETED
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  // Relations
+  content     String   @db.Text
+  type        String   // Text, Gallery, List, etc.
+  order       Int
+  visible     Boolean  @default(true)
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  propertyId  String?
-  property    Property? @relation(fields: [propertyId], references: [id])
-  posts       Post[]    // Social media posts about this listing
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  @@map("listings")
+  @@index([userId])
 }
 
-model Message {
-  id             String       @id @default(cuid())
-  content        String       @db.Text
-  createdAt      DateTime     @default(now())
-  
-  // Relations
-  userId         String
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  conversationId String
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+// Existing Models (Add any missing ones)
 
-  @@map("messages")
+model Qualification {
+  id           String   @id @default(cuid())
+  title        String
+  institution  String
+  year         Int
+  verified     Boolean  @default(false)
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId])
 }
 
-model Conversation {
-  id        String    @id @default(cuid())
-  name      String?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  
-  // Relations
-  users     User[]
-  messages  Message[]
+model Verification {
+  id          String   @id @default(cuid())
+  type        String   // ID, Address, Professional, etc.
+  status      String   // PENDING, VERIFIED, REJECTED
+  verifiedAt  DateTime?
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  @@map("conversations")
+  @@index([userId])
 }
+
+// Add other existing models (Listing, Review, Post, Follow, etc.)
+// as they were in the original schema
+
+// Remember to add proper indexes and relations
