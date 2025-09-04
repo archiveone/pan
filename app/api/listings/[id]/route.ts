@@ -1,64 +1,29 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
-
-interface Params {
-  params: {
-    id: string;
-  };
-}
+import { authOptions } from '@/lib/auth';
 
 // GET /api/listings/[id] - Get a single listing
-export async function GET(req: Request, { params }: Params) {
+export async function GET(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
   try {
-    const { id } = params;
-    const session = await getServerSession(authOptions);
-
     const listing = await prisma.listing.findUnique({
-      where: { id },
+      where: { id: params.id },
       include: {
-        user: {
+        owner: {
           select: {
             id: true,
             name: true,
             image: true,
-            verified: true,
-            agentProfile: {
-              select: {
-                id: true,
-                company: true,
-                kycVerified: true,
-                specialties: true,
-                experience: true,
-              },
-            },
+            isVerified: true,
           },
-        },
-        media: {
-          orderBy: {
-            order: 'asc',
-          },
-        },
-        reviews: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                image: true,
-              },
-            },
-          },
-          orderBy: {
-            createdAt: 'desc',
-          },
-          take: 5,
         },
         _count: {
           select: {
             savedBy: true,
-            reviews: true,
+            enquiries: true,
           },
         },
       },
@@ -71,61 +36,9 @@ export async function GET(req: Request, { params }: Params) {
       );
     }
 
-    // Increment view count
-    await prisma.listing.update({
-      where: { id },
-      data: { views: { increment: 1 } },
-    });
-
-    // Check if user has saved this listing
-    let isSaved = false;
-    if (session?.user) {
-      const savedListing = await prisma.savedListing.findUnique({
-        where: {
-          userId_listingId: {
-            userId: session.user.id,
-            listingId: id,
-          },
-        },
-      });
-      isSaved = !!savedListing;
-    }
-
-    // Get similar listings
-    const similarListings = await prisma.listing.findMany({
-      where: {
-        id: { not: id },
-        type: listing.type,
-        status: 'ACTIVE',
-        city: listing.city,
-        OR: [
-          { propertyType: listing.propertyType },
-          { serviceType: listing.serviceType },
-          { leisureType: listing.leisureType },
-        ],
-      },
-      include: {
-        media: {
-          where: { isPrimary: true },
-          take: 1,
-        },
-        _count: {
-          select: {
-            savedBy: true,
-            reviews: true,
-          },
-        },
-      },
-      take: 4,
-    });
-
-    return NextResponse.json({
-      ...listing,
-      isSaved,
-      similarListings,
-    });
+    return NextResponse.json(listing);
   } catch (error) {
-    console.error('Listing fetch error:', error);
+    console.error('Error fetching listing:', error);
     return NextResponse.json(
       { error: 'Failed to fetch listing' },
       { status: 500 }
@@ -134,11 +47,12 @@ export async function GET(req: Request, { params }: Params) {
 }
 
 // PATCH /api/listings/[id] - Update a listing
-export async function PATCH(req: Request, { params }: Params) {
+export async function PATCH(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
   try {
-    const { id } = params;
     const session = await getServerSession(authOptions);
-    
     if (!session?.user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -146,65 +60,45 @@ export async function PATCH(req: Request, { params }: Params) {
       );
     }
 
-    // Check if listing exists and belongs to user
-    const existingListing = await prisma.listing.findUnique({
-      where: { id },
-      select: { userId: true },
+    const data = await request.json();
+
+    // Check if user owns the listing or is admin
+    const listing = await prisma.listing.findUnique({
+      where: { id: params.id },
+      select: { ownerId: true },
     });
 
-    if (!existingListing) {
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true },
+    });
+
+    if (listing?.ownerId !== session.user.id && user?.role !== 'ADMIN') {
       return NextResponse.json(
-        { error: 'Listing not found' },
-        { status: 404 }
+        { error: 'Unauthorized' },
+        { status: 401 }
       );
     }
 
-    if (existingListing.userId !== session.user.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized to update this listing' },
-        { status: 403 }
-      );
-    }
-
-    const body = await req.json();
-    const {
-      media,
-      ...updates
-    } = body;
-
-    // Start a transaction for atomic updates
-    const updatedListing = await prisma.$transaction(async (tx) => {
-      // Update the listing
-      const listing = await tx.listing.update({
-        where: { id },
-        data: updates,
-      });
-
-      // Handle media updates if provided
-      if (media) {
-        // Delete existing media
-        await tx.listingMedia.deleteMany({
-          where: { listingId: id },
-        });
-
-        // Create new media records
-        if (media.length > 0) {
-          await tx.listingMedia.createMany({
-            data: media.map((m: any, index: number) => ({
-              listingId: id,
-              ...m,
-              order: index,
-            })),
-          });
-        }
-      }
-
-      return listing;
+    // Update listing
+    const updatedListing = await prisma.listing.update({
+      where: { id: params.id },
+      data,
+      include: {
+        owner: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+            isVerified: true,
+          },
+        },
+      },
     });
 
     return NextResponse.json(updatedListing);
   } catch (error) {
-    console.error('Listing update error:', error);
+    console.error('Error updating listing:', error);
     return NextResponse.json(
       { error: 'Failed to update listing' },
       { status: 500 }
@@ -213,11 +107,12 @@ export async function PATCH(req: Request, { params }: Params) {
 }
 
 // DELETE /api/listings/[id] - Delete a listing
-export async function DELETE(req: Request, { params }: Params) {
+export async function DELETE(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
   try {
-    const { id } = params;
     const session = await getServerSession(authOptions);
-    
     if (!session?.user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -225,10 +120,71 @@ export async function DELETE(req: Request, { params }: Params) {
       );
     }
 
-    // Check if listing exists and belongs to user
+    // Check if user owns the listing or is admin
     const listing = await prisma.listing.findUnique({
-      where: { id },
-      select: { userId: true },
+      where: { id: params.id },
+      select: { ownerId: true },
+    });
+
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true },
+    });
+
+    if (listing?.ownerId !== session.user.id && user?.role !== 'ADMIN') {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    // Delete listing
+    await prisma.listing.delete({
+      where: { id: params.id },
+    });
+
+    return NextResponse.json({ message: 'Listing deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting listing:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete listing' },
+      { status: 500 }
+    );
+  }
+}
+
+// POST /api/listings/[id]/save - Save/unsave a listing
+export async function POST(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const { action } = await request.json();
+
+    if (action !== 'save' && action !== 'unsave') {
+      return NextResponse.json(
+        { error: 'Invalid action' },
+        { status: 400 }
+      );
+    }
+
+    // Check if listing exists
+    const listing = await prisma.listing.findUnique({
+      where: { id: params.id },
+      include: {
+        savedBy: {
+          where: { id: session.user.id },
+          select: { id: true },
+        },
+      },
     });
 
     if (!listing) {
@@ -238,41 +194,34 @@ export async function DELETE(req: Request, { params }: Params) {
       );
     }
 
-    if (listing.userId !== session.user.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized to delete this listing' },
-        { status: 403 }
-      );
+    // Save or unsave the listing
+    if (action === 'save' && listing.savedBy.length === 0) {
+      await prisma.listing.update({
+        where: { id: params.id },
+        data: {
+          savedBy: {
+            connect: { id: session.user.id },
+          },
+        },
+      });
+      return NextResponse.json({ message: 'Listing saved successfully' });
+    } else if (action === 'unsave' && listing.savedBy.length > 0) {
+      await prisma.listing.update({
+        where: { id: params.id },
+        data: {
+          savedBy: {
+            disconnect: { id: session.user.id },
+          },
+        },
+      });
+      return NextResponse.json({ message: 'Listing unsaved successfully' });
     }
 
-    // Delete listing and related records in a transaction
-    await prisma.$transaction([
-      // Delete related records
-      prisma.listingMedia.deleteMany({
-        where: { listingId: id },
-      }),
-      prisma.savedListing.deleteMany({
-        where: { listingId: id },
-      }),
-      prisma.review.deleteMany({
-        where: { listingId: id },
-      }),
-      prisma.booking.deleteMany({
-        where: { listingId: id },
-      }),
-      // Delete the listing
-      prisma.listing.delete({
-        where: { id },
-      }),
-    ]);
-
-    return NextResponse.json({
-      message: 'Listing deleted successfully',
-    });
+    return NextResponse.json({ message: 'No action needed' });
   } catch (error) {
-    console.error('Listing deletion error:', error);
+    console.error('Error saving/unsaving listing:', error);
     return NextResponse.json(
-      { error: 'Failed to delete listing' },
+      { error: 'Failed to save/unsave listing' },
       { status: 500 }
     );
   }
