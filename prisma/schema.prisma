@@ -43,12 +43,64 @@ model User {
   // Verification status
   isVerified      Boolean   @default(false)
   verificationId  String?   // Stripe Identity verification ID
+
+  // Commission related fields
+  commissions     Commission[]    @relation("AgentCommissions")
+  stripeAccountId String?        // Stripe Connect account ID
+  bankDetails     BankDetails?
 }
 
-enum UserRole {
-  USER
-  AGENT
-  ADMIN
+// Bank details for commission payments
+model BankDetails {
+  id            String    @id @default(cuid())
+  userId        String    @unique
+  user          User      @relation(fields: [userId], references: [id])
+  accountName   String
+  accountNumber String
+  sortCode      String
+  bankName      String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// Commission tracking
+model Commission {
+  id            String    @id @default(cuid())
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Commission details
+  amount        Decimal
+  status        CommissionStatus @default(PENDING)
+  dueDate       DateTime
+  paidDate      DateTime?
+  
+  // Transaction details
+  stripePaymentId String?
+  transactionRef  String?
+  
+  // Related records
+  agent         User      @relation("AgentCommissions", fields: [agentId], references: [id])
+  agentId       String
+  listing       Listing   @relation(fields: [listingId], references: [id])
+  listingId     String
+  inquiry       ListingEnquiry @relation(fields: [inquiryId], references: [id])
+  inquiryId     String    @unique
+
+  // Metadata
+  notes         String?   @db.Text
+
+  @@index([agentId])
+  @@index([listingId])
+  @@index([status])
+}
+
+enum CommissionStatus {
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
+  CANCELLED
 }
 
 // Main Listing model
@@ -90,6 +142,7 @@ model Listing {
   savedBy     User[]   @relation("SavedListings")
   enquiries   ListingEnquiry[]
   posts       Post[]   // Social posts referencing this listing
+  commissions Commission[]
   
   // For property listings
   propertyType PropertyType?
@@ -103,10 +156,40 @@ model Listing {
   leisureType  LeisureType?
   bookingType  BookingType?
   
+  // Sale/Rental tracking
+  salePrice    Decimal?
+  rentAmount   Decimal?
+  dealDate     DateTime?
+  
   @@index([category])
   @@index([type])
   @@index([status])
   @@index([city])
+}
+
+// Listing Enquiry model
+model ListingEnquiry {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Enquiry details
+  message     String   @db.Text
+  status      EnquiryStatus @default(PENDING)
+  
+  // Relations
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String
+  listing     Listing  @relation(fields: [listingId], references: [id])
+  listingId   String
+  commission  Commission?
+
+  // Notification tracking
+  notified    Boolean  @default(false)
+  
+  @@index([status])
+  @@index([userId])
+  @@index([listingId])
 }
 
 // Social Models
@@ -180,7 +263,13 @@ model Share {
   @@index([postId])
 }
 
-// Listing related enums
+// Enums
+enum UserRole {
+  USER
+  AGENT
+  ADMIN
+}
+
 enum ListingCategory {
   PROPERTY
   SERVICE
@@ -202,7 +291,7 @@ enum ListingStatus {
   RENTED
   EXPIRED
   INACTIVE
-  PRIVATE // For private marketplace
+  PRIVATE
 }
 
 enum PropertyType {
@@ -239,28 +328,11 @@ enum BookingType {
   ONE_TIME
 }
 
-// Enquiry model for listing interactions
-model ListingEnquiry {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  // Enquiry details
-  message   String   @db.Text
-  status    EnquiryStatus @default(PENDING)
-  
-  // Relations
-  user      User     @relation(fields: [userId], references: [id])
-  userId    String
-  listing   Listing  @relation(fields: [listingId], references: [id])
-  listingId String
-  
-  @@index([status])
-}
-
 enum EnquiryStatus {
   PENDING
   RESPONDED
+  ACCEPTED
+  REJECTED
   CLOSED
   SPAM
 }
