@@ -1,3 +1,8 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import axios from 'axios';
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
@@ -13,6 +18,76 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useToast } from '@/components/ui/use-toast';
+import { Loader2 } from 'lucide-react';
+
+interface AgentInterestActionsProps {
+  interestId: string;
+  onSuccess: () => void;
+}
+
+const AgentInterestActions = ({ interestId, onSuccess }: AgentInterestActionsProps) => {
+  const [loading, setLoading] = useState<'accept' | 'decline' | null>(null);
+  const { toast } = useToast();
+  const router = useRouter();
+
+  const handleDecision = async (decision: 'ACCEPTED' | 'REJECTED') => {
+    try {
+      setLoading(decision === 'ACCEPTED' ? 'accept' : 'decline');
+      
+      await axios.patch(`/api/private-marketplace/interest/${interestId}`, {
+        decision,
+      });
+
+      toast({
+        title: "Success!",
+        description: decision === 'ACCEPTED' 
+          ? "Agent has been assigned to your property."
+          : "Agent interest has been declined.",
+      });
+
+      onSuccess();
+      router.refresh();
+    } catch (error) {
+      console.error('Decision error:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Could not process your decision. Please try again.",
+      });
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  return (
+    <div className="flex space-x-2">
+      <Button
+        onClick={() => handleDecision('ACCEPTED')}
+        disabled={loading !== null}
+        className="w-24"
+      >
+        {loading === 'accept' ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          'Accept'
+        )}
+      </Button>
+      <Button
+        onClick={() => handleDecision('REJECTED')}
+        variant="outline"
+        disabled={loading !== null}
+        className="w-24"
+      >
+        {loading === 'decline' ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          'Decline'
+        )}
+      </Button>
+    </div>
+  );
+};
 
 export default async function PrivateMarketplacePage() {
   const session = await getServerSession(authOptions);
@@ -54,7 +129,10 @@ export default async function PrivateMarketplacePage() {
               agentBrokerage: true,
             }
           }
-        }
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
       }
     },
     orderBy: {
@@ -135,14 +213,26 @@ export default async function PrivateMarketplacePage() {
                                   </p>
                                 </div>
                                 <p className="mt-2 text-sm">{interest.message}</p>
-                                {interest.status === 'PENDING' && (
-                                  <div className="mt-3 flex space-x-2">
-                                    <Button size="sm">Accept</Button>
-                                    <Button size="sm" variant="outline">Decline</Button>
+                                {interest.status === 'PENDING' && listing.status === 'PENDING' && (
+                                  <div className="mt-3">
+                                    <AgentInterestActions
+                                      interestId={interest.id}
+                                      onSuccess={() => router.refresh()}
+                                    />
                                   </div>
+                                )}
+                                {interest.status !== 'PENDING' && (
+                                  <p className="mt-2 text-sm font-medium text-muted-foreground">
+                                    Status: {interest.status}
+                                  </p>
                                 )}
                               </div>
                             ))}
+                            {listing.agentInterests.length === 0 && (
+                              <p className="text-muted-foreground">
+                                No agent interests yet. Agents in your area will be notified of this listing.
+                              </p>
+                            )}
                           </div>
                         </div>
                       </div>
