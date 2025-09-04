@@ -1,83 +1,61 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
-import { ListingType } from '@/types/listing';
+import { authOptions } from '@/lib/auth';
 
-// GET /api/listings - Get listings with filters
-export async function GET(req: Request) {
+// GET /api/listings - Get all listings with filtering
+export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(req.url);
+    const { searchParams } = new URL(request.url);
     
-    // Parse query parameters
-    const type = searchParams.get('type') as ListingType;
+    // Extract filter parameters
     const category = searchParams.get('category');
+    const type = searchParams.get('type');
     const city = searchParams.get('city');
     const minPrice = searchParams.get('minPrice');
     const maxPrice = searchParams.get('maxPrice');
-    const status = searchParams.get('status');
-    const verified = searchParams.get('verified');
-    const featured = searchParams.get('featured');
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
-    const sort = searchParams.get('sort') || 'createdAt';
-    const order = searchParams.get('order') || 'desc';
+    const skip = (page - 1) * limit;
 
-    // Build filter conditions
+    // Build filter object
     const where: any = {
-      status: 'ACTIVE', // Default to active listings
+      status: 'ACTIVE',
     };
 
+    if (category) where.category = category;
     if (type) where.type = type;
-    if (category) {
-      if (type === 'PROPERTY') where.propertyType = category;
-      if (type === 'SERVICE') where.serviceType = category;
-      if (type === 'LEISURE') where.leisureType = category;
+    if (city) where.city = { contains: city, mode: 'insensitive' };
+    if (minPrice || maxPrice) {
+      where.price = {};
+      if (minPrice) where.price.gte = parseFloat(minPrice);
+      if (maxPrice) where.price.lte = parseFloat(maxPrice);
     }
-    if (city) where.city = city;
-    if (minPrice) where.price = { ...where.price, gte: parseFloat(minPrice) };
-    if (maxPrice) where.price = { ...where.price, lte: parseFloat(maxPrice) };
-    if (status) where.status = status;
-    if (verified) where.verified = verified === 'true';
-    if (featured) where.featured = featured === 'true';
 
     // Get total count for pagination
     const total = await prisma.listing.count({ where });
 
-    // Get listings with pagination and sorting
+    // Get listings with pagination
     const listings = await prisma.listing.findMany({
       where,
       include: {
-        user: {
+        owner: {
           select: {
             id: true,
             name: true,
             image: true,
-            verified: true,
-            agentProfile: {
-              select: {
-                id: true,
-                company: true,
-                kycVerified: true,
-              },
-            },
+            isVerified: true,
           },
-        },
-        media: {
-          where: { isPrimary: true },
-          take: 1,
         },
         _count: {
           select: {
             savedBy: true,
-            reviews: true,
+            enquiries: true,
           },
         },
       },
-      orderBy: {
-        [sort]: order,
-      },
-      skip: (page - 1) * limit,
+      orderBy: { createdAt: 'desc' },
+      skip,
       take: limit,
     });
 
@@ -91,7 +69,7 @@ export async function GET(req: Request) {
       },
     });
   } catch (error) {
-    console.error('Listings fetch error:', error);
+    console.error('Error fetching listings:', error);
     return NextResponse.json(
       { error: 'Failed to fetch listings' },
       { status: 500 }
@@ -100,10 +78,9 @@ export async function GET(req: Request) {
 }
 
 // POST /api/listings - Create a new listing
-export async function POST(req: Request) {
+export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
-    
     if (!session?.user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -111,78 +88,39 @@ export async function POST(req: Request) {
       );
     }
 
-    const body = await req.json();
-    const {
-      type,
-      title,
-      description,
-      location,
-      price,
-      features,
-      amenities,
-      rules,
-      media,
-      ...specificFields
-    } = body;
+    const data = await request.json();
 
-    // Validate required fields
-    if (!type || !title || !description || !location || !price) {
+    // Basic validation
+    if (!data.title || !data.description || !data.price || !data.category || !data.type) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
       );
     }
 
-    // Check if user is verified for property listings
-    if (type === 'PROPERTY') {
-      const user = await prisma.user.findUnique({
-        where: { id: session.user.id },
-        include: { agentProfile: true },
-      });
-
-      if (!user?.agentProfile?.kycVerified) {
-        return NextResponse.json(
-          { error: 'Agent verification required to create property listings' },
-          { status: 403 }
-        );
-      }
-    }
-
     // Create listing
     const listing = await prisma.listing.create({
       data: {
-        type,
-        title,
-        description,
-        status: 'PENDING',
-        ...location,
-        price: price.amount,
-        currency: price.currency,
-        period: price.period,
-        negotiable: price.negotiable,
-        minimumStay: price.minimumStay,
-        features,
-        amenities,
-        rules,
-        userId: session.user.id,
-        ...specificFields,
+        ...data,
+        owner: {
+          connect: { id: session.user.id },
+        },
+      },
+      include: {
+        owner: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+            isVerified: true,
+          },
+        },
       },
     });
 
-    // Create media records if provided
-    if (media?.length) {
-      await prisma.listingMedia.createMany({
-        data: media.map((m: any, index: number) => ({
-          listingId: listing.id,
-          ...m,
-          order: index,
-        })),
-      });
-    }
-
     return NextResponse.json(listing);
   } catch (error) {
-    console.error('Listing creation error:', error);
+    console.error('Error creating listing:', error);
     return NextResponse.json(
       { error: 'Failed to create listing' },
       { status: 500 }
@@ -190,11 +128,10 @@ export async function POST(req: Request) {
   }
 }
 
-// PATCH /api/listings - Bulk update listings
-export async function PATCH(req: Request) {
+// PATCH /api/listings - Bulk update listings (admin only)
+export async function PATCH(request: Request) {
   try {
     const session = await getServerSession(authOptions);
-    
     if (!session?.user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -202,46 +139,30 @@ export async function PATCH(req: Request) {
       );
     }
 
-    const body = await req.json();
-    const { ids, updates } = body;
-
-    if (!ids?.length || !updates) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
-    }
-
-    // Verify ownership of all listings
-    const listings = await prisma.listing.findMany({
-      where: {
-        id: { in: ids },
-        userId: session.user.id,
-      },
+    // Check if user is admin
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true },
     });
 
-    if (listings.length !== ids.length) {
+    if (user?.role !== 'ADMIN') {
       return NextResponse.json(
-        { error: 'Unauthorized to update some listings' },
-        { status: 403 }
+        { error: 'Unauthorized' },
+        { status: 401 }
       );
     }
 
-    // Perform bulk update
+    const { ids, data } = await request.json();
+
+    // Update multiple listings
     const result = await prisma.listing.updateMany({
-      where: {
-        id: { in: ids },
-        userId: session.user.id,
-      },
-      data: updates,
+      where: { id: { in: ids } },
+      data,
     });
 
-    return NextResponse.json({
-      message: 'Listings updated successfully',
-      count: result.count,
-    });
+    return NextResponse.json(result);
   } catch (error) {
-    console.error('Listings update error:', error);
+    console.error('Error updating listings:', error);
     return NextResponse.json(
       { error: 'Failed to update listings' },
       { status: 500 }
@@ -249,11 +170,10 @@ export async function PATCH(req: Request) {
   }
 }
 
-// DELETE /api/listings - Bulk delete listings
-export async function DELETE(req: Request) {
+// DELETE /api/listings - Bulk delete listings (admin only)
+export async function DELETE(request: Request) {
   try {
     const session = await getServerSession(authOptions);
-    
     if (!session?.user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -261,61 +181,29 @@ export async function DELETE(req: Request) {
       );
     }
 
-    const { searchParams } = new URL(req.url);
-    const ids = searchParams.get('ids')?.split(',');
+    // Check if user is admin
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true },
+    });
 
-    if (!ids?.length) {
+    if (user?.role !== 'ADMIN') {
       return NextResponse.json(
-        { error: 'No listing IDs provided' },
-        { status: 400 }
+        { error: 'Unauthorized' },
+        { status: 401 }
       );
     }
 
-    // Verify ownership of all listings
-    const listings = await prisma.listing.findMany({
-      where: {
-        id: { in: ids },
-        userId: session.user.id,
-      },
+    const { ids } = await request.json();
+
+    // Delete multiple listings
+    const result = await prisma.listing.deleteMany({
+      where: { id: { in: ids } },
     });
 
-    if (listings.length !== ids.length) {
-      return NextResponse.json(
-        { error: 'Unauthorized to delete some listings' },
-        { status: 403 }
-      );
-    }
-
-    // Delete listings and related records
-    await prisma.$transaction([
-      // Delete related records
-      prisma.listingMedia.deleteMany({
-        where: { listingId: { in: ids } },
-      }),
-      prisma.savedListing.deleteMany({
-        where: { listingId: { in: ids } },
-      }),
-      prisma.review.deleteMany({
-        where: { listingId: { in: ids } },
-      }),
-      prisma.booking.deleteMany({
-        where: { listingId: { in: ids } },
-      }),
-      // Delete listings
-      prisma.listing.deleteMany({
-        where: {
-          id: { in: ids },
-          userId: session.user.id,
-        },
-      }),
-    ]);
-
-    return NextResponse.json({
-      message: 'Listings deleted successfully',
-      count: ids.length,
-    });
+    return NextResponse.json(result);
   } catch (error) {
-    console.error('Listings deletion error:', error);
+    console.error('Error deleting listings:', error);
     return NextResponse.json(
       { error: 'Failed to delete listings' },
       { status: 500 }
