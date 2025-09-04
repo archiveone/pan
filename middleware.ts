@@ -1,113 +1,129 @@
-import { NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
-import { NextRequestWithAuth } from 'next-auth/middleware';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
-export default async function middleware(req: NextRequestWithAuth) {
-  const token = await getToken({ req });
-  const isAuth = !!token;
-  const isAuthPage = req.nextUrl.pathname.startsWith('/auth');
+// Paths that require authentication
+const protectedPaths = [
+  '/dashboard',
+  '/private-marketplace',
+  '/messages',
+  '/profile',
+  '/settings',
+  '/create-listing',
+  '/analytics',
+];
 
-  // Public paths that don't require authentication
-  const PUBLIC_PATHS = [
-    '/',
-    '/properties',
-    '/services',
-    '/about',
-    '/contact',
-  ];
+// Paths that require agent verification
+const agentPaths = [
+  '/private-marketplace/submit-interest',
+  '/create-listing',
+  '/analytics',
+];
 
-  // API paths that don't require authentication
-  const PUBLIC_API_PATHS = [
-    '/api/properties',
-    '/api/services',
-  ];
+// Paths that are only accessible when not authenticated
+const authPaths = ['/auth/signin', '/auth/signup'];
 
-  const isPublicPath = PUBLIC_PATHS.some(path => 
-    req.nextUrl.pathname === path || req.nextUrl.pathname.startsWith(`${path}/`)
+export async function middleware(request: NextRequest) {
+  const token = await getToken({
+    req: request,
+    secret: process.env.NEXTAUTH_SECRET,
+  });
+
+  const { pathname } = request.nextUrl;
+
+  // Check if the path is protected
+  const isProtectedPath = protectedPaths.some((path) =>
+    pathname.startsWith(path)
   );
 
-  const isPublicApiPath = PUBLIC_API_PATHS.some(path =>
-    req.nextUrl.pathname.startsWith(path)
-  );
+  // Check if the path requires agent verification
+  const isAgentPath = agentPaths.some((path) => pathname.startsWith(path));
 
-  // Handle authentication pages
-  if (isAuthPage) {
-    if (isAuth) {
-      // Redirect to dashboard if user is already authenticated
-      return NextResponse.redirect(new URL('/dashboard', req.url));
+  // Check if the path is an auth path
+  const isAuthPath = authPaths.some((path) => pathname === path);
+
+  // Redirect to signin if accessing protected path without auth
+  if (isProtectedPath && !token) {
+    const url = new URL('/auth/signin', request.url);
+    url.searchParams.set('callbackUrl', encodeURI(pathname));
+    return NextResponse.redirect(url);
+  }
+
+  // Redirect to dashboard if accessing auth paths while authenticated
+  if (isAuthPath && token) {
+    return NextResponse.redirect(new URL('/dashboard', request.url));
+  }
+
+  // Check agent verification for agent-only paths
+  if (isAgentPath && token) {
+    const isVerifiedAgent = token.role === 'AGENT' && token.isVerified === true;
+    if (!isVerifiedAgent) {
+      // Redirect to agent verification page if not verified
+      return NextResponse.redirect(
+        new URL('/profile/verify-agent', request.url)
+      );
     }
-    return NextResponse.next();
   }
 
-  // Allow public paths and API endpoints
-  if (isPublicPath || isPublicApiPath) {
-    return NextResponse.next();
-  }
-
-  // Protected API routes
-  if (req.nextUrl.pathname.startsWith('/api')) {
-    if (!isAuth) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
+  // API route protection
+  if (pathname.startsWith('/api')) {
+    // Protect private marketplace endpoints
+    if (pathname.startsWith('/api/private-marketplace') && !token) {
+      return new NextResponse(
+        JSON.stringify({ message: 'Authentication required' }),
         { status: 401 }
       );
     }
-    return NextResponse.next();
-  }
 
-  // Protected pages
-  if (!isAuth) {
-    let callbackUrl = req.nextUrl.pathname;
-    if (req.nextUrl.search) {
-      callbackUrl += req.nextUrl.search;
-    }
-
-    const encodedCallbackUrl = encodeURIComponent(callbackUrl);
-    return NextResponse.redirect(
-      new URL(`/auth/signin?callbackUrl=${encodedCallbackUrl}`, req.url)
-    );
-  }
-
-  // Role-based access control
-  if (token?.role) {
-    // Agent-only routes
-    const AGENT_ROUTES = ['/agent', '/properties/create'];
-    const isAgentRoute = AGENT_ROUTES.some(path => 
-      req.nextUrl.pathname.startsWith(path)
-    );
-
-    if (isAgentRoute && token.role !== 'AGENT') {
-      return NextResponse.redirect(
-        new URL('/dashboard?error=unauthorized', req.url)
+    // Protect agent-only endpoints
+    if (
+      pathname.startsWith('/api/agent') &&
+      (!token || token.role !== 'AGENT')
+    ) {
+      return new NextResponse(
+        JSON.stringify({ message: 'Agent access required' }),
+        { status: 403 }
       );
     }
 
-    // Admin-only routes
-    const ADMIN_ROUTES = ['/admin'];
-    const isAdminRoute = ADMIN_ROUTES.some(path => 
-      req.nextUrl.pathname.startsWith(path)
-    );
-
-    if (isAdminRoute && token.role !== 'ADMIN') {
-      return NextResponse.redirect(
-        new URL('/dashboard?error=unauthorized', req.url)
+    // Protect admin-only endpoints
+    if (
+      pathname.startsWith('/api/admin') &&
+      (!token || token.role !== 'ADMIN')
+    ) {
+      return new NextResponse(
+        JSON.stringify({ message: 'Admin access required' }),
+        { status: 403 }
       );
     }
+  }
+
+  // Add user info to headers for logging/debugging
+  if (token) {
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set('x-user-id', token.id);
+    requestHeaders.set('x-user-role', token.role);
+
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
   }
 
   return NextResponse.next();
 }
 
-// Configure protected routes
+// Configure which paths the middleware should run on
 export const config = {
   matcher: [
     /*
      * Match all request paths except:
-     * 1. _next/static (static files)
-     * 2. _next/image (image optimization files)
-     * 3. favicon.ico (favicon file)
-     * 4. public folder
+     * 1. /_next (Next.js internals)
+     * 2. /static (static files)
+     * 3. /favicon.ico (favicon file)
+     * 4. /public (public files)
      */
-    '/((?!_next/static|_next/image|favicon.ico|public/).*)',
+    '/((?!_next|static|favicon.ico|public).*)',
   ],
 };
