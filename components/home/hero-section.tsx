@@ -4,16 +4,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { Search, MapPin, Building2, Briefcase, Compass } from 'lucide-react';
+import { Search, MapPin } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from '@/components/ui/tabs';
 import {
   Select,
   SelectContent,
@@ -22,230 +16,150 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-const categories = [
-  {
-    id: 'properties',
-    label: 'Properties',
-    icon: Building2,
-    placeholder: 'Search properties...',
-    types: [
-      { value: 'all', label: 'All Properties' },
-      { value: 'buy', label: 'For Sale' },
-      { value: 'rent', label: 'For Rent' },
-      { value: 'commercial', label: 'Commercial' },
-    ],
-  },
-  {
-    id: 'services',
-    label: 'Services',
-    icon: Briefcase,
-    placeholder: 'Search services...',
-    types: [
-      { value: 'all', label: 'All Services' },
-      { value: 'trades', label: 'Trades' },
-      { value: 'professional', label: 'Professional' },
-      { value: 'creative', label: 'Creative' },
-    ],
-  },
-  {
-    id: 'leisure',
-    label: 'Leisure',
-    icon: Compass,
-    placeholder: 'Search experiences...',
-    types: [
-      { value: 'all', label: 'All Leisure' },
-      { value: 'rentals', label: 'Rentals' },
-      { value: 'experiences', label: 'Experiences' },
-      { value: 'venues', label: 'Venues' },
-    ],
-  },
+const propertyTypes = [
+  { value: 'all', label: 'All Properties' },
+  { value: 'house', label: 'House' },
+  { value: 'apartment', label: 'Apartment' },
+  { value: 'commercial', label: 'Commercial' },
+  { value: 'land', label: 'Land' },
+];
+
+const priceRanges = [
+  { value: 'all', label: 'Any Price' },
+  { value: '0-100000', label: 'Up to €100,000' },
+  { value: '100000-200000', label: '€100,000 - €200,000' },
+  { value: '200000-300000', label: '€200,000 - €300,000' },
+  { value: '300000-500000', label: '€300,000 - €500,000' },
+  { value: '500000-plus', label: '€500,000+' },
 ];
 
 export function HeroSection() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState('properties');
-  const [searchType, setSearchType] = useState('all');
   const [location, setLocation] = useState('');
-  const [query, setQuery] = useState('');
+  const [propertyType, setPropertyType] = useState('all');
+  const [priceRange, setPriceRange] = useState('all');
 
   const handleSearch = () => {
     const searchParams = new URLSearchParams({
-      type: searchType,
       location,
-      q: query,
+      type: propertyType,
+      price: priceRange,
     });
-    router.push(`/${activeTab}/search?${searchParams.toString()}`);
-  };
-
-  const fadeIn = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 },
+    router.push(`/search?${searchParams.toString()}`);
   };
 
   return (
-    <div className="relative min-h-[85vh] flex items-center justify-center overflow-hidden">
+    <div className="relative min-h-[600px] flex items-center justify-center">
       {/* Background Image with Overlay */}
       <div className="absolute inset-0 z-0">
         <Image
           src="/hero-bg.jpg"
-          alt="GREIA Platform"
+          alt="Beautiful Irish Property"
           fill
           className="object-cover"
           priority
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-black/50" />
+        <div className="absolute inset-0 bg-black/50" />
       </div>
 
       {/* Content */}
-      <div className="container relative z-10 mx-auto px-4 py-24">
-        <div className="max-w-4xl mx-auto text-center mb-12">
-          <motion.h1
-            initial="hidden"
-            animate="visible"
-            variants={fadeIn}
-            transition={{ duration: 0.5 }}
-            className="hero-title mb-6"
-          >
-            Life's Operating System
-          </motion.h1>
-          
-          <motion.p
-            initial="hidden"
-            animate="visible"
-            variants={fadeIn}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="hero-subtitle text-white/90 mb-8"
-          >
-            Your unified platform for Properties, Services, Leisure, and Networking.
-            Find what you need, connect with professionals, and manage your lifestyle
-            in one place.
-          </motion.p>
-        </div>
+      <div className="relative z-10 container mx-auto px-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="max-w-3xl mx-auto text-center text-white mb-8"
+        >
+          <h1 className="text-5xl md:text-6xl font-bold mb-4">
+            Find Your Dream Home in Ireland
+          </h1>
+          <p className="text-xl md:text-2xl text-white/90">
+            Discover the perfect property across Ireland's most beautiful locations
+          </p>
+        </motion.div>
 
         <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={fadeIn}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="max-w-3xl mx-auto"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="max-w-4xl mx-auto"
         >
-          <div className="bg-background/95 backdrop-blur-lg rounded-2xl p-4 shadow-lg">
-            <Tabs
-              defaultValue="properties"
-              value={activeTab}
-              onValueChange={setActiveTab}
-              className="w-full"
-            >
-              <TabsList className="grid grid-cols-3 mb-6">
-                {categories.map((category) => (
-                  <TabsTrigger
-                    key={category.id}
-                    value={category.id}
-                    className="flex items-center space-x-2"
-                  >
-                    <category.icon className="w-4 h-4" />
-                    <span>{category.label}</span>
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-
-              {categories.map((category) => (
-                <TabsContent key={category.id} value={category.id}>
-                  <div className="flex flex-col md:flex-row gap-4">
-                    <div className="flex-1">
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                        <Input
-                          type="text"
-                          placeholder={category.placeholder}
-                          value={query}
-                          onChange={(e) => setQuery(e.target.value)}
-                          className="pl-10"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex-1">
-                      <div className="relative">
-                        <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                        <Input
-                          type="text"
-                          placeholder="Location"
-                          value={location}
-                          onChange={(e) => setLocation(e.target.value)}
-                          className="pl-10"
-                        />
-                      </div>
-                    </div>
-
-                    <Select value={searchType} onValueChange={setSearchType}>
-                      <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Select type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {category.types.map((type) => (
-                          <SelectItem key={type.value} value={type.value}>
-                            {type.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-
-                    <Button onClick={handleSearch} size="lg" className="md:w-auto w-full">
-                      Search
-                    </Button>
-                  </div>
-                </TabsContent>
-              ))}
-            </Tabs>
-
-            {/* Quick Stats */}
-            <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-border/50">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-primary">10,000+</div>
-                <div className="text-sm text-muted-foreground">Properties Listed</div>
+          <div className="bg-white rounded-lg p-4 shadow-lg">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {/* Location Search */}
+              <div className="relative col-span-2">
+                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
+                <Input
+                  type="text"
+                  placeholder="Enter location..."
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  className="pl-10 h-12 text-lg"
+                />
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-primary">5,000+</div>
-                <div className="text-sm text-muted-foreground">Service Providers</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-primary">2,000+</div>
-                <div className="text-sm text-muted-foreground">Experiences</div>
-              </div>
+
+              {/* Property Type */}
+              <Select value={propertyType} onValueChange={setPropertyType}>
+                <SelectTrigger className="h-12">
+                  <SelectValue placeholder="Property Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {propertyTypes.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Price Range */}
+              <Select value={priceRange} onValueChange={setPriceRange}>
+                <SelectTrigger className="h-12">
+                  <SelectValue placeholder="Price Range" />
+                </SelectTrigger>
+                <SelectContent>
+                  {priceRanges.map((range) => (
+                    <SelectItem key={range.value} value={range.value}>
+                      {range.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Search Button */}
+            <div className="mt-4">
+              <Button 
+                onClick={handleSearch} 
+                className="w-full h-12 text-lg font-semibold"
+                size="lg"
+              >
+                <Search className="w-5 h-5 mr-2" />
+                Search Properties
+              </Button>
             </div>
           </div>
         </motion.div>
 
-        {/* Trust Indicators */}
+        {/* Quick Stats */}
         <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={fadeIn}
-          transition={{ duration: 0.5, delay: 0.6 }}
-          className="flex justify-center items-center space-x-8 mt-12"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="max-w-2xl mx-auto mt-12 grid grid-cols-3 gap-8"
         >
-          <Image
-            src="/trust-badge-1.svg"
-            alt="Trust Badge"
-            width={100}
-            height={40}
-            className="opacity-80 hover:opacity-100 transition-opacity"
-          />
-          <Image
-            src="/trust-badge-2.svg"
-            alt="Trust Badge"
-            width={100}
-            height={40}
-            className="opacity-80 hover:opacity-100 transition-opacity"
-          />
-          <Image
-            src="/trust-badge-3.svg"
-            alt="Trust Badge"
-            width={100}
-            height={40}
-            className="opacity-80 hover:opacity-100 transition-opacity"
-          />
+          <div className="text-center text-white">
+            <div className="text-3xl font-bold mb-1">15,000+</div>
+            <div className="text-white/80">Properties Listed</div>
+          </div>
+          <div className="text-center text-white">
+            <div className="text-3xl font-bold mb-1">10,000+</div>
+            <div className="text-white/80">Happy Customers</div>
+          </div>
+          <div className="text-center text-white">
+            <div className="text-3xl font-bold mb-1">32</div>
+            <div className="text-white/80">Counties Covered</div>
+          </div>
         </motion.div>
       </div>
     </div>
