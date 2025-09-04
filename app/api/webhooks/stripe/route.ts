@@ -1,382 +1,163 @@
-import { NextResponse } from 'next/server'
-import { headers } from 'next/headers'
-import { prisma } from '@/lib/prisma'
-import { pusher } from '@/lib/pusher'
-import Stripe from 'stripe'
+import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
+import { stripe } from '@/lib/stripe';
+import {
+  handleSubscriptionUpdated,
+  handleSubscriptionDeleted,
+  handleIdentityVerified,
+} from '@/lib/stripe';
+import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2023-10-16',
-})
-
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!
+// Stripe webhook signing secret
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
 export async function POST(req: Request) {
   try {
-    const body = await req.text()
-    const signature = headers().get('stripe-signature')!
+    const body = await req.text();
+    const signature = headers().get('stripe-signature')!;
 
-    let event: Stripe.Event
+    let event: Stripe.Event;
 
     try {
       event = stripe.webhooks.constructEvent(
         body,
         signature,
         webhookSecret
-      )
+      );
     } catch (err) {
-      console.error('[STRIPE_WEBHOOK_ERROR]', err)
-      return new NextResponse(`Webhook Error: ${err.message}`, { status: 400 })
+      console.error('Webhook signature verification failed:', err);
+      return NextResponse.json(
+        { error: 'Invalid signature' },
+        { status: 400 }
+      );
     }
 
-    const session = event.data.object as Stripe.Checkout.Session
+    // Handle different event types
+    switch (event.type) {
+      case 'customer.subscription.created':
+      case 'customer.subscription.updated':
+        await handleSubscriptionUpdated(
+          event.data.object as Stripe.Subscription
+        );
+        break;
 
-    if (event.type === 'checkout.session.completed') {
-      // Handle successful payments
-      const metadata = session.metadata!
-      const paymentType = metadata.type // PROPERTY, SERVICE, LEISURE, VALUATION
-      const itemId = metadata.itemId
-      const userId = metadata.userId
+      case 'customer.subscription.deleted':
+        await handleSubscriptionDeleted(
+          event.data.object as Stripe.Subscription
+        );
+        break;
 
-      if (paymentType === 'PROPERTY') {
-        // Handle property booking payment
-        await prisma.propertyBooking.update({
+      case 'identity.verification_session.completed':
+        await handleIdentityVerified(
+          event.data.object as Stripe.Identity.VerificationSession
+        );
+        break;
+
+      case 'payment_intent.succeeded':
+        const paymentIntent = event.data.object as Stripe.PaymentIntent;
+        // Create transaction record
+        await prisma.transaction.create({
+          data: {
+            stripePaymentIntentId: paymentIntent.id,
+            amount: paymentIntent.amount / 100, // Convert from cents
+            currency: paymentIntent.currency,
+            status: 'succeeded',
+            userId: paymentIntent.metadata.userId,
+            type: paymentIntent.metadata.type || 'subscription',
+          },
+        });
+        break;
+
+      case 'payment_intent.payment_failed':
+        const failedPayment = event.data.object as Stripe.PaymentIntent;
+        // Update transaction status
+        await prisma.transaction.updateMany({
           where: {
-            id: itemId,
-            userId,
+            stripePaymentIntentId: failedPayment.id,
           },
           data: {
-            status: 'CONFIRMED',
-            paymentStatus: 'PAID',
-            paymentDetails: {
-              stripeSessionId: session.id,
-              amount: session.amount_total! / 100,
-              currency: session.currency,
-              paymentMethod: session.payment_method_types[0],
-            },
-            activities: {
-              create: {
-                type: 'PAYMENT_COMPLETED',
-                userId,
-                description: 'Property booking payment completed',
-                metadata: {
-                  amount: session.amount_total! / 100,
-                  currency: session.currency,
-                  dublinRegion: metadata.dublinRegion,
-                },
-              }
-            },
+            status: 'failed',
+            errorMessage: failedPayment.last_payment_error?.message,
           },
-        })
+        });
 
-        // Create commission records for agent and referrer
-        const commissionPromises = []
-        
-        // 5% commission for executing agent
-        if (metadata.agentId) {
-          commissionPromises.push(
-            prisma.commission.create({
-              data: {
-                userId: metadata.agentId,
-                type: 'PROPERTY_BOOKING',
-                status: 'PENDING',
-                amount: (session.amount_total! / 100) * 0.05, // 5% commission
-                currency: session.currency,
-                metadata: {
-                  bookingId: itemId,
-                  propertyId: metadata.propertyId,
-                  dublinRegion: metadata.dublinRegion,
-                },
-              },
-            })
-          )
-        }
+        // Notify user of failed payment
+        await prisma.notification.create({
+          data: {
+            userId: failedPayment.metadata.userId,
+            type: 'PAYMENT_FAILED',
+            title: 'Payment Failed',
+            message: 'Your payment has failed. Please update your payment method.',
+            isRead: false,
+          },
+        });
+        break;
 
-        // 20% referral commission if applicable
-        if (metadata.referrerId) {
-          commissionPromises.push(
-            prisma.commission.create({
-              data: {
-                userId: metadata.referrerId,
-                type: 'PROPERTY_REFERRAL',
-                status: 'PENDING',
-                amount: (session.amount_total! / 100) * 0.01, // 1% referral commission (20% of 5%)
-                currency: session.currency,
-                metadata: {
-                  bookingId: itemId,
-                  propertyId: metadata.propertyId,
-                  agentId: metadata.agentId,
-                  dublinRegion: metadata.dublinRegion,
-                },
-              },
-            })
-          )
-        }
+      case 'invoice.payment_succeeded':
+        const invoice = event.data.object as Stripe.Invoice;
+        // Create invoice record
+        await prisma.invoice.create({
+          data: {
+            stripeInvoiceId: invoice.id,
+            amount: invoice.amount_paid / 100,
+            currency: invoice.currency,
+            status: invoice.status,
+            userId: invoice.metadata.userId,
+            paidAt: new Date(invoice.status_transitions.paid_at! * 1000),
+            periodStart: new Date(invoice.period_start * 1000),
+            periodEnd: new Date(invoice.period_end * 1000),
+          },
+        });
+        break;
 
-        if (commissionPromises.length > 0) {
-          await Promise.all(commissionPromises)
-        }
-
-      } else if (paymentType === 'SERVICE') {
-        // Handle service booking payment
-        await prisma.serviceBooking.update({
+      case 'invoice.payment_failed':
+        const failedInvoice = event.data.object as Stripe.Invoice;
+        // Update invoice status
+        await prisma.invoice.updateMany({
           where: {
-            id: itemId,
-            userId,
+            stripeInvoiceId: failedInvoice.id,
           },
           data: {
-            status: 'CONFIRMED',
-            paymentStatus: 'PAID',
-            paymentDetails: {
-              stripeSessionId: session.id,
-              amount: session.amount_total! / 100,
-              currency: session.currency,
-              paymentMethod: session.payment_method_types[0],
-            },
-            activities: {
-              create: {
-                type: 'PAYMENT_COMPLETED',
-                userId,
-                description: 'Service booking payment completed',
-                metadata: {
-                  amount: session.amount_total! / 100,
-                  currency: session.currency,
-                  dublinRegion: metadata.dublinRegion,
-                },
-              }
-            },
+            status: 'failed',
           },
-        })
+        });
 
-        // Create commission record for service provider
-        await prisma.commission.create({
+        // Notify user of failed invoice payment
+        await prisma.notification.create({
           data: {
-            userId: metadata.providerId,
-            type: 'SERVICE_BOOKING',
-            status: 'PENDING',
-            amount: (session.amount_total! / 100) * 0.10, // 10% commission
-            currency: session.currency,
-            metadata: {
-              bookingId: itemId,
-              serviceId: metadata.serviceId,
-              dublinRegion: metadata.dublinRegion,
-            },
+            userId: failedInvoice.metadata.userId,
+            type: 'INVOICE_FAILED',
+            title: 'Invoice Payment Failed',
+            message: 'Your invoice payment has failed. Please update your payment method.',
+            isRead: false,
           },
-        })
+        });
+        break;
 
-      } else if (paymentType === 'LEISURE') {
-        // Handle leisure booking payment
-        await prisma.leisureBooking.update({
+      case 'customer.updated':
+        const customer = event.data.object as Stripe.Customer;
+        // Update user's Stripe customer details
+        await prisma.user.update({
           where: {
-            id: itemId,
-            userId,
+            stripeCustomerId: customer.id,
           },
           data: {
-            status: 'CONFIRMED',
-            paymentStatus: 'PAID',
-            paymentDetails: {
-              stripeSessionId: session.id,
-              amount: session.amount_total! / 100,
-              currency: session.currency,
-              paymentMethod: session.payment_method_types[0],
-            },
-            activities: {
-              create: {
-                type: 'PAYMENT_COMPLETED',
-                userId,
-                description: 'Leisure booking payment completed',
-                metadata: {
-                  amount: session.amount_total! / 100,
-                  currency: session.currency,
-                  dublinRegion: metadata.dublinRegion,
-                },
-              }
-            },
+            stripeDefaultPaymentMethodId: customer.invoice_settings.default_payment_method as string,
+            stripeUpdatedAt: new Date(),
           },
-        })
+        });
+        break;
 
-        // Create commission record for leisure provider
-        await prisma.commission.create({
-          data: {
-            userId: metadata.providerId,
-            type: 'LEISURE_BOOKING',
-            status: 'PENDING',
-            amount: (session.amount_total! / 100) * 0.15, // 15% commission
-            currency: session.currency,
-            metadata: {
-              bookingId: itemId,
-              leisureId: metadata.leisureId,
-              dublinRegion: metadata.dublinRegion,
-            },
-          },
-        })
-
-      } else if (paymentType === 'VALUATION') {
-        // Handle valuation payment
-        await prisma.valuationRequest.update({
-          where: {
-            id: itemId,
-            userId,
-          },
-          data: {
-            status: 'PAID',
-            paymentDetails: {
-              stripeSessionId: session.id,
-              amount: session.amount_total! / 100,
-              currency: session.currency,
-              paymentMethod: session.payment_method_types[0],
-            },
-            activities: {
-              create: {
-                type: 'PAYMENT_COMPLETED',
-                userId,
-                description: 'Valuation payment completed',
-                metadata: {
-                  amount: session.amount_total! / 100,
-                  currency: session.currency,
-                  dublinRegion: metadata.dublinRegion,
-                },
-              }
-            },
-          },
-        })
-
-        // Create commission record for valuation agent
-        await prisma.commission.create({
-          data: {
-            userId: metadata.agentId,
-            type: 'VALUATION',
-            status: 'PENDING',
-            amount: (session.amount_total! / 100) * 0.80, // 80% to agent
-            currency: session.currency,
-            metadata: {
-              valuationId: itemId,
-              propertyId: metadata.propertyId,
-              dublinRegion: metadata.dublinRegion,
-            },
-          },
-        })
-      }
-
-      // Send real-time notification
-      await Promise.all([
-        pusher.trigger(
-          `private-user-${userId}`,
-          'payment-completed',
-          {
-            type: paymentType,
-            itemId,
-            amount: session.amount_total! / 100,
-            currency: session.currency,
-            timestamp: new Date().toISOString(),
-          }
-        ),
-        prisma.notification.create({
-          data: {
-            userId,
-            type: 'PAYMENT_COMPLETED',
-            title: 'Payment Successful',
-            content: `Your payment of ${session.currency.toUpperCase()} ${session.amount_total! / 100} has been processed successfully`,
-            metadata: {
-              type: paymentType,
-              itemId,
-              amount: session.amount_total! / 100,
-              currency: session.currency,
-              dublinRegion: metadata.dublinRegion,
-            },
-          },
-        }),
-      ])
-
-    } else if (event.type === 'checkout.session.expired') {
-      // Handle expired sessions
-      const metadata = session.metadata!
-      const paymentType = metadata.type
-      const itemId = metadata.itemId
-      const userId = metadata.userId
-
-      // Update status based on payment type
-      if (paymentType === 'VALUATION') {
-        await prisma.valuationRequest.update({
-          where: {
-            id: itemId,
-            userId,
-          },
-          data: {
-            status: 'CANCELLED',
-            activities: {
-              create: {
-                type: 'PAYMENT_EXPIRED',
-                userId,
-                description: 'Valuation payment session expired',
-                metadata: {
-                  sessionId: session.id,
-                  dublinRegion: metadata.dublinRegion,
-                },
-              }
-            },
-          },
-        })
-      } else {
-        // Handle booking expirations
-        const bookingModel = 
-          paymentType === 'PROPERTY' ? prisma.propertyBooking :
-          paymentType === 'SERVICE' ? prisma.serviceBooking :
-          prisma.leisureBooking
-
-        await bookingModel.update({
-          where: {
-            id: itemId,
-            userId,
-          },
-          data: {
-            status: 'CANCELLED',
-            paymentStatus: 'EXPIRED',
-            activities: {
-              create: {
-                type: 'PAYMENT_EXPIRED',
-                userId,
-                description: 'Payment session expired',
-                metadata: {
-                  sessionId: session.id,
-                  dublinRegion: metadata.dublinRegion,
-                },
-              }
-            },
-          },
-        })
-      }
-
-      // Send notification
-      await Promise.all([
-        pusher.trigger(
-          `private-user-${userId}`,
-          'payment-expired',
-          {
-            type: paymentType,
-            itemId,
-            timestamp: new Date().toISOString(),
-          }
-        ),
-        prisma.notification.create({
-          data: {
-            userId,
-            type: 'PAYMENT_EXPIRED',
-            title: 'Payment Session Expired',
-            content: 'Your payment session has expired. Please try again.',
-            metadata: {
-              type: paymentType,
-              itemId,
-              dublinRegion: metadata.dublinRegion,
-            },
-          },
-        }),
-      ])
+      default:
+        console.log(`Unhandled event type: ${event.type}`);
     }
 
-    return new NextResponse(null, { status: 200 })
-
+    return NextResponse.json({ received: true });
   } catch (error) {
-    console.error('[STRIPE_WEBHOOK_ERROR]', error)
-    return new NextResponse('Internal Error', { status: 500 })
+    console.error('Webhook error:', error);
+    return NextResponse.json(
+      { error: 'Webhook handler failed' },
+      { status: 500 }
+    );
   }
 }
