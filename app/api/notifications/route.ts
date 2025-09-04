@@ -1,484 +1,192 @@
-import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
-import { prisma } from '@/lib/prisma'
-import { pusher } from '@/lib/pusher'
+import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import prismadb from '@/lib/prismadb';
 
-// Create notification with intelligent routing (Dublin-based)
-export async function POST(req: Request) {
+// Get notifications
+export async function GET(req: Request) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
-      return new NextResponse('Unauthorized', { status: 401 })
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.email) {
+      return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const body = await req.json()
-    const { 
-      type,
-      title,
-      content,
-      metadata,
-      routingCriteria,
-    } = body
+    const { searchParams } = new URL(req.url);
+    const unreadOnly = searchParams.get('unreadOnly') === 'true';
+    const cursor = searchParams.get('cursor');
+    const limit = 20;
 
-    // Handle different notification types with Dublin-focused routing
-    switch (type) {
-      case 'PROPERTY_SUBMISSION': {
-        // Route new property to relevant Dublin-based agents
-        const { propertyId, location, propertyType, priceRange } = metadata
-        
-        // Find matching agents with Dublin coverage
-        const matchingAgents = await prisma.user.findMany({
-          where: {
-            role: 'AGENT',
-            isVerified: true,
-            agentProfile: {
-              isActive: true,
-              areasServed: {
-                has: location.area,
-              },
-              specializations: {
-                has: propertyType,
-              },
-              // Ensure agents cover Dublin areas
-              OR: [
-                { areasServed: { has: 'Dublin' } },
-                { areasServed: { has: location.area } },
-              ],
-            },
-          },
-          include: {
-            agentProfile: {
-              select: {
-                rating: true,
-                totalDeals: true,
-                successRate: true,
-                areasServed: true,
-              },
-            },
-          },
-        })
+    // Build where clause
+    const where = {
+      userId: session.user.id,
+      ...(unreadOnly && { read: false }),
+      ...(cursor && { createdAt: { lt: new Date(cursor) } })
+    };
 
-        // Create notifications and leads for matching agents
-        const notificationPromises = matchingAgents.map(agent => 
-          Promise.all([
-            prisma.notification.create({
-              data: {
-                userId: agent.id,
-                type: 'PROPERTY_LEAD',
-                title: 'New Property Lead Available',
-                content: `New ${propertyType} property in ${location.area}, Dublin available for agent assignment`,
-                metadata: {
-                  propertyId,
-                  propertyType,
-                  location,
-                  priceRange,
-                  currency: 'EUR', // Set to Euro for Dublin
-                },
-              },
-            }),
-            prisma.lead.create({
-              data: {
-                userId: agent.id,
-                title: `Property Lead - ${propertyType} in ${location.area}, Dublin`,
-                type: 'PROPERTY',
-                status: 'NEW',
-                source: 'PROPERTY_SUBMISSION',
-                value: priceRange.max * 0.05, // 5% commission potential
-                currency: 'EUR',
-                metadata: {
-                  propertyId,
-                  propertyType,
-                  location,
-                  priceRange,
-                  dublinRegion: location.dublinRegion,
-                },
-              },
-            }),
-            pusher.trigger(
-              `private-user-${agent.id}`,
-              'property-lead',
-              {
-                propertyId,
-                propertyType,
-                location,
-                priceRange,
-                currency: 'EUR',
-                timestamp: new Date().toISOString(),
-              }
-            ),
-          ])
-        )
-
-        await Promise.all(notificationPromises)
-        return NextResponse.json({ 
-          success: true,
-          agentsNotified: matchingAgents.length,
-        })
-      }
-
-      case 'VALUATION_REQUEST': {
-        // Route valuation request to qualified Dublin agents
-        const { propertyId, location, propertyType, urgency } = metadata
-
-        // Find Dublin-based agents with valuation expertise
-        const qualifiedAgents = await prisma.user.findMany({
-          where: {
-            role: 'AGENT',
-            isVerified: true,
-            agentProfile: {
-              isActive: true,
-              areasServed: {
-                has: location.area,
-              },
-              totalValuations: {
-                gte: 5, // Minimum valuation experience
-              },
-              rating: {
-                gte: 4, // Minimum rating requirement
-              },
-              // Dublin coverage required
-              OR: [
-                { areasServed: { has: 'Dublin' } },
-                { areasServed: { has: location.area } },
-              ],
-            },
-          },
-          include: {
-            agentProfile: {
-              select: {
-                rating: true,
-                totalValuations: true,
-                successRate: true,
-                dublinExperience: true,
-              },
-            },
-          },
-          orderBy: [
-            { agentProfile: { rating: 'desc' } },
-            { agentProfile: { totalValuations: 'desc' } },
-          ],
-          take: 5, // Limit to top 5 agents
-        })
-
-        // Create notifications for qualified agents
-        const notificationPromises = qualifiedAgents.map(agent =>
-          Promise.all([
-            prisma.notification.create({
-              data: {
-                userId: agent.id,
-                type: 'VALUATION_REQUEST',
-                title: 'New Dublin Valuation Request',
-                content: `Valuation needed for ${propertyType} property in ${location.area}, Dublin`,
-                metadata: {
-                  propertyId,
-                  propertyType,
-                  location,
-                  urgency,
-                  currency: 'EUR',
-                },
-              },
-            }),
-            prisma.lead.create({
-              data: {
-                userId: agent.id,
-                title: `Valuation Lead - ${propertyType} in ${location.area}, Dublin`,
-                type: 'VALUATION',
-                status: 'NEW',
-                priority: urgency,
-                source: 'VALUATION_REQUEST',
-                currency: 'EUR',
-                metadata: {
-                  propertyId,
-                  propertyType,
-                  location,
-                  dublinRegion: location.dublinRegion,
-                },
-              },
-            }),
-            pusher.trigger(
-              `private-user-${agent.id}`,
-              'valuation-request',
-              {
-                propertyId,
-                propertyType,
-                location,
-                urgency,
-                currency: 'EUR',
-                timestamp: new Date().toISOString(),
-              }
-            ),
-          ])
-        )
-
-        await Promise.all(notificationPromises)
-        return NextResponse.json({
-          success: true,
-          agentsNotified: qualifiedAgents.length,
-        })
-      }
-
-      case 'SERVICE_REQUEST': {
-        // Route service request to Dublin-based professionals
-        const { serviceType, location, budget, timeline } = metadata
-
-        // Find matching Dublin professionals
-        const matchingProfessionals = await prisma.user.findMany({
-          where: {
-            role: 'PROFESSIONAL',
-            isVerified: true,
-            professionalProfile: {
-              isActive: true,
-              specializations: {
-                has: serviceType,
-              },
-              areasServed: {
-                has: location.area,
-              },
-              // Dublin coverage required
-              OR: [
-                { areasServed: { has: 'Dublin' } },
-                { areasServed: { has: location.area } },
-              ],
-            },
-          },
-          include: {
-            professionalProfile: {
-              select: {
-                rating: true,
-                totalServices: true,
-                successRate: true,
-                dublinExperience: true,
-              },
-            },
-          },
-        })
-
-        // Create notifications for matching professionals
-        const notificationPromises = matchingProfessionals.map(professional =>
-          Promise.all([
-            prisma.notification.create({
-              data: {
-                userId: professional.id,
-                type: 'SERVICE_REQUEST',
-                title: 'New Dublin Service Request',
-                content: `${serviceType} service requested in ${location.area}, Dublin`,
-                metadata: {
-                  serviceType,
-                  location,
-                  budget,
-                  timeline,
-                  currency: 'EUR',
-                },
-              },
-            }),
-            prisma.lead.create({
-              data: {
-                userId: professional.id,
-                title: `Service Lead - ${serviceType} in Dublin`,
-                type: 'SERVICE',
-                status: 'NEW',
-                value: budget,
-                currency: 'EUR',
-                source: 'SERVICE_REQUEST',
-                metadata: {
-                  serviceType,
-                  location,
-                  timeline,
-                  dublinRegion: location.dublinRegion,
-                },
-              },
-            }),
-            pusher.trigger(
-              `private-user-${professional.id}`,
-              'service-request',
-              {
-                serviceType,
-                location,
-                budget,
-                timeline,
-                currency: 'EUR',
-                timestamp: new Date().toISOString(),
-              }
-            ),
-          ])
-        )
-
-        await Promise.all(notificationPromises)
-        return NextResponse.json({
-          success: true,
-          professionalsNotified: matchingProfessionals.length,
-        })
-      }
-
-      default: {
-        // Handle standard notifications
-        const notification = await prisma.notification.create({
-          data: {
-            userId: session.user.id,
-            type,
-            title,
-            content,
-            metadata: {
-              ...metadata,
-              currency: metadata?.currency || 'EUR', // Default to Euro
-            },
-          },
-        })
-
-        // Send real-time notification
-        await pusher.trigger(
-          `private-user-${session.user.id}`,
-          'notification',
-          {
-            id: notification.id,
-            type,
-            title,
-            content,
-            metadata: {
-              ...metadata,
-              currency: metadata?.currency || 'EUR',
-            },
-            timestamp: new Date().toISOString(),
+    // Get notifications with pagination
+    const notifications = await prismadb.notification.findMany({
+      where,
+      take: limit,
+      skip: cursor ? 1 : 0,
+      orderBy: {
+        createdAt: 'desc'
+      },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
           }
-        )
-
-        return NextResponse.json({
-          success: true,
-          notification,
-        })
+        }
       }
-    }
+    });
 
+    // Get next cursor
+    const nextCursor = notifications.length === limit
+      ? notifications[notifications.length - 1].createdAt.toISOString()
+      : null;
+
+    // Get unread count
+    const unreadCount = await prismadb.notification.count({
+      where: {
+        userId: session.user.id,
+        read: false,
+      }
+    });
+
+    return NextResponse.json({
+      notifications,
+      nextCursor,
+      unreadCount,
+    });
   } catch (error) {
-    console.error('[CREATE_NOTIFICATION_ERROR]', error)
-    return new NextResponse('Internal Error', { status: 500 })
+    console.error('[NOTIFICATIONS_GET]', error);
+    return new NextResponse("Internal Error", { status: 500 });
   }
 }
 
 // Mark notifications as read
-export async function PUT(req: Request) {
+export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
-      return new NextResponse('Unauthorized', { status: 401 })
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.email) {
+      return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const body = await req.json()
-    const { notificationIds } = body
+    const body = await req.json();
+    const { notificationIds } = body;
 
-    // Update notification read status
-    await prisma.notification.updateMany({
+    if (!notificationIds || !Array.isArray(notificationIds)) {
+      return new NextResponse("Invalid notification IDs", { status: 400 });
+    }
+
+    // Verify ownership of notifications
+    const notifications = await prismadb.notification.findMany({
       where: {
-        id: { in: notificationIds },
+        id: {
+          in: notificationIds
+        },
+        userId: session.user.id,
+      }
+    });
+
+    if (notifications.length !== notificationIds.length) {
+      return new NextResponse("Some notifications not found or unauthorized", { status: 403 });
+    }
+
+    // Mark notifications as read
+    await prismadb.notification.updateMany({
+      where: {
+        id: {
+          in: notificationIds
+        },
         userId: session.user.id,
       },
       data: {
-        readAt: new Date(),
-      },
-    })
+        read: true,
+      }
+    });
 
-    return NextResponse.json({ success: true })
-
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('[UPDATE_NOTIFICATION_ERROR]', error)
-    return new NextResponse('Internal Error', { status: 500 })
+    console.error('[NOTIFICATIONS_MARK_READ]', error);
+    return new NextResponse("Internal Error", { status: 500 });
   }
 }
 
-// Get notifications with filtering
-export async function GET(req: Request) {
+// Delete notifications
+export async function DELETE(req: Request) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
-      return new NextResponse('Unauthorized', { status: 401 })
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.email) {
+      return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const { searchParams } = new URL(req.url)
-    const type = searchParams.get('type')
-    const unreadOnly = searchParams.get('unreadOnly') === 'true'
-    const dublinRegion = searchParams.get('dublinRegion')
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '20')
+    const { searchParams } = new URL(req.url);
+    const notificationId = searchParams.get('id');
 
-    // Build filter conditions
-    const where = {
-      userId: session.user.id,
-      ...(type && { type }),
-      ...(unreadOnly && { readAt: null }),
-      ...(dublinRegion && {
-        metadata: {
-          path: ['dublinRegion'],
-          equals: dublinRegion,
-        },
-      }),
+    if (!notificationId) {
+      return new NextResponse("Notification ID required", { status: 400 });
     }
 
-    // Get notifications with pagination
-    const [notifications, total, unreadCount] = await prisma.$transaction([
-      prisma.notification.findMany({
-        where,
-        orderBy: {
-          createdAt: 'desc',
-        },
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-      prisma.notification.count({ where }),
-      prisma.notification.count({
-        where: {
-          userId: session.user.id,
-          readAt: null,
-        },
-      }),
-    ])
+    // Verify ownership and delete notification
+    const notification = await prismadb.notification.findFirst({
+      where: {
+        id: notificationId,
+        userId: session.user.id,
+      }
+    });
 
-    // Get comprehensive statistics
-    const stats = await prisma.$transaction([
-      // Unread count
-      prisma.notification.count({
-        where: {
-          userId: session.user.id,
-          readAt: null,
-        },
-      }),
-      // Count by type
-      prisma.notification.groupBy({
-        by: ['type'],
-        where: { userId: session.user.id },
-        _count: true,
-      }),
-      // Count by Dublin region
-      prisma.notification.groupBy({
-        by: ['metadata'],
-        where: {
-          userId: session.user.id,
-          metadata: {
-            path: ['dublinRegion'],
-            not: null,
-          },
-        },
-        _count: true,
-      }),
-    ])
+    if (!notification) {
+      return new NextResponse("Notification not found or unauthorized", { status: 403 });
+    }
 
-    return NextResponse.json({
-      notifications,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit),
-      },
-      stats: {
-        unreadCount: stats[0],
-        byType: stats[1],
-        byDublinRegion: stats[2],
-      },
-    })
+    await prismadb.notification.delete({
+      where: {
+        id: notificationId,
+      }
+    });
 
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('[GET_NOTIFICATIONS_ERROR]', error)
-    return new NextResponse('Internal Error', { status: 500 })
+    console.error('[NOTIFICATION_DELETE]', error);
+    return new NextResponse("Internal Error", { status: 500 });
+  }
+}
+
+// Update notification preferences
+export async function PATCH(req: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.email) {
+      return new NextResponse("Unauthorized", { status: 401 });
+    }
+
+    const body = await req.json();
+    const { preferences } = body;
+
+    if (!preferences || typeof preferences !== 'object') {
+      return new NextResponse("Invalid preferences", { status: 400 });
+    }
+
+    // Update user's notification preferences
+    const user = await prismadb.user.update({
+      where: {
+        id: session.user.id,
+      },
+      data: {
+        notificationPreferences: preferences,
+      }
+    });
+
+    return NextResponse.json(user.notificationPreferences);
+  } catch (error) {
+    console.error('[NOTIFICATION_PREFERENCES_UPDATE]', error);
+    return new NextResponse("Internal Error", { status: 500 });
   }
 }
