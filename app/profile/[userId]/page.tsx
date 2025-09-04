@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import { getServerSession } from 'next-auth';
 import { notFound } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
-import prismadb from '@/lib/prismadb';
+import prisma from '@/lib/prismadb';
 
 import { ProfileView } from './profile-view';
 
@@ -15,7 +15,7 @@ interface ProfilePageProps {
 export async function generateMetadata(
   { params }: ProfilePageProps
 ): Promise<Metadata> {
-  const user = await prismadb.user.findUnique({
+  const user = await prisma.user.findUnique({
     where: { id: params.userId },
     select: { name: true }
   });
@@ -36,8 +36,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   const session = await getServerSession(authOptions);
   const isOwnProfile = session?.user?.id === params.userId;
 
-  // Get user profile data
-  const user = await prismadb.user.findUnique({
+  const user = await prisma.user.findUnique({
     where: { id: params.userId },
     include: {
       _count: {
@@ -48,23 +47,27 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
           reviews: true,
         }
       },
-      verifications: {
-        select: {
-          type: true,
-          status: true,
-          verifiedAt: true,
-        }
+      // New relations
+      socialLinks: true,
+      portfolioItems: {
+        orderBy: { createdAt: 'desc' },
+        take: 8,
       },
+      todos: isOwnProfile ? { orderBy: { createdAt: 'desc' } } : false,
+      educationHistory: true,
+      workHistory: true,
+      certifications: true,
+      skills: true,
+      languages: true,
+      availability: true,
+      customSections: {
+        orderBy: { order: 'asc' }
+      },
+
+      verifications: true,
       expertise: true,
       serviceAreas: true,
-      qualifications: {
-        select: {
-          title: true,
-          institution: true,
-          year: true,
-          verified: true,
-        }
-      },
+      qualifications: true,
       reviews: {
         take: 5,
         orderBy: { createdAt: 'desc' },
@@ -116,10 +119,9 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     notFound();
   }
 
-  // Check if current user follows this profile
   let isFollowing = false;
   if (session?.user) {
-    const followRecord = await prismadb.follow.findUnique({
+    const followRecord = await prisma.follow.findUnique({
       where: {
         followerId_followingId: {
           followerId: session.user.id,
@@ -130,8 +132,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     isFollowing = !!followRecord;
   }
 
-  // Get activity feed
-  const activity = await prismadb.activity.findMany({
+  const activity = await prisma.activity.findMany({
     where: { userId: params.userId },
     take: 10,
     orderBy: { createdAt: 'desc' },
@@ -153,41 +154,8 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     }
   });
 
-  // Get stats and analytics if own profile
-  let analytics = null;
-  if (isOwnProfile) {
-    analytics = {
-      views: await prismadb.profileView.count({
-        where: { profileId: params.userId }
-      }),
-      listingViews: await prismadb.listingView.count({
-        where: { listing: { userId: params.userId } }
-      }),
-      totalBookings: await prismadb.booking.count({
-        where: { listing: { userId: params.userId } }
-      }),
-      totalEarnings: await prismadb.booking.aggregate({
-        where: {
-          listing: { userId: params.userId },
-          status: 'COMPLETED'
-        },
-        _sum: { amount: true }
-      }),
-      reviewScore: await prismadb.review.aggregate({
-        where: { userId: params.userId },
-        _avg: { rating: true }
-      }),
-      responseRate: await prismadb.message.groupBy({
-        by: ['userId'],
-        where: { userId: params.userId },
-        _avg: { responseTime: true }
-      }),
-    };
-  }
-
-  // Increment profile view count if not own profile
   if (!isOwnProfile && session?.user) {
-    await prismadb.profileView.create({
+    await prisma.profileView.create({
       data: {
         profileId: params.userId,
         viewerId: session.user.id,
@@ -199,7 +167,6 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     <ProfileView
       user={user}
       activity={activity}
-      analytics={analytics}
       isOwnProfile={isOwnProfile}
       isFollowing={isFollowing}
       currentUser={session?.user ? {
