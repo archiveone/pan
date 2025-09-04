@@ -1,190 +1,252 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
+import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import prisma from '@/lib/prisma';
-import Pusher from 'pusher';
+import prismadb from '@/lib/prismadb';
+import { pusherServer } from '@/lib/pusher';
 
-const pusher = new Pusher({
-  appId: process.env.PUSHER_APP_ID!,
-  key: process.env.NEXT_PUBLIC_PUSHER_KEY!,
-  secret: process.env.PUSHER_SECRET!,
-  cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
-  useTLS: true,
-});
-
-// POST /api/messages - Send a new message
+// Send a message
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+
+    if (!session?.user?.email) {
+      return new NextResponse("Unauthorized", { status: 401 });
     }
 
     const body = await req.json();
-    const { content, receiverId } = body;
+    const { 
+      content,
+      conversationId,
+      recipientId 
+    } = body;
 
-    // Validate required fields
-    if (!content || !receiverId) {
-      return NextResponse.json(
-        { error: 'Content and receiver are required' },
-        { status: 400 }
-      );
+    if (!content) {
+      return new NextResponse("Message content is required", { status: 400 });
     }
 
-    // Get or create conversation
-    let conversation = await prisma.conversation.findFirst({
-      where: {
-        participants: {
-          every: {
-            id: {
-              in: [session.user.id, receiverId],
-            },
-          },
-        },
-      },
-    });
+    let conversation;
 
-    if (!conversation) {
-      conversation = await prisma.conversation.create({
-        data: {
-          participants: {
-            connect: [
-              { id: session.user.id },
-              { id: receiverId },
-            ],
-          },
+    if (conversationId) {
+      // Verify user is part of the conversation
+      conversation = await prismadb.conversation.findFirst({
+        where: {
+          id: conversationId,
+          users: {
+            some: {
+              id: session.user.id
+            }
+          }
         },
+        include: {
+          users: true
+        }
       });
+
+      if (!conversation) {
+        return new NextResponse("Conversation not found", { status: 404 });
+      }
+    } else if (recipientId) {
+      // Check if conversation already exists between these users
+      conversation = await prismadb.conversation.findFirst({
+        where: {
+          AND: [
+            {
+              users: {
+                some: {
+                  id: session.user.id
+                }
+              }
+            },
+            {
+              users: {
+                some: {
+                  id: recipientId
+                }
+              }
+            }
+          ]
+        },
+        include: {
+          users: true
+        }
+      });
+
+      // Create new conversation if it doesn't exist
+      if (!conversation) {
+        conversation = await prismadb.conversation.create({
+          data: {
+            users: {
+              connect: [
+                { id: session.user.id },
+                { id: recipientId }
+              ]
+            }
+          },
+          include: {
+            users: true
+          }
+        });
+      }
+    } else {
+      return new NextResponse("Either conversationId or recipientId is required", { status: 400 });
     }
 
-    // Create message
-    const message = await prisma.message.create({
+    // Create the message
+    const message = await prismadb.message.create({
       data: {
         content,
+        userId: session.user.id,
         conversationId: conversation.id,
-        senderId: session.user.id,
-        receiverId,
       },
       include: {
-        sender: {
-          select: {
-            name: true,
-            email: true,
-            image: true,
-          },
-        },
-      },
-    });
-
-    // Update conversation's last message
-    await prisma.conversation.update({
-      where: { id: conversation.id },
-      data: {
-        lastMessageAt: new Date(),
-        lastMessageId: message.id,
-      },
-    });
-
-    // Trigger real-time update for receiver
-    await pusher.trigger(`private-user-${receiverId}`, 'new-message', message);
-
-    // Create notification for receiver
-    await prisma.notification.create({
-      data: {
-        userId: receiverId,
-        type: 'MESSAGE',
-        title: 'New Message',
-        message: `New message from ${session.user.name || session.user.email}`,
-        isRead: false,
-      },
-    });
-
-    return NextResponse.json(message);
-  } catch (error) {
-    console.error('Message send error:', error);
-    return NextResponse.json(
-      { error: 'Failed to send message' },
-      { status: 500 }
-    );
-  }
-}
-
-// GET /api/messages/conversations - Get user's conversations
-export async function GET(req: Request) {
-  try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    const conversations = await prisma.conversation.findMany({
-      where: {
-        participants: {
-          some: {
-            id: session.user.id,
-          },
-        },
-      },
-      include: {
-        participants: {
+        user: {
           select: {
             id: true,
             name: true,
-            email: true,
             image: true,
-          },
-        },
-        messages: {
-          orderBy: {
-            createdAt: 'desc',
-          },
-          take: 1,
-          select: {
-            content: true,
-            createdAt: true,
-            senderId: true,
-            read: true,
-          },
-        },
-      },
-      orderBy: {
-        lastMessageAt: 'desc',
-      },
+          }
+        }
+      }
     });
 
-    // Calculate unread count for each conversation
-    const conversationsWithUnreadCount = await Promise.all(
-      conversations.map(async (conv) => {
-        const unreadCount = await prisma.message.count({
-          where: {
-            conversationId: conv.id,
-            receiverId: session.user.id,
-            read: false,
-          },
-        });
+    // Update conversation's updatedAt
+    await prismadb.conversation.update({
+      where: { id: conversation.id },
+      data: { updatedAt: new Date() }
+    });
 
-        return {
-          ...conv,
-          unreadCount,
-          lastMessage: conv.messages[0],
-        };
-      })
-    );
+    // Notify other conversation participants
+    const otherUsers = conversation.users.filter(user => user.id !== session.user.id);
+    
+    for (const user of otherUsers) {
+      await pusherServer.trigger(`private-user-${user.id}`, 'new-message', {
+        message: {
+          ...message,
+          conversationId: conversation.id,
+          senderName: session.user.name,
+        }
+      });
 
-    return NextResponse.json(conversationsWithUnreadCount);
+      // Create notification
+      await prismadb.notification.create({
+        data: {
+          userId: user.id,
+          type: 'MESSAGE',
+          title: 'New Message',
+          content: `${session.user.name}: ${content.substring(0, 50)}${content.length > 50 ? '...' : ''}`,
+          link: `/messages/${conversation.id}`,
+          senderId: session.user.id,
+        }
+      });
+
+      // Notify about new notification
+      await pusherServer.trigger(`private-user-${user.id}`, 'new-notification', {
+        message: 'You have a new message'
+      });
+    }
+
+    return NextResponse.json(message);
   } catch (error) {
-    console.error('Conversations fetch error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch conversations' },
-      { status: 500 }
-    );
+    console.error('[MESSAGE_SEND]', error);
+    return new NextResponse("Internal Error", { status: 500 });
+  }
+}
+
+// Get conversations
+export async function GET(req: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.email) {
+      return new NextResponse("Unauthorized", { status: 401 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const conversationId = searchParams.get('conversationId');
+
+    if (conversationId) {
+      // Get messages for a specific conversation
+      const conversation = await prismadb.conversation.findFirst({
+        where: {
+          id: conversationId,
+          users: {
+            some: {
+              id: session.user.id
+            }
+          }
+        },
+        include: {
+          users: {
+            select: {
+              id: true,
+              name: true,
+              image: true,
+            }
+          },
+          messages: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  image: true,
+                }
+              }
+            },
+            orderBy: {
+              createdAt: 'asc'
+            }
+          }
+        }
+      });
+
+      if (!conversation) {
+        return new NextResponse("Conversation not found", { status: 404 });
+      }
+
+      return NextResponse.json(conversation);
+    } else {
+      // Get all conversations for the user
+      const conversations = await prismadb.conversation.findMany({
+        where: {
+          users: {
+            some: {
+              id: session.user.id
+            }
+          }
+        },
+        include: {
+          users: {
+            select: {
+              id: true,
+              name: true,
+              image: true,
+            }
+          },
+          messages: {
+            take: 1,
+            orderBy: {
+              createdAt: 'desc'
+            },
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                }
+              }
+            }
+          }
+        },
+        orderBy: {
+          updatedAt: 'desc'
+        }
+      });
+
+      return NextResponse.json(conversations);
+    }
+  } catch (error) {
+    console.error('[CONVERSATIONS_GET]', error);
+    return new NextResponse("Internal Error", { status: 500 });
   }
 }
