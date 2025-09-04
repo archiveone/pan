@@ -1,163 +1,159 @@
-import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { z } from 'zod'
+import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth';
+import prisma from '@/lib/prisma';
 
-// Validation schema for property creation/update
-const propertySchema = z.object({
-  title: z.string().min(10),
-  description: z.string().min(50),
-  price: z.number().positive(),
-  currency: z.string().default('GBP'),
-  location: z.string().min(5),
-  propertyType: z.enum(['HOUSE', 'APARTMENT', 'COMMERCIAL', 'LAND']),
-  listingType: z.enum(['SALE', 'RENT']),
-  bedrooms: z.number().optional(),
-  bathrooms: z.number().optional(),
-  features: z.array(z.string()).optional(),
-  amenities: z.array(z.string()).optional(),
-  images: z.array(z.object({
-    url: z.string().url(),
-    isPrimary: z.boolean().default(false),
-  })).optional(),
-})
-
-// GET /api/properties - List properties with filtering
-export async function GET(request: Request) {
+// GET /api/properties - Get all properties with filtering
+export async function GET(req: Request) {
   try {
-    const { searchParams } = new URL(request.url)
-    
-    // Parse query parameters
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '10')
-    const propertyType = searchParams.get('propertyType')
-    const listingType = searchParams.get('listingType')
-    const minPrice = searchParams.get('minPrice')
-    const maxPrice = searchParams.get('maxPrice')
-    const location = searchParams.get('location')
-    const searchTerm = searchParams.get('search')
+    const { searchParams } = new URL(req.url);
+    const search = searchParams.get('search') || '';
+    const type = searchParams.get('type') || undefined;
+    const minPrice = Number(searchParams.get('minPrice')) || 0;
+    const maxPrice = Number(searchParams.get('maxPrice')) || 999999999;
 
-    // Build filter conditions
-    const where: any = {
-      status: 'ACTIVE',
-    }
-
-    if (propertyType) {
-      where.propertyType = propertyType
-    }
-
-    if (listingType) {
-      where.listingType = listingType
-    }
-
-    if (minPrice || maxPrice) {
-      where.price = {}
-      if (minPrice) where.price.gte = parseFloat(minPrice)
-      if (maxPrice) where.price.lte = parseFloat(maxPrice)
-    }
-
-    if (location) {
-      where.location = {
-        contains: location,
-        mode: 'insensitive',
-      }
-    }
-
-    if (searchTerm) {
-      where.OR = [
-        { title: { contains: searchTerm, mode: 'insensitive' } },
-        { description: { contains: searchTerm, mode: 'insensitive' } },
-      ]
-    }
-
-    // Get total count for pagination
-    const total = await prisma.propertyListing.count({ where })
-
-    // Get paginated results
-    const properties = await prisma.propertyListing.findMany({
-      where,
+    const properties = await prisma.property.findMany({
+      where: {
+        AND: [
+          {
+            OR: [
+              { title: { contains: search, mode: 'insensitive' } },
+              { description: { contains: search, mode: 'insensitive' } },
+              { address: { contains: search, mode: 'insensitive' } },
+            ],
+          },
+          {
+            type: type as any || undefined,
+          },
+          {
+            price: {
+              gte: minPrice,
+              lte: maxPrice,
+            },
+          },
+        ],
+      },
       include: {
-        images: true,
-        user: {
+        owner: {
           select: {
+            id: true,
             name: true,
+            email: true,
             image: true,
-            agentProfile: true,
           },
         },
       },
-      skip: (page - 1) * limit,
-      take: limit,
-      orderBy: { createdAt: 'desc' },
-    })
-
-    return NextResponse.json({
-      properties,
-      pagination: {
-        total,
-        pages: Math.ceil(total / limit),
-        page,
-        limit,
+      orderBy: {
+        createdAt: 'desc',
       },
-    })
+    });
+
+    return NextResponse.json(properties);
   } catch (error) {
-    console.error('Error fetching properties:', error)
+    console.error('Property fetch error:', error);
     return NextResponse.json(
       { error: 'Failed to fetch properties' },
       { status: 500 }
-    )
+    );
   }
 }
 
-// POST /api/properties - Create new property listing
-export async function POST(request: Request) {
+// POST /api/properties - Create a new property
+export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions);
     
     if (!session?.user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
-      )
+      );
     }
 
-    const json = await request.json()
-    const validatedData = propertySchema.parse(json)
+    const body = await req.json();
+    const { title, description, address, price, type, images } = body;
 
-    const property = await prisma.propertyListing.create({
-      data: {
-        ...validatedData,
-        userId: session.user.id,
-        images: {
-          create: validatedData.images || [],
-        },
-      },
-      include: {
-        images: true,
-        user: {
-          select: {
-            name: true,
-            image: true,
-            agentProfile: true,
-          },
-        },
-      },
-    })
-
-    return NextResponse.json(property, { status: 201 })
-  } catch (error) {
-    if (error instanceof z.ZodError) {
+    // Validate required fields
+    if (!title || !address || !price || !type) {
       return NextResponse.json(
-        { error: 'Invalid property data', details: error.errors },
+        { error: 'Missing required fields' },
         { status: 400 }
-      )
+      );
     }
 
-    console.error('Error creating property:', error)
+    // Create property
+    const property = await prisma.property.create({
+      data: {
+        title,
+        description,
+        address,
+        price: Number(price),
+        type,
+        ownerId: session.user.id,
+        status: 'ACTIVE',
+      },
+    });
+
+    // Create notification for nearby agents
+    await prisma.notification.create({
+      data: {
+        type: 'PROPERTY',
+        title: 'New Property Listed',
+        message: `New ${type.toLowerCase()} property listed at ${address}`,
+        userId: session.user.id,
+      },
+    });
+
+    return NextResponse.json(property);
+  } catch (error) {
+    console.error('Property creation error:', error);
     return NextResponse.json(
-      { error: 'Failed to create property listing' },
+      { error: 'Failed to create property' },
       { status: 500 }
-    )
+    );
+  }
+}
+
+// PATCH /api/properties - Update a property
+export async function PATCH(req: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const body = await req.json();
+    const { id, ...updateData } = body;
+
+    // Verify ownership
+    const existingProperty = await prisma.property.findUnique({
+      where: { id },
+      select: { ownerId: true },
+    });
+
+    if (!existingProperty || existingProperty.ownerId !== session.user.id) {
+      return NextResponse.json(
+        { error: 'Not authorized to update this property' },
+        { status: 403 }
+      );
+    }
+
+    // Update property
+    const property = await prisma.property.update({
+      where: { id },
+      data: updateData,
+    });
+
+    return NextResponse.json(property);
+  } catch (error) {
+    console.error('Property update error:', error);
+    return NextResponse.json(
+      { error: 'Failed to update property' },
+      { status: 500 }
+    );
   }
 }
