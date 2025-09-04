@@ -1,4 +1,4 @@
-// This is your Prisma schema file,
+// This is your Prisma schema file
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,43 +8,21 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// User and Authentication Models
 model User {
-  id             String    @id @default(cuid())
-  name           String?
-  email          String?   @unique
-  emailVerified  DateTime?
-  image          String?
-  hashedPassword String?
-  isVerified     Boolean   @default(false)
-  role           Role      @default(USER)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-
-  // Properties and Listings
-  properties         Property[]
-  propertySubmissions PropertySubmission[]
-  valuationRequests  ValuationRequest[]
-  valuationOffers    ValuationOffer[]
-  agentInterests     AgentInterest[]
-  
-  // CRM Related
-  contacts          Contact[]
-  leads            Lead[]
-  tasks            Task[]
-  notes            Note[]
-  
-  // Messaging and Social
-  sentMessages     Message[]        @relation("SentMessages")
-  receivedMessages Message[]        @relation("ReceivedMessages")
-  conversations    Conversation[]   @relation("UserConversations")
-  posts            Post[]
-  comments         Comment[]
-  reactions        Reaction[]
-
-  // Accounts and Sessions (NextAuth)
-  accounts Account[]
-  sessions Session[]
+  id            String       @id @default(cuid())
+  name          String?
+  email         String?      @unique
+  emailVerified DateTime?
+  image         String?
+  role          UserRole     @default(USER)
+  isVerified    Boolean      @default(false)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  accounts      Account[]
+  sessions      Session[]
+  properties    Property[]   // Properties owned by user
+  commissions   Commission[] // Commissions received (for agents)
+  notifications Notification[]
 }
 
 model Account {
@@ -74,203 +52,76 @@ model Session {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-// Property Related Models
 model Property {
-  id          String   @id @default(cuid())
+  id          String       @id @default(cuid())
   title       String
-  description String
-  type        String   // RESIDENTIAL, COMMERCIAL, LUXURY, TIMESHARE
-  status      String   // ACTIVE, PENDING, SOLD, RENTED
+  description String?      @db.Text
+  address     String
   price       Float
-  location    String
-  bedrooms    Int?
-  bathrooms   Int?
-  area        Float?
-  images      String[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
+  type        PropertyType
+  status      PropertyStatus @default(ACTIVE)
+  ownerId     String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  owner       User        @relation(fields: [ownerId], references: [id])
+  commissions Commission[]
 }
 
-model PropertySubmission {
-  id          String   @id @default(cuid())
-  propertyDetails Json
-  status      String   // PENDING, ASSIGNED, COMPLETED
-  commission  Float    // 5% commission for routing
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  agentInterests AgentInterest[]
+model Commission {
+  id             String           @id @default(cuid())
+  propertyId     String
+  agentId        String
+  saleAmount     Float
+  totalCommission Float
+  platformFee    Float
+  agentCommission Float
+  status         CommissionStatus @default(PENDING)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  property       Property        @relation(fields: [propertyId], references: [id])
+  agent          User           @relation(fields: [agentId], references: [id])
 }
 
-model AgentInterest {
-  id          String   @id @default(cuid())
-  status      String   // INTERESTED, ACCEPTED, REJECTED
-  message     String?
-  createdAt   DateTime @default(now())
-
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  submissionId String
-  submission  PropertySubmission @relation(fields: [submissionId], references: [id])
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String   @db.Text
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-// Valuation Marketplace Models
-model ValuationRequest {
-  id          String   @id @default(cuid())
-  propertyDetails Json
-  status      String   // PENDING, IN_PROGRESS, COMPLETED
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  offers      ValuationOffer[]
-}
-
-model ValuationOffer {
-  id          String   @id @default(cuid())
-  amount      Float
-  message     String?
-  status      String   // PENDING, ACCEPTED, REJECTED
-  createdAt   DateTime @default(now())
-
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  requestId   String
-  request     ValuationRequest @relation(fields: [requestId], references: [id])
-}
-
-// CRM Models
-model Contact {
-  id          String   @id @default(cuid())
-  name        String
-  email       String?
-  phone       String?
-  type        String   // CLIENT, AGENT, VENDOR, OTHER
-  notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  leads       Lead[]
-}
-
-model Lead {
-  id          String   @id @default(cuid())
-  title       String
-  status      LeadStatus
-  value       Float?
-  source      String?
-  notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  contactId   String
-  contact     Contact  @relation(fields: [contactId], references: [id])
-}
-
-model Task {
-  id          String   @id @default(cuid())
-  title       String
-  description String?
-  dueDate     DateTime?
-  status      String   // TODO, IN_PROGRESS, COMPLETED
-  priority    String   // LOW, MEDIUM, HIGH
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-}
-
-model Note {
-  id          String   @id @default(cuid())
-  content     String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-}
-
-// Messaging Models
-model Conversation {
-  id          String   @id @default(cuid())
-  name        String?
-  isGroup     Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  lastMessageAt DateTime @default(now())
-
-  users       User[]   @relation("UserConversations")
-  messages    Message[]
-}
-
-model Message {
-  id          String   @id @default(cuid())
-  content     String
-  createdAt   DateTime @default(now())
-
-  senderId    String
-  sender      User     @relation("SentMessages", fields: [senderId], references: [id])
-  receiverId  String
-  receiver    User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
-  conversationId String
-  conversation Conversation @relation(fields: [conversationId], references: [id])
-}
-
-// Social Networking Models
-model Post {
-  id          String   @id @default(cuid())
-  content     String
-  images      String[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  comments    Comment[]
-  reactions   Reaction[]
-}
-
-model Comment {
-  id          String   @id @default(cuid())
-  content     String
-  createdAt   DateTime @default(now())
-
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  postId      String
-  post        Post     @relation(fields: [postId], references: [id])
-}
-
-model Reaction {
-  id          String   @id @default(cuid())
-  type        String   // LIKE, LOVE, HAHA, WOW, SAD, ANGRY
-  createdAt   DateTime @default(now())
-
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  postId      String
-  post        Post     @relation(fields: [postId], references: [id])
-}
-
-enum Role {
+enum UserRole {
   USER
   AGENT
   ADMIN
 }
 
-enum LeadStatus {
-  NEW
-  QUALIFIED
-  WON
-  LOST
+enum PropertyType {
+  HOUSE
+  APARTMENT
+  COMMERCIAL
+  LAND
+}
+
+enum PropertyStatus {
+  ACTIVE
+  PENDING
+  SOLD
+  WITHDRAWN
+}
+
+enum CommissionStatus {
+  PENDING
+  APPROVED
+  PAID
+  REJECTED
+}
+
+enum NotificationType {
+  COMMISSION
+  PROPERTY
+  SYSTEM
 }
