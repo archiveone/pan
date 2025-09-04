@@ -1,85 +1,105 @@
-import './globals.css';
-import type { Metadata } from 'next';
-import { Inter, SF_Pro_Display } from 'next/font/google';
-import Providers from './providers';
-import Navbar from '@/components/navigation/navbar';
-import Footer from '@/components/navigation/footer';
+import { Metadata } from 'next';
+import { Inter, Cabinet_Grotesk } from 'next/font/google';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
-// Inter for body text
-const inter = Inter({ 
+import { ThemeProvider } from '@/components/providers/theme-provider';
+import { Toaster } from '@/components/ui/toaster';
+import { Header } from '@/components/layout/header';
+import { Footer } from '@/components/layout/footer';
+
+import './globals.css';
+
+const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
+  display: 'swap',
 });
 
-// SF Pro Display for headings (closest to Apple's font)
-const sfProDisplay = SF_Pro_Display({ 
+const cabinetGrotesk = Cabinet_Grotesk({
   subsets: ['latin'],
-  variable: '--font-display',
+  variable: '--font-cabinet-grotesk',
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
-  title: 'GREIA - Life\'s Operating System',
-  description: 'One super-app for lifestyle, property, and networking',
-  icons: {
-    icon: '/favicon.ico',
+  title: {
+    default: 'GREIA - Life\'s Operating System',
+    template: '%s | GREIA',
   },
-  metadataBase: new URL('https://greia.com'),
+  description: 'Your unified platform for Properties, Services, Leisure, and Networking.',
+  keywords: [
+    'property management',
+    'real estate',
+    'services marketplace',
+    'leisure activities',
+    'professional networking',
+    'lifestyle platform',
+  ],
+  authors: [{ name: 'GREIA' }],
+  creator: 'GREIA',
   openGraph: {
     type: 'website',
     locale: 'en_US',
     url: 'https://greia.com',
     title: 'GREIA - Life\'s Operating System',
-    description: 'One super-app for lifestyle, property, and networking',
+    description: 'Your unified platform for Properties, Services, Leisure, and Networking.',
     siteName: 'GREIA',
-    images: [
-      {
-        url: '/og-image.png',
-        width: 1200,
-        height: 630,
-        alt: 'GREIA - Life\'s Operating System',
-      },
-    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'GREIA - Life\'s Operating System',
-    description: 'One super-app for lifestyle, property, and networking',
-    images: ['/og-image.png'],
+    description: 'Your unified platform for Properties, Services, Leisure, and Networking.',
     creator: '@greia',
   },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon-16x16.png',
+    apple: '/apple-touch-icon.png',
   },
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: 'white' },
-    { media: '(prefers-color-scheme: dark)', color: 'black' },
-  ],
+  manifest: '/site.webmanifest',
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
 };
 
-export default function RootLayout({
-  children,
-}: {
+interface RootLayoutProps {
   children: React.ReactNode;
-}) {
+}
+
+export default async function RootLayout({ children }: RootLayoutProps) {
+  const session = await getServerSession(authOptions);
+  
   return (
-    <html 
-      lang="en" 
-      className={`${inter.variable} ${sfProDisplay.variable}`}
-      suppressHydrationWarning
-    >
-      <body 
-        className={`${inter.className} min-h-screen bg-background antialiased`}
-        suppressHydrationWarning
-      >
-        <Providers>
+    <html lang="en" suppressHydrationWarning>
+      <head />
+      <body className={`${inter.variable} ${cabinetGrotesk.variable} font-sans antialiased`}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
           <div className="relative flex min-h-screen flex-col">
-            <Navbar />
-            <main className="flex-1">{children}</main>
+            <Header user={session?.user} />
+            
+            <main className="flex-1">
+              {children}
+            </main>
+            
             <Footer />
           </div>
-        </Providers>
+          
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );
