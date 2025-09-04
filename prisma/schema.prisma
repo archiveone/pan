@@ -21,10 +21,24 @@ model User {
   updatedAt     DateTime  @updatedAt
   role          UserRole  @default(USER)
   
+  // Profile fields
+  bio           String?   @db.Text
+  city          String?
+  state         String?
+  country       String?
+  
   // Listings related fields
   listings         Listing[]        @relation("UserListings")
   savedListings    Listing[]        @relation("SavedListings")
   listingEnquiries ListingEnquiry[]
+  
+  // Social fields
+  posts           Post[]
+  comments        Comment[]
+  likes           Like[]
+  shares          Share[]
+  followers       User[]    @relation("UserFollows")
+  following       User[]    @relation("UserFollows")
   
   // Verification status
   isVerified      Boolean   @default(false)
@@ -75,6 +89,7 @@ model Listing {
   ownerId     String
   savedBy     User[]   @relation("SavedListings")
   enquiries   ListingEnquiry[]
+  posts       Post[]   // Social posts referencing this listing
   
   // For property listings
   propertyType PropertyType?
@@ -94,6 +109,78 @@ model Listing {
   @@index([city])
 }
 
+// Social Models
+model Post {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  content   String?  @db.Text
+  images    String[] // Array of image URLs
+  
+  // Relations
+  author    User     @relation(fields: [authorId], references: [id])
+  authorId  String
+  listing   Listing? @relation(fields: [listingId], references: [id])
+  listingId String?
+  
+  // Engagement
+  likes     Like[]
+  comments  Comment[]
+  shares    Share[]
+  
+  @@index([authorId])
+  @@index([listingId])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  content   String   @db.Text
+  
+  // Relations
+  author    User     @relation(fields: [authorId], references: [id])
+  authorId  String
+  post      Post     @relation(fields: [postId], references: [id])
+  postId    String
+  
+  @@index([authorId])
+  @@index([postId])
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  
+  // Relations
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  post      Post     @relation(fields: [postId], references: [id])
+  postId    String
+  
+  @@unique([userId, postId])
+  @@index([userId])
+  @@index([postId])
+}
+
+model Share {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  
+  // Relations
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  post      Post     @relation(fields: [postId], references: [id])
+  postId    String
+  
+  @@unique([userId, postId])
+  @@index([userId])
+  @@index([postId])
+}
+
+// Listing related enums
 enum ListingCategory {
   PROPERTY
   SERVICE
@@ -115,6 +202,7 @@ enum ListingStatus {
   RENTED
   EXPIRED
   INACTIVE
+  PRIVATE // For private marketplace
 }
 
 enum PropertyType {
