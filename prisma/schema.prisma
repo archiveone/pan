@@ -1,36 +1,127 @@
-// Update the Commission model in the existing schema
-model Commission {
-  id            String    @id @default(cuid())
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  
-  // Commission amounts
-  amount        Decimal   // Amount agent receives (95% of their commission)
-  greiaAmount   Decimal   // Amount GREIA receives (5% of agent's commission)
-  totalAmount   Decimal   // Total commission amount (100% of agent's commission)
-  
-  // Status tracking
-  status        CommissionStatus @default(PENDING)
-  dueDate       DateTime
-  paidDate      DateTime?
-  
-  // Transaction details
-  stripePaymentId String?
-  transactionRef  String?
-  
-  // Related records
-  agent         User      @relation("AgentCommissions", fields: [agentId], references: [id])
-  agentId       String
-  listing       Listing   @relation(fields: [listingId], references: [id])
-  listingId     String
-  inquiry       ListingEnquiry @relation(fields: [inquiryId], references: [id])
-  inquiryId     String    @unique
+// This is your Prisma schema file
+generator client {
+  provider = "prisma-client-js"
+}
 
-  // Metadata for commission calculations
-  metadata      Json      // Stores rates and original price information
-  notes         String?   @db.Text
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
 
-  @@index([agentId])
-  @@index([listingId])
-  @@index([status])
+model User {
+  id                   String    @id @default(cuid())
+  name                 String?
+  email                String?   @unique
+  emailVerified        DateTime?
+  image                String?
+  hashedPassword       String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  
+  // Verification fields
+  verificationSessionId String?   @unique
+  verificationStatus    String?   @default("UNVERIFIED") // UNVERIFIED, PENDING, VERIFIED, FAILED
+  verificationError     String?
+  verifiedAt           DateTime?
+  
+  // Role and type
+  role                 String    @default("USER") // USER, AGENT, ADMIN
+  userType             String?   // LANDLORD, TENANT, AGENT, BUSINESS
+  
+  // Relationships
+  accounts             Account[]
+  listings             Listing[]
+  messages             Message[]
+  conversations        Conversation[]
+  properties           Property[]
+  
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Property {
+  id          String   @id @default(cuid())
+  title       String
+  description String?  @db.Text
+  price       Float
+  location    String
+  type        String   // HOUSE, APARTMENT, COMMERCIAL, etc.
+  status      String   // AVAILABLE, PENDING, SOLD, RENTED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Media
+  images      String[] // Array of image URLs
+  
+  // Relationships
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listings    Listing[]
+
+  @@map("properties")
+}
+
+model Listing {
+  id          String   @id @default(cuid())
+  title       String
+  description String?  @db.Text
+  price       Float
+  type        String   // SALE, RENT, SERVICE
+  status      String   // ACTIVE, PENDING, COMPLETED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relationships
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  propertyId  String?
+  property    Property? @relation(fields: [propertyId], references: [id])
+
+  @@map("listings")
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  content        String       @db.Text
+  createdAt      DateTime     @default(now())
+  
+  // Relationships
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+model Conversation {
+  id        String    @id @default(cuid())
+  name      String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  
+  // Relationships
+  users     User[]
+  messages  Message[]
+
+  @@map("conversations")
 }
