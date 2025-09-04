@@ -33,20 +33,142 @@ model User {
   agentBrokerage       String?
   serviceAreas         String[]  // Array of postcodes/areas
   
+  // Social media fields
+  bio                  String?   @db.Text
+  coverImage           String?
+  followers            Follow[]  @relation("Following")
+  following            Follow[]  @relation("Followers")
+  posts                Post[]
+  comments             Comment[]
+  likes                Like[]
+  
   // Relationships
   accounts             Account[]
   listings             Listing[]
   messages             Message[]
   conversations        Conversation[]
   properties           Property[]
-  privateListings      PrivateListing[] // Properties submitted to private marketplace
-  agentInterests       AgentInterest[]  // Agent's interest in private listings
-  referrals            Referral[]       // Referrals received
+  privateListings      PrivateListing[]
+  agentInterests       AgentInterest[]
+  referrals            Referral[]
   referralsGiven       Referral[]       @relation("ReferringAgent")
+  valuationRequests    ValuationRequest[]
+  valuationOffers      ValuationOffer[]
 
   @@map("users")
 }
 
+// Social Media Models
+model Post {
+  id          String    @id @default(cuid())
+  content     String    @db.Text
+  images      String[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // Relations
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comments    Comment[]
+  likes       Like[]
+  
+  // Optional property/listing reference
+  propertyId  String?
+  property    Property? @relation(fields: [propertyId], references: [id])
+  listingId   String?
+  listing     Listing?  @relation(fields: [listingId], references: [id])
+
+  @@map("posts")
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  
+  // Relations
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@map("comments")
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  
+  // Relations
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@map("likes")
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  
+  // Relations
+  followerId  String
+  follower    User     @relation("Following", fields: [followerId], references: [id], onDelete: Cascade)
+  followingId String
+  following   User     @relation("Followers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@map("follows")
+}
+
+// Valuation Marketplace Models
+model ValuationRequest {
+  id          String    @id @default(cuid())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  status      String    // PENDING, IN_PROGRESS, COMPLETED
+  
+  // Property details
+  address     String
+  postcode    String
+  propertyType String
+  bedrooms    Int?
+  bathrooms   Int?
+  description String?   @db.Text
+  images      String[]
+  
+  // Owner details
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  
+  // Valuation offers
+  offers      ValuationOffer[]
+
+  @@map("valuation_requests")
+}
+
+model ValuationOffer {
+  id          String    @id @default(cuid())
+  createdAt   DateTime  @default(now())
+  status      String    // PENDING, ACCEPTED, REJECTED
+  
+  // Valuation details
+  value       Float
+  confidence  Int       // Confidence level 1-5
+  notes       String?   @db.Text
+  
+  // Relations
+  requestId   String
+  request     ValuationRequest @relation(fields: [requestId], references: [id])
+  agentId     String
+  agent       User      @relation(fields: [agentId], references: [id])
+
+  @@map("valuation_offers")
+}
+
+// Existing Models
 model Account {
   id                String  @id @default(cuid())
   userId            String
@@ -73,20 +195,21 @@ model Property {
   description String?  @db.Text
   price       Float
   location    String
-  postcode    String   // For area matching
+  postcode    String
   type        String   // HOUSE, APARTMENT, COMMERCIAL, etc.
   status      String   // AVAILABLE, PENDING, SOLD, RENTED
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
   // Media
-  images      String[] // Array of image URLs
+  images      String[]
   
-  // Relationships
+  // Relations
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   listings    Listing[]
   privateListing PrivateListing?
+  posts       Post[]   // Social media posts about this property
 
   @@map("properties")
 }
@@ -107,7 +230,7 @@ model PrivateListing {
   
   // Agent assignment
   assignedAgentId String?
-  commission      Float?  // Agreed commission rate
+  commission      Float?
   
   // Agent interests
   agentInterests  AgentInterest[]
@@ -119,7 +242,7 @@ model AgentInterest {
   id              String   @id @default(cuid())
   createdAt       DateTime @default(now())
   
-  // Relationships
+  // Relations
   privateListing  PrivateListing @relation(fields: [privateListingId], references: [id])
   privateListingId String
   
@@ -139,14 +262,14 @@ model Referral {
   id              String   @id @default(cuid())
   createdAt       DateTime @default(now())
   status          String   // PENDING, COMPLETED
-  commission      Float    // 20% of the original commission
+  commission      Float
   
-  // Relationships
-  agentId         String   // Agent receiving referral
+  // Relations
+  agentId         String
   agent           User     @relation(fields: [agentId], references: [id])
   
-  referringAgentId String  // Agent giving referral
-  referringAgent   User    @relation("ReferringAgent", fields: [referringAgentId], references: [id])
+  referringAgentId String
+  referringAgent   User     @relation("ReferringAgent", fields: [referringAgentId], references: [id])
   
   privateListingId String?
   notes           String?
@@ -164,11 +287,12 @@ model Listing {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
-  // Relationships
+  // Relations
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   propertyId  String?
   property    Property? @relation(fields: [propertyId], references: [id])
+  posts       Post[]    // Social media posts about this listing
 
   @@map("listings")
 }
@@ -178,7 +302,7 @@ model Message {
   content        String       @db.Text
   createdAt      DateTime     @default(now())
   
-  // Relationships
+  // Relations
   userId         String
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   conversationId String
@@ -193,7 +317,7 @@ model Conversation {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   
-  // Relationships
+  // Relations
   users     User[]
   messages  Message[]
 
