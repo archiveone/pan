@@ -8,250 +8,312 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// User and Profile
 model User {
-  id                    String                 @id @default(cuid())
-  name                  String
-  email                 String                 @unique
-  emailVerified        DateTime?
-  image                 String?
-  password             String?
-  bio                   String?                @db.Text
-  location             String?
-  phone                String?
-  website              String?
-  rating               Float                   @default(0)
-  createdAt           DateTime               @default(now())
-  updatedAt           DateTime               @updatedAt
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  username      String?   @unique
+  bio           String?
+  coverImage    String?
+  location      String?
+  website       String?
+  joinedAt      DateTime  @default(now())
+  verified      Boolean   @default(false)
 
-  // New Profile Features
-  profileBackground    String?                // Background image URL
-  coverPhoto          String?                // Cover photo URL
-  headline            String?                // Professional headline
-  socialLinks         SocialLink[]           // Social media links
-  portfolioItems      PortfolioItem[]        // Portfolio items (documents, images, etc.)
-  todos               Todo[]                 // Private to-do items
-  educationHistory    Education[]            // Education history
-  workHistory        WorkHistory[]          // Work history
-  certifications      Certification[]        // Professional certifications
-  skills              Skill[]                // Professional skills
-  languages           Language[]             // Languages spoken
-  availability        Availability?          // Availability settings
-  customSections      ProfileSection[]       // Custom profile sections
+  // Professional Info
+  company       String?
+  position      String?
+  experience    String?
+  specialties   String[]
+  certifications String[]
 
-  // Existing Relations
-  expertise           String[]
-  serviceAreas        String[]
-  qualifications      Qualification[]
-  verifications       Verification[]
-  listings            Listing[]
-  reviews             Review[]
-  posts               Post[]
-  followers           Follow[]               @relation("Following")
-  following           Follow[]               @relation("Followers")
-  conversations       ConversationParticipant[]
-  messages            Message[]
-  notifications       Notification[]
-  achievements        Achievement[]
-  paymentMethods      PaymentMethod[]
-  bankAccounts        BankAccount[]
-  subscriptions       Subscription[]
-  activities          Activity[]
-  profileViews        ProfileView[]
+  // Relationships
+  posts         Post[]
+  comments      Comment[]
+  likes         Like[]
+  followers     Follow[]    @relation("following")
+  following     Follow[]    @relation("followers")
+  messages      Message[]   @relation("sent")
+  receivedMessages Message[] @relation("received")
+  notifications Notification[] @relation("userNotifications")
+  groupMemberships GroupMember[]
+  events        Event[]     @relation("organizer")
+  eventAttendees EventAttendee[]
+  communities   CommunityMember[]
+  savedPosts    SavedPost[]
+  achievements  Achievement[]
+
+  // Activity tracking
+  lastActive    DateTime   @default(now())
+  onlineStatus  String?    // "online", "offline", "away"
+
+  @@index([email])
+  @@index([username])
 }
 
-// New Models for Enhanced Profile Features
+// Social Posts
+model Post {
+  id          String    @id @default(cuid())
+  content     String
+  images      String[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  author      User      @relation(fields: [authorId], references: [id])
+  authorId    String
+  
+  // Post type and references
+  type        String    // "general", "property", "service", "event"
+  propertyId  String?   // Reference to property if type is "property"
+  serviceId   String?   // Reference to service if type is "service"
+  eventId     String?   // Reference to event if type is "event"
 
-model SocialLink {
+  // Engagement
+  likes       Like[]
+  comments    Comment[]
+  shares      Share[]
+  savedBy     SavedPost[]
+  
+  // Visibility
+  visibility  String    @default("public") // "public", "followers", "private"
+  
+  @@index([authorId])
+  @@index([type])
+}
+
+// Comments
+model Comment {
+  id        String    @id @default(cuid())
+  content   String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  author    User      @relation(fields: [authorId], references: [id])
+  authorId  String
+  post      Post      @relation(fields: [postId], references: [id])
+  postId    String
+  
+  // Nested comments
+  parentId  String?
+  parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies   Comment[] @relation("CommentReplies")
+  
+  @@index([authorId])
+  @@index([postId])
+}
+
+// Likes
+model Like {
   id        String   @id @default(cuid())
-  platform  String   // e.g., LinkedIn, Twitter, Instagram
-  url       String
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  post      Post     @relation(fields: [postId], references: [id])
+  postId    String
 
+  @@unique([userId, postId])
   @@index([userId])
+  @@index([postId])
 }
 
-model PortfolioItem {
+// Follows
+model Follow {
   id          String   @id @default(cuid())
-  title       String
-  description String?  @db.Text
-  type        String   // e.g., Document, Image, Video, Link
-  url         String   // File or external URL
-  thumbnail   String?  // Thumbnail image URL
-  category    String?  // Custom category
-  featured    Boolean  @default(false)
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  follower    User     @relation("following", fields: [followerId], references: [id])
+  followerId  String
+  following   User     @relation("followers", fields: [followingId], references: [id])
+  followingId String
   createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
 
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+// Direct Messages
+model Message {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+  sender    User     @relation("sent", fields: [senderId], references: [id])
+  senderId  String
+  receiver  User     @relation("received", fields: [receiverId], references: [id])
+  receiverId String
+  read      Boolean  @default(false)
+  
+  // Message type
+  type      String   @default("text") // "text", "image", "file"
+  fileUrl   String?
+  
+  // Chat thread grouping
+  threadId  String?
+  
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([threadId])
+}
+
+// Notifications
+model Notification {
+  id        String   @id @default(cuid())
+  type      String   // "like", "comment", "follow", "mention", "message"
+  content   String
+  createdAt DateTime @default(now())
+  read      Boolean  @default(false)
+  user      User     @relation("userNotifications", fields: [userId], references: [id])
+  userId    String
+  
+  // Reference data
+  postId    String?
+  commentId String?
+  senderId  String?
+  
   @@index([userId])
 }
 
-model Todo {
-  id          String   @id @default(cuid())
-  title       String
-  description String?  @db.Text
-  dueDate     DateTime?
-  completed   Boolean  @default(false)
-  priority    String?  // High, Medium, Low
-  category    String?
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@index([userId])
-}
-
-model Education {
-  id              String   @id @default(cuid())
-  institution     String
-  degree          String
-  fieldOfStudy    String
-  startDate       DateTime
-  endDate         DateTime?
-  grade           String?
-  activities      String?  @db.Text
-  description     String?  @db.Text
-  verified        Boolean  @default(false)
-  verificationDoc String?  // URL to verification document
-  userId          String
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@index([userId])
-}
-
-model WorkHistory {
-  id              String   @id @default(cuid())
-  company         String
-  position        String
-  location        String?
-  startDate       DateTime
-  endDate         DateTime?
-  current         Boolean  @default(false)
-  description     String?  @db.Text
-  achievements    String[] // List of achievements
-  skills          String[] // Skills used
-  verified        Boolean  @default(false)
-  verificationDoc String?  // URL to verification document
-  userId          String
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@index([userId])
-}
-
-model Certification {
-  id              String   @id @default(cuid())
-  name            String
-  issuingBody     String
-  issueDate       DateTime
-  expiryDate      DateTime?
-  credentialId    String?
-  credentialUrl   String?
-  verified        Boolean  @default(false)
-  verificationDoc String?  // URL to verification document
-  userId          String
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@index([userId])
-}
-
-model Skill {
-  id          String   @id @default(cuid())
+// Groups
+model Group {
+  id          String    @id @default(cuid())
   name        String
-  category    String?
-  level       String?  // Beginner, Intermediate, Expert
-  endorsed    Boolean  @default(false)
-  endorsements Int     @default(0)
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  description String?
+  image       String?
+  createdAt   DateTime  @default(now())
+  type        String    // "professional", "interest", "location"
+  privacy     String    @default("public") // "public", "private", "secret"
+  
+  // Members
+  members     GroupMember[]
+  
+  // Content
+  posts       GroupPost[]
+  events      Event[]
+}
 
+model GroupMember {
+  id        String   @id @default(cuid())
+  group     Group    @relation(fields: [groupId], references: [id])
+  groupId   String
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  role      String   @default("member") // "admin", "moderator", "member"
+  joinedAt  DateTime @default(now())
+
+  @@unique([groupId, userId])
+  @@index([groupId])
   @@index([userId])
 }
 
-model Language {
-  id          String   @id @default(cuid())
-  name        String
-  level       String   // Basic, Intermediate, Fluent, Native
-  certified   Boolean  @default(false)
-  certificate String?  // URL to language certificate
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model GroupPost {
+  id        String   @id @default(cuid())
+  content   String
+  images    String[]
+  createdAt DateTime @default(now())
+  group     Group    @relation(fields: [groupId], references: [id])
+  groupId   String
+  authorId  String
 
-  @@index([userId])
+  @@index([groupId])
 }
 
-model Availability {
-  id            String   @id @default(cuid())
-  status        String   // Available, Busy, Away
-  schedule      Json?    // Weekly schedule
-  timezone      String
-  responseTime  Int?     // Average response time in minutes
-  bookingNotice Int?     // Minimum notice for bookings in hours
-  userId        String   @unique
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-}
-
-model ProfileSection {
-  id          String   @id @default(cuid())
+// Events
+model Event {
+  id          String    @id @default(cuid())
   title       String
-  content     String   @db.Text
-  type        String   // Text, Gallery, List, etc.
-  order       Int
-  visible     Boolean  @default(true)
+  description String
+  startDate   DateTime
+  endDate     DateTime?
+  location    String?
+  image       String?
+  capacity    Int?
+  privacy     String    @default("public") // "public", "private"
+  
+  // Organizer
+  organizer   User      @relation("organizer", fields: [organizerId], references: [id])
+  organizerId String
+  
+  // Group association
+  group       Group?    @relation(fields: [groupId], references: [id])
+  groupId     String?
+  
+  // Attendees
+  attendees   EventAttendee[]
+  
+  @@index([organizerId])
+  @@index([groupId])
+}
+
+model EventAttendee {
+  id        String   @id @default(cuid())
+  event     Event    @relation(fields: [eventId], references: [id])
+  eventId   String
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  status    String   // "going", "maybe", "not_going"
+  joinedAt  DateTime @default(now())
+
+  @@unique([eventId, userId])
+  @@index([eventId])
+  @@index([userId])
+}
+
+// Communities
+model Community {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  image       String?
+  type        String    // "property", "service", "location"
+  members     CommunityMember[]
+}
+
+model CommunityMember {
+  id          String    @id @default(cuid())
+  community   Community @relation(fields: [communityId], references: [id])
+  communityId String
+  user        User      @relation(fields: [userId], references: [id])
   userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  role        String    @default("member") // "admin", "moderator", "member"
+  joinedAt    DateTime  @default(now())
 
+  @@unique([communityId, userId])
+  @@index([communityId])
   @@index([userId])
 }
 
-// Existing Models (Add any missing ones)
-
-model Qualification {
-  id           String   @id @default(cuid())
-  title        String
-  institution  String
-  year         Int
-  verified     Boolean  @default(false)
-  userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
+// Saved Posts
+model SavedPost {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  post      Post     @relation(fields: [postId], references: [id])
+  postId    String
+  savedAt   DateTime @default(now())
+  
+  @@unique([userId, postId])
   @@index([userId])
+  @@index([postId])
 }
 
-model Verification {
+// Post Shares
+model Share {
+  id        String   @id @default(cuid())
+  post      Post     @relation(fields: [postId], references: [id])
+  postId    String
+  sharedAt  DateTime @default(now())
+  
+  @@index([postId])
+}
+
+// User Achievements
+model Achievement {
   id          String   @id @default(cuid())
-  type        String   // ID, Address, Professional, etc.
-  status      String   // PENDING, VERIFIED, REJECTED
-  verifiedAt  DateTime?
+  user        User     @relation(fields: [userId], references: [id])
   userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
+  title       String
+  description String?
+  icon        String?
+  awardedAt   DateTime @default(now())
+  
   @@index([userId])
 }
-
-// Add other existing models (Listing, Review, Post, Follow, etc.)
-// as they were in the original schema
-
-// Remember to add proper indexes and relations
