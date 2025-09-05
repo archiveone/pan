@@ -8,312 +8,288 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// User and Profile
-model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  image         String?
-  username      String?   @unique
-  bio           String?
-  coverImage    String?
-  location      String?
-  website       String?
-  joinedAt      DateTime  @default(now())
-  verified      Boolean   @default(false)
-
-  // Professional Info
-  company       String?
-  position      String?
-  experience    String?
-  specialties   String[]
-  certifications String[]
-
-  // Relationships
-  posts         Post[]
-  comments      Comment[]
-  likes         Like[]
-  followers     Follow[]    @relation("following")
-  following     Follow[]    @relation("followers")
-  messages      Message[]   @relation("sent")
-  receivedMessages Message[] @relation("received")
-  notifications Notification[] @relation("userNotifications")
-  groupMemberships GroupMember[]
-  events        Event[]     @relation("organizer")
-  eventAttendees EventAttendee[]
-  communities   CommunityMember[]
-  savedPosts    SavedPost[]
-  achievements  Achievement[]
-
-  // Activity tracking
-  lastActive    DateTime   @default(now())
-  onlineStatus  String?    // "online", "offline", "away"
-
-  @@index([email])
-  @@index([username])
-}
-
-// Social Posts
-model Post {
-  id          String    @id @default(cuid())
-  content     String
-  images      String[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  author      User      @relation(fields: [authorId], references: [id])
-  authorId    String
-  
-  // Post type and references
-  type        String    // "general", "property", "service", "event"
-  propertyId  String?   // Reference to property if type is "property"
-  serviceId   String?   // Reference to service if type is "service"
-  eventId     String?   // Reference to event if type is "event"
-
-  // Engagement
-  likes       Like[]
-  comments    Comment[]
-  shares      Share[]
-  savedBy     SavedPost[]
-  
-  // Visibility
-  visibility  String    @default("public") // "public", "followers", "private"
-  
-  @@index([authorId])
-  @@index([type])
-}
-
-// Comments
-model Comment {
-  id        String    @id @default(cuid())
-  content   String
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  author    User      @relation(fields: [authorId], references: [id])
-  authorId  String
-  post      Post      @relation(fields: [postId], references: [id])
-  postId    String
-  
-  // Nested comments
-  parentId  String?
-  parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
-  replies   Comment[] @relation("CommentReplies")
-  
-  @@index([authorId])
-  @@index([postId])
-}
-
-// Likes
-model Like {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id])
-  userId    String
-  post      Post     @relation(fields: [postId], references: [id])
-  postId    String
-
-  @@unique([userId, postId])
-  @@index([userId])
-  @@index([postId])
-}
-
-// Follows
-model Follow {
+// CRM Models
+model CRMWorkspace {
   id          String   @id @default(cuid())
-  follower    User     @relation("following", fields: [followerId], references: [id])
-  followerId  String
-  following   User     @relation("followers", fields: [followingId], references: [id])
-  followingId String
+  name        String
+  description String?
   createdAt   DateTime @default(now())
-
-  @@unique([followerId, followingId])
-  @@index([followerId])
-  @@index([followingId])
+  updatedAt   DateTime @updatedAt
+  ownerId     String
+  owner       User     @relation(fields: [ownerId], references: [id])
+  members     CRMWorkspaceMember[]
+  boards      CRMBoard[]
+  groups      CRMGroup[]
+  tags        CRMTag[]
+  tasks       CRMTask[]
+  leads       CRMLead[]
+  contacts    CRMContact[]
+  deals       CRMDeal[]
+  activities  CRMActivity[]
 }
 
-// Direct Messages
-model Message {
-  id        String   @id @default(cuid())
-  content   String
-  createdAt DateTime @default(now())
-  sender    User     @relation("sent", fields: [senderId], references: [id])
-  senderId  String
-  receiver  User     @relation("received", fields: [receiverId], references: [id])
-  receiverId String
-  read      Boolean  @default(false)
-  
-  // Message type
-  type      String   @default("text") // "text", "image", "file"
-  fileUrl   String?
-  
-  // Chat thread grouping
-  threadId  String?
-  
-  @@index([senderId])
-  @@index([receiverId])
-  @@index([threadId])
+model CRMWorkspaceMember {
+  id          String       @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        CRMRole     @default(MEMBER)
+  workspace   CRMWorkspace @relation(fields: [workspaceId], references: [id])
+  user        User        @relation(fields: [userId], references: [id])
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@unique([workspaceId, userId])
 }
 
-// Notifications
-model Notification {
-  id        String   @id @default(cuid())
-  type      String   // "like", "comment", "follow", "mention", "message"
-  content   String
-  createdAt DateTime @default(now())
-  read      Boolean  @default(false)
-  user      User     @relation("userNotifications", fields: [userId], references: [id])
-  userId    String
-  
-  // Reference data
-  postId    String?
-  commentId String?
-  senderId  String?
-  
-  @@index([userId])
-}
-
-// Groups
-model Group {
-  id          String    @id @default(cuid())
+model CRMBoard {
+  id          String       @id @default(cuid())
   name        String
   description String?
-  image       String?
-  createdAt   DateTime  @default(now())
-  type        String    // "professional", "interest", "location"
-  privacy     String    @default("public") // "public", "private", "secret"
-  
-  // Members
-  members     GroupMember[]
-  
-  // Content
-  posts       GroupPost[]
-  events      Event[]
+  type        CRMBoardType
+  workspaceId String
+  workspace   CRMWorkspace @relation(fields: [workspaceId], references: [id])
+  groups      CRMGroup[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 }
 
-model GroupMember {
-  id        String   @id @default(cuid())
-  group     Group    @relation(fields: [groupId], references: [id])
-  groupId   String
-  user      User     @relation(fields: [userId], references: [id])
-  userId    String
-  role      String   @default("member") // "admin", "moderator", "member"
-  joinedAt  DateTime @default(now())
-
-  @@unique([groupId, userId])
-  @@index([groupId])
-  @@index([userId])
+model CRMGroup {
+  id          String       @id @default(cuid())
+  name        String
+  description String?
+  color       String?
+  position    Int
+  boardId     String
+  board       CRMBoard     @relation(fields: [boardId], references: [id])
+  workspaceId String
+  workspace   CRMWorkspace @relation(fields: [workspaceId], references: [id])
+  tasks       CRMTask[]
+  leads       CRMLead[]
+  deals       CRMDeal[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 }
 
-model GroupPost {
-  id        String   @id @default(cuid())
-  content   String
-  images    String[]
-  createdAt DateTime @default(now())
-  group     Group    @relation(fields: [groupId], references: [id])
-  groupId   String
-  authorId  String
-
-  @@index([groupId])
-}
-
-// Events
-model Event {
-  id          String    @id @default(cuid())
+model CRMTask {
+  id          String       @id @default(cuid())
   title       String
+  description String?
+  status      CRMStatus   @default(NEW)
+  priority    CRMPriority @default(MEDIUM)
+  dueDate     DateTime?
+  groupId     String
+  group       CRMGroup     @relation(fields: [groupId], references: [id])
+  workspaceId String
+  workspace   CRMWorkspace @relation(fields: [workspaceId], references: [id])
+  assignedTo  String?
+  assignee    User?       @relation(fields: [assignedTo], references: [id])
+  tags        CRMTaskTag[]
+  activities  CRMActivity[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model CRMLead {
+  id          String       @id @default(cuid())
+  name        String
+  email       String?
+  phone       String?
+  source      String?
+  status      CRMStatus   @default(NEW)
+  value       Float?
+  groupId     String
+  group       CRMGroup     @relation(fields: [groupId], references: [id])
+  workspaceId String
+  workspace   CRMWorkspace @relation(fields: [workspaceId], references: [id])
+  assignedTo  String?
+  assignee    User?       @relation(fields: [assignedTo], references: [id])
+  tags        CRMLeadTag[]
+  activities  CRMActivity[]
+  contacts    CRMContact[]
+  deals       CRMDeal[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model CRMContact {
+  id          String       @id @default(cuid())
+  name        String
+  email       String?
+  phone       String?
+  company     String?
+  position    String?
+  leadId      String?
+  lead        CRMLead?     @relation(fields: [leadId], references: [id])
+  workspaceId String
+  workspace   CRMWorkspace @relation(fields: [workspaceId], references: [id])
+  activities  CRMActivity[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model CRMDeal {
+  id          String       @id @default(cuid())
+  title       String
+  value       Float
+  status      CRMStatus   @default(NEW)
+  closingDate DateTime?
+  leadId      String
+  lead        CRMLead      @relation(fields: [leadId], references: [id])
+  groupId     String
+  group       CRMGroup     @relation(fields: [groupId], references: [id])
+  workspaceId String
+  workspace   CRMWorkspace @relation(fields: [workspaceId], references: [id])
+  assignedTo  String?
+  assignee    User?       @relation(fields: [assignedTo], references: [id])
+  activities  CRMActivity[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model CRMTag {
+  id          String       @id @default(cuid())
+  name        String
+  color       String
+  workspaceId String
+  workspace   CRMWorkspace @relation(fields: [workspaceId], references: [id])
+  tasks       CRMTaskTag[]
+  leads       CRMLeadTag[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@unique([name, workspaceId])
+}
+
+model CRMTaskTag {
+  taskId    String
+  tagId     String
+  task      CRMTask     @relation(fields: [taskId], references: [id])
+  tag       CRMTag      @relation(fields: [tagId], references: [id])
+  createdAt DateTime    @default(now())
+
+  @@id([taskId, tagId])
+}
+
+model CRMLeadTag {
+  leadId    String
+  tagId     String
+  lead      CRMLead     @relation(fields: [leadId], references: [id])
+  tag       CRMTag      @relation(fields: [tagId], references: [id])
+  createdAt DateTime    @default(now())
+
+  @@id([leadId, tagId])
+}
+
+model CRMActivity {
+  id          String          @id @default(cuid())
+  type        CRMActivityType
   description String
-  startDate   DateTime
-  endDate     DateTime?
-  location    String?
-  image       String?
-  capacity    Int?
-  privacy     String    @default("public") // "public", "private"
-  
-  // Organizer
-  organizer   User      @relation("organizer", fields: [organizerId], references: [id])
-  organizerId String
-  
-  // Group association
-  group       Group?    @relation(fields: [groupId], references: [id])
-  groupId     String?
-  
-  // Attendees
-  attendees   EventAttendee[]
-  
-  @@index([organizerId])
-  @@index([groupId])
+  taskId      String?
+  task        CRMTask?        @relation(fields: [taskId], references: [id])
+  leadId      String?
+  lead        CRMLead?        @relation(fields: [leadId], references: [id])
+  contactId   String?
+  contact     CRMContact?     @relation(fields: [contactId], references: [id])
+  dealId      String?
+  deal        CRMDeal?        @relation(fields: [dealId], references: [id])
+  workspaceId String
+  workspace   CRMWorkspace    @relation(fields: [workspaceId], references: [id])
+  createdBy   String
+  creator     User           @relation(fields: [createdBy], references: [id])
+  createdAt   DateTime       @default(now())
 }
 
-model EventAttendee {
-  id        String   @id @default(cuid())
-  event     Event    @relation(fields: [eventId], references: [id])
-  eventId   String
-  user      User     @relation(fields: [userId], references: [id])
-  userId    String
-  status    String   // "going", "maybe", "not_going"
-  joinedAt  DateTime @default(now())
-
-  @@unique([eventId, userId])
-  @@index([eventId])
-  @@index([userId])
+// User Model (extended)
+model User {
+  id                String              @id @default(cuid())
+  name              String?
+  email             String?             @unique
+  emailVerified     DateTime?
+  image             String?
+  accounts          Account[]
+  sessions          Session[]
+  ownedWorkspaces   CRMWorkspace[]
+  workspaceMember   CRMWorkspaceMember[]
+  assignedTasks     CRMTask[]
+  assignedLeads     CRMLead[]
+  assignedDeals     CRMDeal[]
+  activities        CRMActivity[]
 }
 
-// Communities
-model Community {
-  id          String    @id @default(cuid())
-  name        String
-  description String?
-  image       String?
-  type        String    // "property", "service", "location"
-  members     CommunityMember[]
+// Auth Models
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?  @db.Text
+  access_token       String?  @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?  @db.Text
+  session_state      String?
+  user               User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
 }
 
-model CommunityMember {
-  id          String    @id @default(cuid())
-  community   Community @relation(fields: [communityId], references: [id])
-  communityId String
-  user        User      @relation(fields: [userId], references: [id])
-  userId      String
-  role        String    @default("member") // "admin", "moderator", "member"
-  joinedAt    DateTime  @default(now())
-
-  @@unique([communityId, userId])
-  @@index([communityId])
-  @@index([userId])
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-// Saved Posts
-model SavedPost {
-  id        String   @id @default(cuid())
-  user      User     @relation(fields: [userId], references: [id])
-  userId    String
-  post      Post     @relation(fields: [postId], references: [id])
-  postId    String
-  savedAt   DateTime @default(now())
-  
-  @@unique([userId, postId])
-  @@index([userId])
-  @@index([postId])
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
 }
 
-// Post Shares
-model Share {
-  id        String   @id @default(cuid())
-  post      Post     @relation(fields: [postId], references: [id])
-  postId    String
-  sharedAt  DateTime @default(now())
-  
-  @@index([postId])
+// Enums
+enum CRMRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
 }
 
-// User Achievements
-model Achievement {
-  id          String   @id @default(cuid())
-  user        User     @relation(fields: [userId], references: [id])
-  userId      String
-  title       String
-  description String?
-  icon        String?
-  awardedAt   DateTime @default(now())
-  
-  @@index([userId])
+enum CRMBoardType {
+  TASKS
+  LEADS
+  DEALS
+}
+
+enum CRMStatus {
+  NEW
+  IN_PROGRESS
+  FOLLOW_UP
+  CLOSED
+  WON
+  LOST
+}
+
+enum CRMPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum CRMActivityType {
+  NOTE
+  EMAIL
+  CALL
+  MEETING
+  TASK_UPDATE
+  LEAD_UPDATE
+  DEAL_UPDATE
+  STATUS_CHANGE
+  ASSIGNMENT
+  TAG_ADDED
+  TAG_REMOVED
 }
