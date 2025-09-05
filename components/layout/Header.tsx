@@ -1,48 +1,104 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
+import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/router';
+import {
+  Home,
+  Building2,
+  Wrench,
+  Ticket,
+  Users,
+  Bell,
+  MessageSquare,
+  Menu,
+  X,
+  Search,
+  ChevronDown,
+} from 'lucide-react';
+
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger
-} from '@/components/ui/navigation-menu';
-import {
-  Building2,
-  Briefcase,
-  Compass,
-  Users,
-  MessageCircle,
-  Bell,
-  Settings,
-  LogOut
-} from 'lucide-react';
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetClose,
+} from '@/components/ui/sheet';
+import { Input } from '@/components/ui/input';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+
+const navigation = [
+  {
+    name: 'Properties',
+    href: '/properties',
+    icon: Building2,
+    items: [
+      { name: 'Buy', href: '/properties/buy' },
+      { name: 'Rent', href: '/properties/rent' },
+      { name: 'Sell', href: '/properties/sell' },
+      { name: 'Luxury', href: '/properties/luxury' },
+      { name: 'Commercial', href: '/properties/commercial' },
+      { name: 'Timeshares', href: '/properties/timeshares' },
+    ],
+  },
+  {
+    name: 'Services',
+    href: '/services',
+    icon: Wrench,
+    items: [
+      { name: 'Trades', href: '/services/trades' },
+      { name: 'Contractors', href: '/services/contractors' },
+      { name: 'Professional', href: '/services/professional' },
+      { name: 'Specialists', href: '/services/specialists' },
+    ],
+  },
+  {
+    name: 'Leisure',
+    href: '/leisure',
+    icon: Ticket,
+    items: [
+      { name: 'Car Rentals', href: '/leisure/cars' },
+      { name: 'Boat Rentals', href: '/leisure/boats' },
+      { name: 'Venue Hire', href: '/leisure/venues' },
+      { name: 'Experiences', href: '/leisure/experiences' },
+      { name: 'Events', href: '/leisure/events' },
+    ],
+  },
+  {
+    name: 'Connect',
+    href: '/connect',
+    icon: Users,
+    items: [
+      { name: 'Social Feed', href: '/connect/feed' },
+      { name: 'Network', href: '/connect/network' },
+      { name: 'Groups', href: '/connect/groups' },
+      { name: 'CRM', href: '/connect/crm' },
+    ],
+  },
+];
 
 export function Header() {
   const { data: session } = useSession();
-  const router = useRouter();
+  const pathname = usePathname();
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Handle scroll effect
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 0);
     };
+
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -51,274 +107,230 @@ export function Header() {
     <header
       className={cn(
         'fixed top-0 left-0 right-0 z-50 transition-all duration-200',
-        isScrolled
-          ? 'bg-background/80 backdrop-blur-sm border-b'
-          : 'bg-transparent'
+        isScrolled ? 'bg-white/95 backdrop-blur-sm shadow-sm' : 'bg-white'
       )}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+      <nav className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8" aria-label="Top">
+        <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center">
-            <div className="relative h-10 w-32">
-              <Image
-                src="/images/greia-logo-gradient.svg"
-                alt="GREIA"
-                fill
-                className="object-contain"
-                priority
+          <div className="flex items-center">
+            <Link href="/" className="flex items-center">
+              <span className="sr-only">GREIA</span>
+              <img
+                className="h-8 w-auto"
+                src="/images/logo.svg"
+                alt="GREIA Logo"
               />
-            </div>
-          </Link>
+              <span className="ml-3 text-xl font-bold text-gray-900">GREIA</span>
+            </Link>
+          </div>
 
-          {/* Main Navigation */}
-          <NavigationMenu className="hidden lg:flex">
-            <NavigationMenuList>
-              <NavigationMenuItem>
-                <NavigationMenuTrigger>Properties</NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <ul className="grid gap-3 p-6 w-[400px] grid-cols-2">
-                    <li className="col-span-2">
-                      <NavigationMenuLink asChild>
-                        <Link
-                          href="/properties"
-                          className="flex items-center space-x-2 p-2 rounded-md hover:bg-accent"
-                        >
-                          <Building2 className="h-5 w-5" />
-                          <div>
-                            <div className="font-medium">All Properties</div>
-                            <p className="text-sm text-muted-foreground">
-                              Browse all available properties
-                            </p>
-                          </div>
-                        </Link>
-                      </NavigationMenuLink>
-                    </li>
-                    <li>
-                      <NavigationMenuLink asChild>
-                        <Link
-                          href="/properties/residential"
-                          className="block p-2 rounded-md hover:bg-accent"
-                        >
-                          <div className="font-medium">Residential</div>
-                          <p className="text-sm text-muted-foreground">
-                            Houses and apartments
-                          </p>
-                        </Link>
-                      </NavigationMenuLink>
-                    </li>
-                    <li>
-                      <NavigationMenuLink asChild>
-                        <Link
-                          href="/properties/commercial"
-                          className="block p-2 rounded-md hover:bg-accent"
-                        >
-                          <div className="font-medium">Commercial</div>
-                          <p className="text-sm text-muted-foreground">
-                            Office and retail spaces
-                          </p>
-                        </Link>
-                      </NavigationMenuLink>
-                    </li>
-                  </ul>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-
-              <NavigationMenuItem>
-                <NavigationMenuTrigger>Services</NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <ul className="grid gap-3 p-6 w-[400px] grid-cols-2">
-                    <li className="col-span-2">
-                      <NavigationMenuLink asChild>
-                        <Link
-                          href="/services"
-                          className="flex items-center space-x-2 p-2 rounded-md hover:bg-accent"
-                        >
-                          <Briefcase className="h-5 w-5" />
-                          <div>
-                            <div className="font-medium">All Services</div>
-                            <p className="text-sm text-muted-foreground">
-                              Browse all available services
-                            </p>
-                          </div>
-                        </Link>
-                      </NavigationMenuLink>
-                    </li>
-                    <li>
-                      <NavigationMenuLink asChild>
-                        <Link
-                          href="/services/trades"
-                          className="block p-2 rounded-md hover:bg-accent"
-                        >
-                          <div className="font-medium">Trades</div>
-                          <p className="text-sm text-muted-foreground">
-                            Professional contractors
-                          </p>
-                        </Link>
-                      </NavigationMenuLink>
-                    </li>
-                    <li>
-                      <NavigationMenuLink asChild>
-                        <Link
-                          href="/services/professional"
-                          className="block p-2 rounded-md hover:bg-accent"
-                        >
-                          <div className="font-medium">Professional</div>
-                          <p className="text-sm text-muted-foreground">
-                            Business services
-                          </p>
-                        </Link>
-                      </NavigationMenuLink>
-                    </li>
-                  </ul>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-
-              <NavigationMenuItem>
-                <NavigationMenuTrigger>Leisure</NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <ul className="grid gap-3 p-6 w-[400px] grid-cols-2">
-                    <li className="col-span-2">
-                      <NavigationMenuLink asChild>
-                        <Link
-                          href="/leisure"
-                          className="flex items-center space-x-2 p-2 rounded-md hover:bg-accent"
-                        >
-                          <Compass className="h-5 w-5" />
-                          <div>
-                            <div className="font-medium">All Leisure</div>
-                            <p className="text-sm text-muted-foreground">
-                              Browse all leisure activities
-                            </p>
-                          </div>
-                        </Link>
-                      </NavigationMenuLink>
-                    </li>
-                    <li>
-                      <NavigationMenuLink asChild>
-                        <Link
-                          href="/leisure/rentals"
-                          className="block p-2 rounded-md hover:bg-accent"
-                        >
-                          <div className="font-medium">Rentals</div>
-                          <p className="text-sm text-muted-foreground">
-                            Cars, boats, and venues
-                          </p>
-                        </Link>
-                      </NavigationMenuLink>
-                    </li>
-                    <li>
-                      <NavigationMenuLink asChild>
-                        <Link
-                          href="/leisure/experiences"
-                          className="block p-2 rounded-md hover:bg-accent"
-                        >
-                          <div className="font-medium">Experiences</div>
-                          <p className="text-sm text-muted-foreground">
-                            Events and activities
-                          </p>
-                        </Link>
-                      </NavigationMenuLink>
-                    </li>
-                  </ul>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-
-              <NavigationMenuItem>
-                <NavigationMenuLink asChild>
-                  <Link
-                    href="/network"
+          {/* Desktop Navigation */}
+          <div className="hidden lg:flex lg:items-center lg:space-x-6">
+            {navigation.map((item) => (
+              <DropdownMenu key={item.name}>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
                     className={cn(
-                      'flex items-center space-x-1 px-4 py-2 rounded-md transition-colors',
-                      router.pathname.startsWith('/network')
-                        ? 'bg-accent text-accent-foreground'
-                        : 'hover:bg-accent hover:text-accent-foreground'
+                      'flex items-center space-x-1',
+                      pathname.startsWith(item.href) && 'text-primary'
                     )}
                   >
-                    <Users className="h-5 w-5" />
-                    <span>Network</span>
-                  </Link>
-                </NavigationMenuLink>
-              </NavigationMenuItem>
-            </NavigationMenuList>
-          </NavigationMenu>
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.name}</span>
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  {item.items.map((subItem) => (
+                    <DropdownMenuItem key={subItem.name} asChild>
+                      <Link
+                        href={subItem.href}
+                        className={cn(
+                          pathname === subItem.href && 'bg-muted'
+                        )}
+                      >
+                        {subItem.name}
+                      </Link>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ))}
+          </div>
 
-          {/* User Actions */}
-          <div className="flex items-center space-x-4">
-            {session?.user ? (
+          {/* Desktop Right Section */}
+          <div className="hidden lg:flex lg:items-center lg:space-x-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search..."
+                className="w-64 pl-9"
+              />
+            </div>
+
+            {session ? (
               <>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-muted-foreground hover:text-foreground"
-                  onClick={() => router.push('/messages')}
-                >
-                  <MessageCircle className="h-5 w-5" />
+                <Button variant="ghost" size="icon" className="relative">
+                  <Bell className="h-5 w-5" />
+                  <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0">
+                    3
+                  </Badge>
                 </Button>
 
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-muted-foreground hover:text-foreground"
-                  onClick={() => router.push('/notifications')}
-                >
-                  <Bell className="h-5 w-5" />
+                <Button variant="ghost" size="icon">
+                  <MessageSquare className="h-5 w-5" />
                 </Button>
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      className="relative h-8 w-8 rounded-full"
-                    >
+                    <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                       <Avatar>
-                        <AvatarImage
-                          src={session.user.image || ''}
-                          alt={session.user.name || ''}
-                        />
+                        <AvatarImage src={session.user?.image || ''} />
                         <AvatarFallback>
-                          {session.user.name?.charAt(0).toUpperCase()}
+                          {session.user?.name?.charAt(0) || '?'}
                         </AvatarFallback>
                       </Avatar>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                    <DropdownMenuItem
-                      onClick={() =>
-                        router.push(\`/profile/\${session.user.username}\`)
-                      }
-                    >
-                      Profile
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push('/settings')}>
-                      <Settings className="mr-2 h-4 w-4" />
-                      Settings
-                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => router.push('/api/auth/signout')}>
-                      <LogOut className="mr-2 h-4 w-4" />
-                      Sign out
-                    </DropdownMenuItem>
+                    <DropdownMenuItem>Profile</DropdownMenuItem>
+                    <DropdownMenuItem>Settings</DropdownMenuItem>
+                    <DropdownMenuItem>Sign out</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </>
             ) : (
-              <>
-                <Button
-                  variant="ghost"
-                  onClick={() => router.push('/api/auth/signin')}
-                >
-                  Sign in
+              <div className="flex items-center space-x-2">
+                <Button variant="ghost" asChild>
+                  <Link href="/auth/login">Log in</Link>
                 </Button>
-                <Button onClick={() => router.push('/signup')}>
-                  Get Started
+                <Button asChild>
+                  <Link href="/auth/signup">Sign up</Link>
                 </Button>
-              </>
+              </div>
             )}
           </div>
+
+          {/* Mobile Menu Button */}
+          <div className="flex lg:hidden">
+            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Menu className="h-6 w-6" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-80">
+                <div className="flex flex-col h-full">
+                  <div className="flex items-center justify-between py-4">
+                    <Link href="/" className="flex items-center" onClick={() => setIsMobileMenuOpen(false)}>
+                      <img
+                        className="h-8 w-auto"
+                        src="/images/logo.svg"
+                        alt="GREIA Logo"
+                      />
+                      <span className="ml-3 text-xl font-bold">GREIA</span>
+                    </Link>
+                    <SheetClose asChild>
+                      <Button variant="ghost" size="icon">
+                        <X className="h-6 w-6" />
+                      </Button>
+                    </SheetClose>
+                  </div>
+
+                  <div className="relative my-4">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      type="search"
+                      placeholder="Search..."
+                      className="w-full pl-9"
+                    />
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto">
+                    <div className="space-y-2">
+                      {navigation.map((item) => (
+                        <div key={item.name} className="space-y-1">
+                          <Button
+                            variant="ghost"
+                            className="w-full justify-start"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                          >
+                            <item.icon className="h-4 w-4 mr-2" />
+                            {item.name}
+                          </Button>
+                          <div className="pl-6 space-y-1">
+                            {item.items.map((subItem) => (
+                              <Button
+                                key={subItem.name}
+                                variant="ghost"
+                                className="w-full justify-start text-sm"
+                                asChild
+                              >
+                                <Link
+                                  href={subItem.href}
+                                  onClick={() => setIsMobileMenuOpen(false)}
+                                >
+                                  {subItem.name}
+                                </Link>
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="border-t py-4">
+                    {session ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-3 px-2">
+                          <Avatar>
+                            <AvatarImage src={session.user?.image || ''} />
+                            <AvatarFallback>
+                              {session.user?.name?.charAt(0) || '?'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="text-sm font-medium">
+                              {session.user?.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {session.user?.email}
+                            </p>
+                          </div>
+                        </div>
+                        <Button variant="ghost" className="w-full justify-start">
+                          Profile
+                        </Button>
+                        <Button variant="ghost" className="w-full justify-start">
+                          Settings
+                        </Button>
+                        <Button variant="ghost" className="w-full justify-start">
+                          Sign out
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <Button className="w-full" asChild>
+                          <Link href="/auth/signup">Sign up</Link>
+                        </Button>
+                        <Button variant="outline" className="w-full" asChild>
+                          <Link href="/auth/login">Log in</Link>
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
-      </div>
+      </nav>
     </header>
   );
 }
