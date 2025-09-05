@@ -8,6 +8,7 @@ import {
   Bars3Icon,
   BellIcon,
   UserCircleIcon,
+  MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
 import { classNames } from "@/lib/utils";
 import { Logo } from "@/components/ui/logo";
@@ -15,6 +16,13 @@ import { Logo } from "@/components/ui/logo";
 interface NavbarProps {
   onMenuClick: () => void;
 }
+
+const mainNavigation = [
+  { name: "Properties", href: "/properties" },
+  { name: "Services", href: "/services" },
+  { name: "Leisure", href: "/leisure" },
+  { name: "Connect", href: "/connect" },
+];
 
 export default function Navbar({ onMenuClick }: NavbarProps) {
   const { data: session } = useSession();
@@ -32,9 +40,9 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
   return (
     <header className="sticky top-0 z-40">
       {/* Main header with gradient */}
-      <div className="bg-gradient-to-r from-blue-600 via-blue-500 to-blue-400 px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-7xl">
-          <div className="flex h-16 items-center justify-between">
+      <div className="bg-gradient-to-r from-blue-600 via-blue-500 to-blue-400">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex h-20 items-center justify-between">
             <div className="flex items-center">
               <button
                 type="button"
@@ -48,7 +56,30 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                 <Logo variant="light" />
               </div>
             </div>
+
+            {/* Main Navigation */}
+            <nav className="hidden lg:flex lg:space-x-8">
+              {mainNavigation.map((item) => (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className="text-white hover:text-gray-100 px-3 py-2 text-sm font-medium"
+                >
+                  {item.name}
+                </Link>
+              ))}
+            </nav>
+
             <div className="flex items-center gap-x-4 lg:gap-x-6">
+              {/* Search */}
+              <button
+                type="button"
+                className="-m-2.5 p-2.5 text-white hover:text-gray-100"
+              >
+                <span className="sr-only">Search</span>
+                <MagnifyingGlassIcon className="h-6 w-6" aria-hidden="true" />
+              </button>
+
               {/* Notifications */}
               <button
                 type="button"
@@ -117,14 +148,21 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
         </div>
       </div>
 
-      {/* Secondary navigation bar (optional) */}
-      <nav className="border-b border-gray-200 bg-white">
+      {/* Search bar - can be toggled */}
+      <div className="border-b border-gray-200 bg-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-12 items-center justify-between">
-            {/* Add any secondary navigation items here */}
+          <div className="flex h-12 items-center">
+            <div className="flex-1 flex items-center">
+              <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
+              <input
+                type="text"
+                placeholder="Search..."
+                className="ml-3 block w-full border-0 py-1.5 text-gray-900 placeholder:text-gray-400 focus:ring-0 sm:text-sm sm:leading-6"
+              />
+            </div>
           </div>
         </div>
-      </nav>
+      </div>
     </header>
   );
 }
