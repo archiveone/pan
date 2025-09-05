@@ -32,7 +32,7 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 221.2 83.2% 53.3%;
  
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
     /* GREIA Theme Colors */
     --greia-blue-start: 221.2 83.2% 53.3%;
@@ -90,15 +90,51 @@
   @apply bg-gradient-to-br from-[hsl(var(--greia-sunset-start))] to-[hsl(var(--greia-sunset-end))];
 }
 
-.greia-hero {
-  @apply relative min-h-[600px] flex items-center justify-center overflow-hidden;
-  background: linear-gradient(135deg, 
-    hsl(var(--greia-blue-start)) 0%, 
-    hsl(var(--greia-blue-end)) 100%
-  );
+/* Apple-style Search Tabs */
+.tabs-list {
+  @apply p-1 bg-muted rounded-xl;
 }
 
-.greia-hero::before {
+.tab {
+  @apply relative px-4 py-2 rounded-lg transition-all duration-200 focus:outline-none;
+}
+
+.tab[data-state='active'] {
+  @apply bg-white shadow-sm;
+}
+
+.tab[data-state='inactive'] {
+  @apply text-muted-foreground hover:bg-white/50;
+}
+
+/* Search Card Styling */
+.search-card {
+  @apply backdrop-blur-xl bg-white/90 shadow-lg;
+  box-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.1);
+}
+
+.search-input {
+  @apply bg-white rounded-lg border-0 focus:ring-2 focus:ring-primary/20;
+}
+
+/* Curved Hero Section */
+.curved-hero {
+  @apply relative overflow-hidden;
+  min-height: 600px;
+}
+
+.curved-hero::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 160px;
+  background: white;
+  clip-path: ellipse(50% 60% at 50% 100%);
+}
+
+.curved-hero::after {
   content: '';
   position: absolute;
   top: 0;
@@ -110,9 +146,76 @@
   pointer-events: none;
 }
 
-.greia-hero.sunset {
-  background: linear-gradient(135deg, 
-    hsl(var(--greia-sunset-start)) 0%, 
-    hsl(var(--greia-sunset-end)) 100%
+/* Enhanced Glassmorphism */
+.glass-card {
+  @apply backdrop-blur-xl bg-white/90 border border-white/20;
+  box-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.1);
+}
+
+/* Animated Gradient Background */
+@keyframes gradientFlow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animated-gradient {
+  background-size: 200% 200%;
+  animation: gradientFlow 15s ease infinite;
+}
+
+/* Enhanced Button Styles */
+.button-primary {
+  @apply relative overflow-hidden transition-all duration-300;
+}
+
+.button-primary::before {
+  content: '';
+  @apply absolute inset-0 opacity-0 transition-opacity duration-300;
+  background: linear-gradient(
+    to right,
+    hsl(var(--greia-blue-start)),
+    hsl(var(--greia-blue-end))
   );
+}
+
+.button-primary:hover::before {
+  @apply opacity-100;
+}
+
+/* Category Card Hover Effects */
+.category-card {
+  @apply transition-all duration-300;
+}
+
+.category-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.15);
+}
+
+/* Icon Container Styles */
+.icon-container {
+  @apply rounded-2xl p-4 transition-all duration-300;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.1),
+    rgba(255, 255, 255, 0.05)
+  );
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.icon-container:hover {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.2),
+    rgba(255, 255, 255, 0.1)
+  );
+  transform: scale(1.05);
 }
