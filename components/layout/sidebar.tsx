@@ -1,73 +1,49 @@
 "use client";
 
 import { Fragment } from "react";
-import { Dialog, Transition } from "@headlessui/react";
-import { XMarkIcon } from "@heroicons/react/24/outline";
-import {
-  HomeIcon,
-  BuildingOfficeIcon,
-  WrenchIcon,
-  TicketIcon,
-  UsersIcon,
-  ChartBarIcon,
-  Cog6ToothIcon,
-} from "@heroicons/react/24/outline";
+import { Dialog, Transition, Disclosure } from "@headlessui/react";
+import { XMarkIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { classNames } from "@/lib/utils";
-import { Logo } from "@/components/ui/logo";
 
-const navigation = [
-  { name: "Dashboard", href: "/dashboard", icon: HomeIcon },
+const categories = [
   {
-    name: "Properties",
-    href: "/properties",
-    icon: BuildingOfficeIcon,
-    children: [
-      { name: "Browse", href: "/properties" },
-      { name: "My Listings", href: "/properties/my-listings" },
-      { name: "Saved", href: "/properties/saved" },
-      { name: "Add Property", href: "/properties/new" },
+    name: "Property Type",
+    options: [
+      { value: "house", label: "House", count: 152 },
+      { value: "apartment", label: "Apartment", count: 89 },
+      { value: "condo", label: "Condo", count: 47 },
+      { value: "townhouse", label: "Townhouse", count: 36 },
     ],
   },
   {
-    name: "Services",
-    href: "/services",
-    icon: WrenchIcon,
-    children: [
-      { name: "Find Services", href: "/services" },
-      { name: "My Services", href: "/services/my-services" },
-      { name: "Bookings", href: "/services/bookings" },
-      { name: "Add Service", href: "/services/new" },
+    name: "Price Range",
+    options: [
+      { value: "0-100000", label: "Under €100,000", count: 24 },
+      { value: "100000-200000", label: "€100,000 - €200,000", count: 56 },
+      { value: "200000-300000", label: "€200,000 - €300,000", count: 78 },
+      { value: "300000+", label: "€300,000+", count: 143 },
     ],
   },
   {
-    name: "Leisure",
-    href: "/leisure",
-    icon: TicketIcon,
-    children: [
-      { name: "Experiences", href: "/leisure/experiences" },
-      { name: "Rentals", href: "/leisure/rentals" },
-      { name: "My Bookings", href: "/leisure/my-bookings" },
-      { name: "Add Listing", href: "/leisure/new" },
+    name: "Bedrooms",
+    options: [
+      { value: "1", label: "1 Bedroom", count: 43 },
+      { value: "2", label: "2 Bedrooms", count: 87 },
+      { value: "3", label: "3 Bedrooms", count: 124 },
+      { value: "4+", label: "4+ Bedrooms", count: 69 },
     ],
   },
   {
-    name: "Connect",
-    href: "/connect",
-    icon: UsersIcon,
-    children: [
-      { name: "Feed", href: "/connect/feed" },
-      { name: "Network", href: "/connect/network" },
-      { name: "Messages", href: "/connect/messages" },
-      { name: "CRM", href: "/connect/crm" },
+    name: "Location",
+    options: [
+      { value: "dublin", label: "Dublin", count: 156 },
+      { value: "cork", label: "Cork", count: 87 },
+      { value: "galway", label: "Galway", count: 65 },
+      { value: "limerick", label: "Limerick", count: 43 },
     ],
   },
-];
-
-const bottomNavigation = [
-  { name: "Analytics", href: "/analytics", icon: ChartBarIcon },
-  { name: "Settings", href: "/settings", icon: Cog6ToothIcon },
 ];
 
 interface SidebarProps {
@@ -126,7 +102,7 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
                     </button>
                   </div>
                 </Transition.Child>
-                <SidebarContent pathname={pathname} />
+                <SidebarContent />
               </Dialog.Panel>
             </Transition.Child>
           </div>
@@ -135,96 +111,62 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
 
       {/* Desktop sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
-        <SidebarContent pathname={pathname} />
+        <SidebarContent />
       </div>
     </>
   );
 }
 
-function SidebarContent({ pathname }: { pathname: string }) {
+function SidebarContent() {
   return (
-    <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white border-r border-gray-200 px-6 pb-4">
+    <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white px-6 pb-4">
       <div className="flex h-16 shrink-0 items-center">
-        <Logo variant="dark" />
+        {/* Optional: Add any content at the top of sidebar */}
       </div>
+
       <nav className="flex flex-1 flex-col">
-        <ul role="list" className="flex flex-1 flex-col gap-y-7">
-          <li>
-            <ul role="list" className="-mx-2 space-y-1">
-              {navigation.map((item) => (
-                <li key={item.name}>
-                  <Link
-                    href={item.href}
-                    className={classNames(
-                      pathname === item.href
-                        ? "bg-gray-100 text-gray-900"
-                        : "text-gray-700 hover:text-gray-900 hover:bg-gray-50",
-                      "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-medium"
-                    )}
-                  >
-                    <item.icon
-                      className={classNames(
-                        pathname === item.href
-                          ? "text-gray-900"
-                          : "text-gray-400 group-hover:text-gray-900",
-                        "h-5 w-5 shrink-0"
-                      )}
-                      aria-hidden="true"
-                    />
-                    {item.name}
-                  </Link>
-                  {item.children && (
-                    <ul role="list" className="mt-1 px-8 space-y-1">
-                      {item.children.map((child) => (
-                        <li key={child.name}>
-                          <Link
-                            href={child.href}
-                            className={classNames(
-                              pathname === child.href
-                                ? "bg-gray-100 text-gray-900"
-                                : "text-gray-600 hover:text-gray-900 hover:bg-gray-50",
-                              "block rounded-md py-2 pr-2 text-sm leading-6"
-                            )}
+        <div className="space-y-6">
+          {categories.map((category) => (
+            <Disclosure as="div" key={category.name} className="border-b border-gray-200 py-6">
+              {({ open }) => (
+                <>
+                  <h3 className="-my-3 flow-root">
+                    <Disclosure.Button className="flex w-full items-center justify-between bg-white py-3 text-sm text-gray-400 hover:text-gray-500">
+                      <span className="font-medium text-gray-900">{category.name}</span>
+                      <span className="ml-6 flex items-center">
+                        <ChevronDownIcon
+                          className={classNames(open ? "-rotate-180" : "rotate-0", "h-5 w-5 transform")}
+                          aria-hidden="true"
+                        />
+                      </span>
+                    </Disclosure.Button>
+                  </h3>
+                  <Disclosure.Panel className="pt-6">
+                    <div className="space-y-4">
+                      {category.options.map((option, optionIdx) => (
+                        <div key={option.value} className="flex items-center">
+                          <input
+                            id={`filter-${category.name}-${optionIdx}`}
+                            name={`${category.name}[]`}
+                            defaultValue={option.value}
+                            type="checkbox"
+                            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <label
+                            htmlFor={`filter-${category.name}-${optionIdx}`}
+                            className="ml-3 text-sm text-gray-600"
                           >
-                            {child.name}
-                          </Link>
-                        </li>
+                            {option.label} ({option.count})
+                          </label>
+                        </div>
                       ))}
-                    </ul>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </li>
-          <li className="mt-auto">
-            <ul role="list" className="-mx-2 space-y-1">
-              {bottomNavigation.map((item) => (
-                <li key={item.name}>
-                  <Link
-                    href={item.href}
-                    className={classNames(
-                      pathname === item.href
-                        ? "bg-gray-100 text-gray-900"
-                        : "text-gray-700 hover:text-gray-900 hover:bg-gray-50",
-                      "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-medium"
-                    )}
-                  >
-                    <item.icon
-                      className={classNames(
-                        pathname === item.href
-                          ? "text-gray-900"
-                          : "text-gray-400 group-hover:text-gray-900",
-                        "h-5 w-5 shrink-0"
-                      )}
-                      aria-hidden="true"
-                    />
-                    {item.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </li>
-        </ul>
+                    </div>
+                  </Disclosure.Panel>
+                </>
+              )}
+            </Disclosure>
+          ))}
+        </div>
       </nav>
     </div>
   );
