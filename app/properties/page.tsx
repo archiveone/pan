@@ -1,24 +1,16 @@
-'use client';
-
 import { useState } from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { MainHeader } from '@/components/layout/MainHeader';
+import { Footer } from '@/components/layout/Footer';
 import {
-  Search,
-  MapPin,
-  BedDouble,
-  Bath,
-  Square,
-  Filter,
-  ChevronDown,
-  Euro,
-} from 'lucide-react';
-
-import { Button } from '@/components/ui/button';
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -27,279 +19,253 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
-import { Slider } from '@/components/ui/slider';
-import { Switch } from '@/components/ui/switch';
-import { Checkbox } from '@/components/ui/checkbox';
+  Slider,
+  SliderTrack,
+  SliderFilledTrack,
+  SliderThumb,
+} from '@/components/ui/slider';
+import {
+  Building2,
+  Search,
+  Filter,
+  MapPin,
+  Bed,
+  Bath,
+  Square,
+  Heart,
+  Share2,
+} from 'lucide-react';
 
-// Sample property data
+// Mock data for properties
 const properties = [
   {
     id: 1,
-    title: 'Modern Apartment in City Center',
-    description: 'Beautiful modern apartment with stunning city views and high-end finishes.',
-    location: 'Dublin 2',
-    price: 2500,
+    title: 'Luxury Waterfront Apartment',
+    location: 'Dublin 2, Ireland',
+    price: '€2,500,000',
     type: 'Apartment',
-    status: 'For Rent',
-    beds: 2,
-    baths: 2,
-    sqm: 85,
-    features: ['Parking', 'Balcony', 'Gym'],
-    images: ['/images/properties/apartment-1.jpg'],
-    agent: {
-      name: 'Sarah Johnson',
-      image: '/images/agents/agent-1.jpg',
-      phone: '+353 1 234 5678',
-    },
+    bedrooms: 3,
+    bathrooms: 2,
+    area: '150 m²',
+    image: '/images/property-1.jpg',
+    featured: true,
+  },
+  {
+    id: 2,
+    title: 'Modern City Center Penthouse',
+    location: 'Dublin 1, Ireland',
+    price: '€1,800,000',
+    type: 'Penthouse',
+    bedrooms: 4,
+    bathrooms: 3,
+    area: '200 m²',
+    image: '/images/property-2.jpg',
+    featured: false,
   },
   // Add more properties...
 ];
 
-const propertyTypes = [
-  'Apartment',
-  'House',
-  'Villa',
-  'Studio',
-  'Penthouse',
-  'Commercial',
-];
-
-const amenities = [
-  'Parking',
-  'Balcony',
-  'Gym',
-  'Pool',
-  'Security',
-  'Elevator',
-  'Garden',
-  'Storage',
-];
-
 export default function PropertiesPage() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [location, setLocation] = useState('');
-  const [priceRange, setPriceRange] = useState([0, 10000]);
-  const [selectedType, setSelectedType] = useState('');
-  const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
-  const [viewType, setViewType] = useState<'grid' | 'list'>('grid');
+  const [priceRange, setPriceRange] = useState([0, 5000000]);
+  const [propertyType, setPropertyType] = useState('all');
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
-      <section className="bg-primary text-white py-12">
-        <div className="container mx-auto px-4">
-          <h1 className="text-4xl font-bold mb-4">Find Your Perfect Property</h1>
-          <p className="text-xl opacity-90 mb-8">
-            Browse through our curated selection of properties
-          </p>
+      <MainHeader />
 
-          {/* Search Bar */}
-          <Card className="p-4 bg-white/10 backdrop-blur-lg">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1">
+      <main className="py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Hero Section */}
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center mb-12"
+          >
+            <h1 className="text-4xl font-bold mb-4">
+              Find Your Perfect Property in Ireland
+            </h1>
+            <p className="text-xl text-muted-foreground">
+              Browse through our curated selection of premium properties
+            </p>
+          </motion.div>
+
+          {/* Search and Filters */}
+          <Card className="mb-8">
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-primary" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Search properties..."
-                    className="pl-10 bg-white text-black"
+                    placeholder="Search locations..."
+                    className="pl-10"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
                 </div>
-              </div>
-              <div className="flex-1">
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-primary" />
-                  <Input
-                    placeholder="Location"
-                    className="pl-10 bg-white text-black"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
+                <Select value={propertyType} onValueChange={setPropertyType}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Property Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    <SelectItem value="apartment">Apartment</SelectItem>
+                    <SelectItem value="house">House</SelectItem>
+                    <SelectItem value="villa">Villa</SelectItem>
+                    <SelectItem value="penthouse">Penthouse</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Price Range</p>
+                  <Slider
+                    value={priceRange}
+                    onValueChange={setPriceRange}
+                    min={0}
+                    max={5000000}
+                    step={100000}
                   />
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>€{priceRange[0].toLocaleString()}</span>
+                    <span>€{priceRange[1].toLocaleString()}</span>
+                  </div>
                 </div>
+                <Button className="h-10">
+                  <Filter className="mr-2 h-4 w-4" />
+                  Apply Filters
+                </Button>
               </div>
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button variant="secondary" className="w-full md:w-auto">
-                    <Filter className="w-4 h-4 mr-2" />
-                    Filters
-                  </Button>
-                </SheetTrigger>
-                <SheetContent>
-                  <SheetHeader>
-                    <SheetTitle>Filter Properties</SheetTitle>
-                  </SheetHeader>
-                  <div className="py-4 space-y-6">
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">
-                        Price Range (€)
-                      </label>
-                      <Slider
-                        value={priceRange}
-                        onValueChange={setPriceRange}
-                        min={0}
-                        max={10000}
-                        step={100}
-                      />
-                      <div className="flex justify-between mt-2 text-sm text-muted-foreground">
-                        <span>€{priceRange[0]}</span>
-                        <span>€{priceRange[1]}</span>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">
-                        Property Type
-                      </label>
-                      <Select
-                        value={selectedType}
-                        onValueChange={setSelectedType}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {propertyTypes.map((type) => (
-                            <SelectItem key={type} value={type}>
-                              {type}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">
-                        Amenities
-                      </label>
-                      <div className="space-y-2">
-                        {amenities.map((amenity) => (
-                          <div key={amenity} className="flex items-center">
-                            <Checkbox
-                              id={amenity}
-                              checked={selectedAmenities.includes(amenity)}
-                              onCheckedChange={(checked) => {
-                                if (checked) {
-                                  setSelectedAmenities([...selectedAmenities, amenity]);
-                                } else {
-                                  setSelectedAmenities(
-                                    selectedAmenities.filter((a) => a !== amenity)
-                                  );
-                                }
-                              }}
-                            />
-                            <label
-                              htmlFor={amenity}
-                              className="ml-2 text-sm font-medium"
-                            >
-                              {amenity}
-                            </label>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </SheetContent>
-              </Sheet>
-              <Button className="w-full md:w-auto">Search</Button>
-            </div>
+            </CardContent>
           </Card>
-        </div>
-      </section>
 
-      {/* Results Section */}
-      <section className="py-12">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h2 className="text-2xl font-bold">
-                {properties.length} Properties Available
-              </h2>
-              <p className="text-muted-foreground">
-                Browse through our selection
-              </p>
+          {/* Featured Properties */}
+          <section className="mb-12">
+            <h2 className="text-2xl font-bold mb-6">Featured Properties</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <AnimatePresence>
+                {properties.filter(p => p.featured).map((property) => (
+                  <motion.div
+                    key={property.id}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="group"
+                  >
+                    <Card className="overflow-hidden">
+                      <div className="relative aspect-video">
+                        <img
+                          src={property.image}
+                          alt={property.title}
+                          className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <div className="absolute top-4 right-4 space-x-2">
+                          <Button size="icon" variant="secondary" className="rounded-full">
+                            <Heart className="h-4 w-4" />
+                          </Button>
+                          <Button size="icon" variant="secondary" className="rounded-full">
+                            <Share2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      <CardContent className="p-6">
+                        <h3 className="text-xl font-semibold mb-2">
+                          {property.title}
+                        </h3>
+                        <div className="flex items-center text-muted-foreground mb-4">
+                          <MapPin className="h-4 w-4 mr-2" />
+                          {property.location}
+                        </div>
+                        <div className="grid grid-cols-3 gap-4 mb-4">
+                          <div className="flex items-center">
+                            <Bed className="h-4 w-4 mr-2" />
+                            <span>{property.bedrooms} Beds</span>
+                          </div>
+                          <div className="flex items-center">
+                            <Bath className="h-4 w-4 mr-2" />
+                            <span>{property.bathrooms} Baths</span>
+                          </div>
+                          <div className="flex items-center">
+                            <Square className="h-4 w-4 mr-2" />
+                            <span>{property.area}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <p className="text-2xl font-bold">{property.price}</p>
+                          <Button>View Details</Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
             </div>
-            <div className="flex items-center gap-4">
-              <Select
-                value={viewType}
-                onValueChange={(value: 'grid' | 'list') => setViewType(value)}
-              >
-                <SelectTrigger className="w-[120px]">
-                  <SelectValue placeholder="View" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="grid">Grid View</SelectItem>
-                  <SelectItem value="list">List View</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          </section>
 
-          <div className={viewType === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-6'}>
-            {properties.map((property) => (
-              <Link href={`/properties/${property.id}`} key={property.id}>
-                <Card className={`overflow-hidden group hover:shadow-lg transition-shadow ${
-                  viewType === 'list' ? 'flex' : ''
-                }`}>
-                  <div className={`relative ${viewType === 'list' ? 'w-1/3' : ''}`}>
-                    <div className="relative h-48 overflow-hidden">
-                      <Image
-                        src={property.images[0]}
-                        alt={property.title}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    </div>
-                    <Badge className="absolute top-2 right-2 bg-primary">
-                      {property.status}
-                    </Badge>
-                  </div>
-                  <div className={`p-4 ${viewType === 'list' ? 'w-2/3' : ''}`}>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                      <MapPin className="w-4 h-4" />
-                      {property.location}
-                    </div>
-                    <h3 className="text-lg font-semibold mb-2">{property.title}</h3>
-                    {viewType === 'list' && (
-                      <p className="text-muted-foreground mb-4 line-clamp-2">
-                        {property.description}
-                      </p>
-                    )}
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
-                      <div className="flex items-center gap-1">
-                        <BedDouble className="w-4 h-4" />
-                        {property.beds} beds
+          {/* All Properties */}
+          <section>
+            <h2 className="text-2xl font-bold mb-6">All Properties</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <AnimatePresence>
+                {properties.map((property) => (
+                  <motion.div
+                    key={property.id}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="group"
+                  >
+                    <Card className="overflow-hidden">
+                      <div className="relative aspect-video">
+                        <img
+                          src={property.image}
+                          alt={property.title}
+                          className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <div className="absolute top-4 right-4 space-x-2">
+                          <Button size="icon" variant="secondary" className="rounded-full">
+                            <Heart className="h-4 w-4" />
+                          </Button>
+                          <Button size="icon" variant="secondary" className="rounded-full">
+                            <Share2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Bath className="w-4 h-4" />
-                        {property.baths} baths
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Square className="w-4 h-4" />
-                        {property.sqm}m²
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-primary font-semibold">
-                        €{property.price}/month
-                      </span>
-                      <Button variant="ghost" size="sm">
-                        View Details
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
-              </Link>
-            ))}
-          </div>
+                      <CardContent className="p-6">
+                        <h3 className="text-xl font-semibold mb-2">
+                          {property.title}
+                        </h3>
+                        <div className="flex items-center text-muted-foreground mb-4">
+                          <MapPin className="h-4 w-4 mr-2" />
+                          {property.location}
+                        </div>
+                        <div className="grid grid-cols-3 gap-4 mb-4">
+                          <div className="flex items-center">
+                            <Bed className="h-4 w-4 mr-2" />
+                            <span>{property.bedrooms} Beds</span>
+                          </div>
+                          <div className="flex items-center">
+                            <Bath className="h-4 w-4 mr-2" />
+                            <span>{property.bathrooms} Baths</span>
+                          </div>
+                          <div className="flex items-center">
+                            <Square className="h-4 w-4 mr-2" />
+                            <span>{property.area}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <p className="text-2xl font-bold">{property.price}</p>
+                          <Button>View Details</Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          </section>
         </div>
-      </section>
+      </main>
+
+      <Footer />
     </div>
   );
 }
