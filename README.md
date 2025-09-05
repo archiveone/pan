@@ -31,6 +31,7 @@ One unified platform for lifestyle, property, and networking, bringing together:
 - Multi-currency support
 - Insurance options for bookings
 - Enhanced user verification
+- Advanced video chat features
 
 ## 🛠 Tech Stack
 
@@ -40,7 +41,7 @@ One unified platform for lifestyle, property, and networking, bringing together:
 - **Payments**: Stripe (Payments, Connect, Identity)
 - **Real-time**: Pusher
 - **UI Components**: shadcn/ui, Radix, Lucide icons
-- **Video Calls**: Twilio
+- **Video Calls**: Twilio Programmable Video
 - **Animations**: Framer Motion
 
 ## 📋 Prerequisites
@@ -96,17 +97,20 @@ One unified platform for lifestyle, property, and networking, bringing together:
    NEXT_PUBLIC_IDENTITY_RETURN_URL=http://localhost:3000/verify-identity/complete
    NEXT_PUBLIC_IDENTITY_REFRESH_URL=http://localhost:3000/verify-identity/retry
 
+   # Twilio Configuration
+   TWILIO_ACCOUNT_SID=AC...
+   TWILIO_AUTH_TOKEN=your_auth_token
+   TWILIO_API_KEY=SK...
+   TWILIO_API_SECRET=your_api_key_secret
+   TWILIO_REGION=gll
+   TWILIO_MAX_PARTICIPANTS=4
+   TWILIO_RECORDING_ENABLED=false
+
    # Pusher Configuration
    NEXT_PUBLIC_PUSHER_APP_KEY=your-pusher-key
    NEXT_PUBLIC_PUSHER_CLUSTER=your-pusher-cluster
    PUSHER_APP_ID=your-pusher-app-id
    PUSHER_SECRET=your-pusher-secret
-
-   # Twilio Configuration
-   TWILIO_ACCOUNT_SID=your-twilio-sid
-   TWILIO_AUTH_TOKEN=your-twilio-token
-   TWILIO_API_KEY=your-twilio-api-key
-   TWILIO_API_SECRET=your-twilio-api-secret
    \`\`\`
 
 5. Initialize the database:
@@ -122,45 +126,42 @@ One unified platform for lifestyle, property, and networking, bringing together:
    npm run dev
    \`\`\`
 
-## 🔐 Stripe Integration Setup
+## 🎥 Video Chat Features
 
-### 1. Required Stripe Products
-- Payments
-- Connect (Platform/Marketplace)
-- Identity
-- Webhooks
+GREIA uses Twilio Programmable Video for high-quality video chat:
 
-### 2. Stripe Dashboard Configuration
-1. Enable required payment methods
-2. Set up Connect platform type
-3. Create Identity verification template
-4. Configure webhook endpoints
+### Core Features
+- Group video calls (up to 50 participants)
+- Screen sharing
+- Background blur
+- Chat during calls
+- Device selection
+- Connection quality indicators
+- Mobile optimization
 
-### 3. Webhook Endpoints
-Configure two webhook endpoints in Stripe Dashboard:
+### Video Quality
+- HD video support
+- Adaptive bitrate
+- Network quality monitoring
+- Automatic reconnection
+- Echo cancellation
+- Noise suppression
 
-1. **Platform Events** (payments & identity)
-   - URL: \`https://your-domain.com/api/payment\`
-   - Events to listen for:
-     - payment_intent.succeeded
-     - payment_intent.payment_failed
-     - payment_intent.canceled
-     - identity.verification_session.verified
-     - identity.verification_session.requires_input
+For detailed setup instructions, see [Twilio Setup Guide](docs/TWILIO_SETUP.md).
 
-2. **Connect Events**
-   - URL: \`https://your-domain.com/api/payment\`
-   - Enable "Listen to Connect events"
-   - Events to listen for:
-     - account.updated
-     - charge.succeeded
-     - payout.paid
-     - transfer.created
+## 💳 Payment Integration
 
-### 4. Local Development
-For local webhook testing:
-1. Install Stripe CLI
-2. Run: \`stripe listen --forward-to localhost:3000/api/payment\`
+GREIA uses Stripe for secure payments:
+
+### Features
+- Secure payment processing
+- Marketplace payments (Connect)
+- Identity verification
+- Multi-currency support
+- Automated payouts
+- Fraud prevention
+
+For detailed setup instructions, see [Stripe Setup Guide](docs/STRIPE_SETUP.md).
 
 ## 📱 Mobile Optimization
 
@@ -215,6 +216,8 @@ Additional documentation:
 - [Database Schema](docs/SCHEMA.md)
 - [Testing Guide](docs/TESTING.md)
 - [Deployment Guide](docs/DEPLOYMENT.md)
+- [Stripe Setup](docs/STRIPE_SETUP.md)
+- [Twilio Setup](docs/TWILIO_SETUP.md)
 
 ## 🤝 Contributing
 
@@ -234,8 +237,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Tailwind CSS](https://tailwindcss.com)
 - [shadcn/ui](https://ui.shadcn.com)
 - [Stripe](https://stripe.com)
-- [Pusher](https://pusher.com)
 - [Twilio](https://twilio.com)
+- [Pusher](https://pusher.com)
 
 ## 🆘 Support
 
