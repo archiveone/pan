@@ -1,55 +1,52 @@
+import { Inter } from 'next/font/google';
 import { Metadata } from 'next';
-import { Inter, Cabinet_Grotesk } from 'next/font/google';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-
-import { ThemeProvider } from '@/components/providers/theme-provider';
+import { Analytics } from '@vercel/analytics/react';
 import { Toaster } from '@/components/ui/toaster';
-import { Header } from '@/components/layout/header';
-import { Footer } from '@/components/layout/footer';
-
+import { Header } from '@/components/layout/Header';
+import { Footer } from '@/components/layout/Footer';
+import { ThemeProvider } from '@/components/theme-provider';
+import { cn } from '@/lib/utils';
 import './globals.css';
 
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-inter',
-  display: 'swap',
-});
-
-const cabinetGrotesk = Cabinet_Grotesk({
-  subsets: ['latin'],
-  variable: '--font-cabinet-grotesk',
-  display: 'swap',
-});
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: {
     default: 'GREIA - Life\'s Operating System',
     template: '%s | GREIA',
   },
-  description: 'Your unified platform for Properties, Services, Leisure, and Networking.',
+  description: 'Your unified platform for properties, services, leisure, and networking.',
   keywords: [
-    'property management',
+    'property marketplace',
     'real estate',
-    'services marketplace',
+    'services platform',
     'leisure activities',
-    'professional networking',
-    'lifestyle platform',
+    'social networking',
+    'CRM system',
+    'property management',
+    'rental marketplace',
+    'event booking',
+    'professional services',
   ],
-  authors: [{ name: 'GREIA' }],
+  authors: [
+    {
+      name: 'GREIA Team',
+      url: 'https://greia.com',
+    },
+  ],
   creator: 'GREIA',
   openGraph: {
     type: 'website',
     locale: 'en_US',
     url: 'https://greia.com',
     title: 'GREIA - Life\'s Operating System',
-    description: 'Your unified platform for Properties, Services, Leisure, and Networking.',
+    description: 'Your unified platform for properties, services, leisure, and networking.',
     siteName: 'GREIA',
   },
   twitter: {
     card: 'summary_large_image',
     title: 'GREIA - Life\'s Operating System',
-    description: 'Your unified platform for Properties, Services, Leisure, and Networking.',
+    description: 'Your unified platform for properties, services, leisure, and networking.',
     creator: '@greia',
   },
   icons: {
@@ -75,13 +72,16 @@ interface RootLayoutProps {
   children: React.ReactNode;
 }
 
-export default async function RootLayout({ children }: RootLayoutProps) {
-  const session = await getServerSession(authOptions);
-  
+export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head />
-      <body className={`${inter.variable} ${cabinetGrotesk.variable} font-sans antialiased`}>
+      <body
+        className={cn(
+          'min-h-screen bg-background font-sans antialiased',
+          inter.className
+        )}
+      >
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -89,17 +89,13 @@ export default async function RootLayout({ children }: RootLayoutProps) {
           disableTransitionOnChange
         >
           <div className="relative flex min-h-screen flex-col">
-            <Header user={session?.user} />
-            
-            <main className="flex-1">
-              {children}
-            </main>
-            
+            <Header />
+            <main className="flex-1 pt-16">{children}</main>
             <Footer />
           </div>
-          
           <Toaster />
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );
