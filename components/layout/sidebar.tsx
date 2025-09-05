@@ -15,6 +15,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { classNames } from "@/lib/utils";
+import { Logo } from "@/components/ui/logo";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: HomeIcon },
@@ -121,10 +122,7 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
                       onClick={() => setOpen(false)}
                     >
                       <span className="sr-only">Close sidebar</span>
-                      <XMarkIcon
-                        className="h-6 w-6 text-white"
-                        aria-hidden="true"
-                      />
+                      <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
                     </button>
                   </div>
                 </Transition.Child>
@@ -145,12 +143,9 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
 
 function SidebarContent({ pathname }: { pathname: string }) {
   return (
-    <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-gray-900 px-6 pb-4">
+    <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white border-r border-gray-200 px-6 pb-4">
       <div className="flex h-16 shrink-0 items-center">
-        <Link href="/" className="flex items-center">
-          <img className="h-8 w-auto" src="/logo.svg" alt="GREIA" />
-          <span className="ml-2 text-xl font-bold text-white">GREIA</span>
-        </Link>
+        <Logo variant="dark" />
       </div>
       <nav className="flex flex-1 flex-col">
         <ul role="list" className="flex flex-1 flex-col gap-y-7">
@@ -162,13 +157,18 @@ function SidebarContent({ pathname }: { pathname: string }) {
                     href={item.href}
                     className={classNames(
                       pathname === item.href
-                        ? "bg-gray-800 text-white"
-                        : "text-gray-400 hover:text-white hover:bg-gray-800",
-                      "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold"
+                        ? "bg-gray-100 text-gray-900"
+                        : "text-gray-700 hover:text-gray-900 hover:bg-gray-50",
+                      "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-medium"
                     )}
                   >
                     <item.icon
-                      className="h-6 w-6 shrink-0"
+                      className={classNames(
+                        pathname === item.href
+                          ? "text-gray-900"
+                          : "text-gray-400 group-hover:text-gray-900",
+                        "h-5 w-5 shrink-0"
+                      )}
                       aria-hidden="true"
                     />
                     {item.name}
@@ -181,8 +181,8 @@ function SidebarContent({ pathname }: { pathname: string }) {
                             href={child.href}
                             className={classNames(
                               pathname === child.href
-                                ? "bg-gray-800 text-white"
-                                : "text-gray-400 hover:text-white hover:bg-gray-800",
+                                ? "bg-gray-100 text-gray-900"
+                                : "text-gray-600 hover:text-gray-900 hover:bg-gray-50",
                               "block rounded-md py-2 pr-2 text-sm leading-6"
                             )}
                           >
@@ -196,7 +196,7 @@ function SidebarContent({ pathname }: { pathname: string }) {
               ))}
             </ul>
           </li>
-          <li>
+          <li className="mt-auto">
             <ul role="list" className="-mx-2 space-y-1">
               {bottomNavigation.map((item) => (
                 <li key={item.name}>
@@ -204,13 +204,18 @@ function SidebarContent({ pathname }: { pathname: string }) {
                     href={item.href}
                     className={classNames(
                       pathname === item.href
-                        ? "bg-gray-800 text-white"
-                        : "text-gray-400 hover:text-white hover:bg-gray-800",
-                      "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold"
+                        ? "bg-gray-100 text-gray-900"
+                        : "text-gray-700 hover:text-gray-900 hover:bg-gray-50",
+                      "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-medium"
                     )}
                   >
                     <item.icon
-                      className="h-6 w-6 shrink-0"
+                      className={classNames(
+                        pathname === item.href
+                          ? "text-gray-900"
+                          : "text-gray-400 group-hover:text-gray-900",
+                        "h-5 w-5 shrink-0"
+                      )}
                       aria-hidden="true"
                     />
                     {item.name}
