@@ -1,238 +1,235 @@
-'use client';
-
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import Image from 'next/image';
+import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Icons } from '@/components/ui/icons';
-import { signIn } from 'next-auth/react';
+import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
+import { Sparkles, CheckCircle2, ArrowRight } from 'lucide-react';
+import confetti from 'canvas-confetti';
 
-const formSchema = z.object({
-  name: z.string().min(2, {
-    message: "Name must be at least 2 characters.",
-  }),
-  email: z.string().email({
-    message: "Please enter a valid email address.",
-  }),
-  password: z.string().min(8, {
-    message: "Password must be at least 8 characters.",
-  }),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-});
+interface SignupStep {
+  id: number;
+  title: string;
+  description: string;
+  fields: {
+    name: string;
+    label: string;
+    type: string;
+    placeholder: string;
+  }[];
+}
 
-export default function SignUp() {
-  const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: "",
-      email: "",
-      password: "",
-      confirmPassword: "",
-    },
-  });
-
-  async function onSubmit(values: z.infer<typeof formSchema>) {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: values.name,
-          email: values.email,
-          password: values.password,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Something went wrong');
+const signupSteps: SignupStep[] = [
+  {
+    id: 1,
+    title: "Let's get started! 🎉",
+    description: "First, tell us your name",
+    fields: [
+      {
+        name: 'fullName',
+        label: 'Full Name',
+        type: 'text',
+        placeholder: 'Enter your full name'
       }
-
-      // Sign in the user after successful registration
-      const result = await signIn('credentials', {
-        email: values.email,
-        password: values.password,
-        redirect: false,
-      });
-
-      if (result?.error) {
-        setError('Failed to sign in after registration');
-        return;
+    ]
+  },
+  {
+    id: 2,
+    title: "Great! Now your email 📧",
+    description: "We'll send you a confirmation link",
+    fields: [
+      {
+        name: 'email',
+        label: 'Email Address',
+        type: 'email',
+        placeholder: 'Enter your email'
       }
-
-      router.push('/dashboard');
-      router.refresh();
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'An error occurred during registration');
-    } finally {
-      setIsLoading(false);
-    }
+    ]
+  },
+  {
+    id: 3,
+    title: "Create a password 🔐",
+    description: "Make it strong and memorable",
+    fields: [
+      {
+        name: 'password',
+        label: 'Password',
+        type: 'password',
+        placeholder: 'Enter your password'
+      },
+      {
+        name: 'confirmPassword',
+        label: 'Confirm Password',
+        type: 'password',
+        placeholder: 'Confirm your password'
+      }
+    ]
+  },
+  {
+    id: 4,
+    title: "What brings you to GREIA? 🌟",
+    description: "Select your primary interest",
+    fields: [
+      {
+        name: 'interest',
+        label: 'Primary Interest',
+        type: 'select',
+        placeholder: 'Choose your interest'
+      }
+    ]
   }
+];
 
-  const handleGoogleSignIn = async () => {
-    setIsLoading(true);
-    setError(null);
+export default function SignupPage() {
+  const [currentStep, setCurrentStep] = useState(1);
+  const [formData, setFormData] = useState({});
+  const [isAnimating, setIsAnimating] = useState(false);
 
-    try {
-      await signIn('google', { callbackUrl: '/dashboard' });
-    } catch (error) {
-      setError('An error occurred with Google sign in.');
-      setIsLoading(false);
+  const progress = (currentStep / signupSteps.length) * 100;
+
+  const handleNext = async () => {
+    setIsAnimating(true);
+    
+    // Simulate form validation
+    await new Promise(resolve => setTimeout(resolve, 600));
+    
+    if (currentStep < signupSteps.length) {
+      // Show sparkles effect
+      const sparkles = Array.from({ length: 3 }).map((_, i) => {
+        const angle = (i / 3) * Math.PI * 2;
+        return {
+          x: Math.cos(angle) * 100,
+          y: Math.sin(angle) * 100,
+          scale: Math.random() * 0.5 + 0.5,
+          rotation: Math.random() * 360
+        };
+      });
+
+      sparkles.forEach(spark => {
+        confetti({
+          particleCount: 3,
+          spread: 60,
+          origin: { x: 0.5 + spark.x / window.innerWidth, y: 0.5 + spark.y / window.innerHeight },
+          colors: ['#2B59FF', '#BB2BFF', '#FF2B2B']
+        });
+      });
+
+      setCurrentStep(prev => prev + 1);
+    } else {
+      // Show completion celebration
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
+      // Handle form submission
     }
+    
+    setIsAnimating(false);
   };
 
+  const currentStepData = signupSteps[currentStep - 1];
+
   return (
-    <div className="container flex h-screen w-screen flex-col items-center justify-center">
-      <Card className="w-[400px]">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl text-center">Create an account</CardTitle>
-          <CardDescription className="text-center">
-            Enter your details to create your account
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4">
-          <Button
-            variant="outline"
-            onClick={handleGoogleSignIn}
-            disabled={isLoading}
-            className="w-full"
-          >
-            {isLoading ? (
-              <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Icons.google className="mr-2 h-4 w-4" />
-            )}
-            Sign up with Google
-          </Button>
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                Or continue with
-              </span>
-            </div>
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Header */}
+      <div className="h-2 bg-gradient-to-r from-[#2B59FF] via-[#BB2BFF] to-[#FF2B2B]" />
+      
+      <div className="flex-1 flex flex-col items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          {/* Logo */}
+          <div className="mb-8 text-center">
+            <Link href="/">
+              <div className="relative h-12 w-40 mx-auto">
+                <Image
+                  src="/images/greia-logo-gradient.svg"
+                  alt="GREIA"
+                  fill
+                  className="object-contain"
+                />
+              </div>
+            </Link>
           </div>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="John Doe" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
+
+          {/* Progress Bar */}
+          <div className="mb-8">
+            <Progress value={progress} className="h-2" />
+            <p className="text-sm text-muted-foreground mt-2 text-center">
+              Step {currentStep} of {signupSteps.length}
+            </p>
+          </div>
+
+          {/* Form Steps */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentStep}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+              className="bg-white p-8 rounded-lg shadow-lg"
+            >
+              <motion.div
+                initial={{ scale: 0.95 }}
+                animate={{ scale: 1 }}
+                transition={{ duration: 0.2 }}
+              >
+                <h1 className="text-2xl font-bold mb-2">{currentStepData.title}</h1>
+                <p className="text-muted-foreground mb-6">{currentStepData.description}</p>
+
+                <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
+                  {currentStepData.fields.map((field) => (
+                    <div key={field.name}>
+                      <Label htmlFor={field.name}>{field.label}</Label>
                       <Input
-                        type="email"
-                        placeholder="name@example.com"
-                        {...field}
+                        id={field.name}
+                        type={field.type}
+                        placeholder={field.placeholder}
+                        className="mt-1"
                       />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="Create a password"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="confirmPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Confirm Password</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="Confirm your password"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading && (
-                  <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
-                )}
-                Create Account
-              </Button>
-            </form>
-          </Form>
-        </CardContent>
-        <CardFooter>
-          <div className="text-sm text-muted-foreground text-center w-full">
+                    </div>
+                  ))}
+
+                  <div className="pt-4">
+                    <Button
+                      onClick={handleNext}
+                      disabled={isAnimating}
+                      className="w-full relative"
+                    >
+                      {isAnimating ? (
+                        <Sparkles className="h-5 w-5 animate-spin" />
+                      ) : currentStep === signupSteps.length ? (
+                        <>
+                          Complete Sign Up
+                          <CheckCircle2 className="ml-2 h-5 w-5" />
+                        </>
+                      ) : (
+                        <>
+                          Continue
+                          <ArrowRight className="ml-2 h-5 w-5" />
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </motion.div>
+            </motion.div>
+          </AnimatePresence>
+
+          {/* Sign In Link */}
+          <p className="text-center mt-6 text-sm text-muted-foreground">
             Already have an account?{' '}
-            <Button
-              variant="link"
-              className="p-0 h-auto"
-              onClick={() => router.push('/auth/signin')}
+            <Link
+              href="/auth/signin"
+              className="text-primary hover:underline font-medium"
             >
               Sign in
-            </Button>
-          </div>
-        </CardFooter>
-      </Card>
+            </Link>
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
