@@ -1,274 +1,245 @@
+'use client';
+
 import Link from 'next/link';
-import Image from 'next/image';
+import { Facebook, Twitter, Instagram, Linkedin, Youtube, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  Facebook,
-  Twitter,
-  Instagram,
-  Linkedin,
-  Youtube,
-  ArrowRight
-} from 'lucide-react';
+
+const navigation = {
+  properties: [
+    { name: 'Buy', href: '/properties/buy' },
+    { name: 'Rent', href: '/properties/rent' },
+    { name: 'Sell', href: '/properties/sell' },
+    { name: 'Luxury', href: '/properties/luxury' },
+    { name: 'Commercial', href: '/properties/commercial' },
+    { name: 'Timeshares', href: '/properties/timeshares' },
+    { name: 'New Developments', href: '/properties/new-developments' },
+    { name: 'Property Valuation', href: '/properties/valuation' },
+  ],
+  services: [
+    { name: 'Trades', href: '/services/trades' },
+    { name: 'Contractors', href: '/services/contractors' },
+    { name: 'Professional Services', href: '/services/professional' },
+    { name: 'Specialists', href: '/services/specialists' },
+    { name: 'Home Services', href: '/services/home' },
+    { name: 'Business Services', href: '/services/business' },
+    { name: 'Service Directory', href: '/services/directory' },
+    { name: 'Become a Provider', href: '/services/become-provider' },
+  ],
+  leisure: [
+    { name: 'Car Rentals', href: '/leisure/cars' },
+    { name: 'Boat Rentals', href: '/leisure/boats' },
+    { name: 'Venue Hire', href: '/leisure/venues' },
+    { name: 'Experiences', href: '/leisure/experiences' },
+    { name: 'Events', href: '/leisure/events' },
+    { name: 'Activities', href: '/leisure/activities' },
+    { name: 'Travel', href: '/leisure/travel' },
+    { name: 'List Your Service', href: '/leisure/list-service' },
+  ],
+  connect: [
+    { name: 'Social Feed', href: '/connect/feed' },
+    { name: 'Network', href: '/connect/network' },
+    { name: 'Groups', href: '/connect/groups' },
+    { name: 'CRM', href: '/connect/crm' },
+    { name: 'Messages', href: '/connect/messages' },
+    { name: 'Notifications', href: '/connect/notifications' },
+    { name: 'Find Friends', href: '/connect/find-friends' },
+    { name: 'Business Network', href: '/connect/business' },
+  ],
+  company: [
+    { name: 'About', href: '/company/about' },
+    { name: 'Careers', href: '/company/careers' },
+    { name: 'Press', href: '/company/press' },
+    { name: 'Blog', href: '/company/blog' },
+    { name: 'Partners', href: '/company/partners' },
+    { name: 'Testimonials', href: '/company/testimonials' },
+    { name: 'Contact', href: '/company/contact' },
+    { name: 'Investors', href: '/company/investors' },
+  ],
+  legal: [
+    { name: 'Terms', href: '/legal/terms' },
+    { name: 'Privacy', href: '/legal/privacy' },
+    { name: 'Cookies', href: '/legal/cookies' },
+    { name: 'Licenses', href: '/legal/licenses' },
+    { name: 'Settings', href: '/legal/settings' },
+    { name: 'Complaints', href: '/legal/complaints' },
+  ],
+  social: [
+    {
+      name: 'Facebook',
+      href: 'https://facebook.com/greia',
+      icon: Facebook,
+    },
+    {
+      name: 'Twitter',
+      href: 'https://twitter.com/greia',
+      icon: Twitter,
+    },
+    {
+      name: 'Instagram',
+      href: 'https://instagram.com/greia',
+      icon: Instagram,
+    },
+    {
+      name: 'LinkedIn',
+      href: 'https://linkedin.com/company/greia',
+      icon: Linkedin,
+    },
+    {
+      name: 'YouTube',
+      href: 'https://youtube.com/greia',
+      icon: Youtube,
+    },
+  ],
+};
 
 export function Footer() {
   return (
-    <footer className="relative mt-20">
-      {/* Gradient Background */}
-      <div
-        className="absolute inset-0 bg-gradient-to-br from-[#2B59FF] via-[#BB2BFF] to-[#FF2B2B] opacity-10"
-        aria-hidden="true"
-      />
+    <footer className="bg-white" aria-labelledby="footer-heading">
+      <h2 id="footer-heading" className="sr-only">
+        Footer
+      </h2>
+      <div className="mx-auto max-w-7xl px-6 pb-8 pt-16 sm:pt-24 lg:px-8 lg:pt-32">
+        <div className="xl:grid xl:grid-cols-3 xl:gap-8">
+          <div className="space-y-8">
+            <Link href="/" className="flex items-center">
+              <img
+                className="h-12 w-auto"
+                src="/images/logo.svg"
+                alt="GREIA Logo"
+              />
+              <span className="ml-3 text-2xl font-bold text-gray-900">GREIA</span>
+            </Link>
+            <p className="text-sm leading-6 text-gray-600">
+              Life's Operating System - Your unified platform for properties, services, leisure, and networking.
+            </p>
+            <div className="flex space-x-6">
+              {navigation.social.map((item) => (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className="text-gray-400 hover:text-gray-500"
+                >
+                  <span className="sr-only">{item.name}</span>
+                  <item.icon className="h-6 w-6" aria-hidden="true" />
+                </Link>
+              ))}
+            </div>
+          </div>
+          <div className="mt-16 grid grid-cols-2 gap-8 xl:col-span-2 xl:mt-0">
+            <div className="md:grid md:grid-cols-2 md:gap-8">
+              <div>
+                <h3 className="text-sm font-semibold leading-6 text-gray-900">Properties</h3>
+                <ul role="list" className="mt-6 space-y-4">
+                  {navigation.properties.map((item) => (
+                    <li key={item.name}>
+                      <Link href={item.href} className="text-sm leading-6 text-gray-600 hover:text-gray-900">
+                        {item.name}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="mt-10 md:mt-0">
+                <h3 className="text-sm font-semibold leading-6 text-gray-900">Services</h3>
+                <ul role="list" className="mt-6 space-y-4">
+                  {navigation.services.map((item) => (
+                    <li key={item.name}>
+                      <Link href={item.href} className="text-sm leading-6 text-gray-600 hover:text-gray-900">
+                        {item.name}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            <div className="md:grid md:grid-cols-2 md:gap-8">
+              <div>
+                <h3 className="text-sm font-semibold leading-6 text-gray-900">Leisure</h3>
+                <ul role="list" className="mt-6 space-y-4">
+                  {navigation.leisure.map((item) => (
+                    <li key={item.name}>
+                      <Link href={item.href} className="text-sm leading-6 text-gray-600 hover:text-gray-900">
+                        {item.name}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="mt-10 md:mt-0">
+                <h3 className="text-sm font-semibold leading-6 text-gray-900">Connect</h3>
+                <ul role="list" className="mt-6 space-y-4">
+                  {navigation.connect.map((item) => (
+                    <li key={item.name}>
+                      <Link href={item.href} className="text-sm leading-6 text-gray-600 hover:text-gray-900">
+                        {item.name}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Newsletter Section */}
-        <div className="py-12 border-b border-border">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+        <div className="mt-16 border-t border-gray-900/10 pt-8 sm:mt-20 lg:mt-24">
+          <div className="flex flex-col items-start justify-between gap-y-12 lg:flex-row lg:items-center">
             <div>
-              <h3 className="text-2xl font-semibold mb-2">
-                Stay updated with GREIA
-              </h3>
-              <p className="text-muted-foreground">
-                Get the latest news, updates, and insights from the world of real estate,
-                services, and leisure activities.
+              <h3 className="text-sm font-semibold leading-6 text-gray-900">Subscribe to our newsletter</h3>
+              <p className="mt-2 text-sm leading-6 text-gray-600">
+                Stay updated with the latest properties, services, and events in your area.
               </p>
             </div>
-            <div className="flex gap-4">
-              <Input
-                type="email"
-                placeholder="Enter your email"
-                className="flex-1"
-              />
-              <Button>
-                Subscribe
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* Main Footer Content */}
-        <div className="py-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {/* Brand Column */}
-          <div className="space-y-4">
-            <Link href="/" className="block">
-              <div className="relative h-12 w-40">
-                <Image
-                  src="/images/greia-logo-gradient.svg"
-                  alt="GREIA"
-                  fill
-                  className="object-contain"
+            <form className="w-full lg:w-auto">
+              <div className="flex gap-x-4">
+                <Input
+                  type="email"
+                  placeholder="Enter your email"
+                  className="min-w-0 flex-auto"
                 />
+                <Button type="submit">
+                  Subscribe
+                </Button>
               </div>
-            </Link>
-            <p className="text-sm text-muted-foreground">
-              Life's Operating System - Your all-in-one platform for properties,
-              services, leisure, and professional networking.
-            </p>
-            <div className="flex space-x-4">
-              <Button variant="ghost" size="icon" asChild>
-                <Link href="https://facebook.com/greia" target="_blank">
-                  <Facebook className="h-5 w-5" />
-                </Link>
-              </Button>
-              <Button variant="ghost" size="icon" asChild>
-                <Link href="https://twitter.com/greia" target="_blank">
-                  <Twitter className="h-5 w-5" />
-                </Link>
-              </Button>
-              <Button variant="ghost" size="icon" asChild>
-                <Link href="https://instagram.com/greia" target="_blank">
-                  <Instagram className="h-5 w-5" />
-                </Link>
-              </Button>
-              <Button variant="ghost" size="icon" asChild>
-                <Link href="https://linkedin.com/company/greia" target="_blank">
-                  <Linkedin className="h-5 w-5" />
-                </Link>
-              </Button>
-              <Button variant="ghost" size="icon" asChild>
-                <Link href="https://youtube.com/greia" target="_blank">
-                  <Youtube className="h-5 w-5" />
-                </Link>
-              </Button>
-            </div>
-          </div>
-
-          {/* Properties Column */}
-          <div>
-            <h4 className="font-semibold mb-4">Properties</h4>
-            <ul className="space-y-2">
-              <li>
-                <Link
-                  href="/properties/residential"
-                  className="text-sm text-muted-foreground hover:text-foreground"
-                >
-                  Residential
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/properties/commercial"
-                  className="text-sm text-muted-foreground hover:text-foreground"
-                >
-                  Commercial
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/properties/luxury"
-                  className="text-sm text-muted-foreground hover:text-foreground"
-                >
-                  Luxury
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/properties/investment"
-                  className="text-sm text-muted-foreground hover:text-foreground"
-                >
-                  Investment
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/properties/new-developments"
-                  className="text-sm text-muted-foreground hover:text-foreground"
-                >
-                  New Developments
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Services Column */}
-          <div>
-            <h4 className="font-semibold mb-4">Services</h4>
-            <ul className="space-y-2">
-              <li>
-                <Link
-                  href="/services/trades"
-                  className="text-sm text-muted-foreground hover:text-foreground"
-                >
-                  Trades
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/services/professional"
-                  className="text-sm text-muted-foreground hover:text-foreground"
-                >
-                  Professional Services
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/services/property-management"
-                  className="text-sm text-muted-foreground hover:text-foreground"
-                >
-                  Property Management
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/services/consultancy"
-                  className="text-sm text-muted-foreground hover:text-foreground"
-                >
-                  Consultancy
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/services/financial"
-                  className="text-sm text-muted-foreground hover:text-foreground"
-                >
-                  Financial Services
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Company Column */}
-          <div>
-            <h4 className="font-semibold mb-4">Company</h4>
-            <ul className="space-y-2">
-              <li>
-                <Link
-                  href="/about"
-                  className="text-sm text-muted-foreground hover:text-foreground"
-                >
-                  About Us
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/careers"
-                  className="text-sm text-muted-foreground hover:text-foreground"
-                >
-                  Careers
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/press"
-                  className="text-sm text-muted-foreground hover:text-foreground"
-                >
-                  Press
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/contact"
-                  className="text-sm text-muted-foreground hover:text-foreground"
-                >
-                  Contact
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/blog"
-                  className="text-sm text-muted-foreground hover:text-foreground"
-                >
-                  Blog
-                </Link>
-              </li>
-            </ul>
+            </form>
           </div>
         </div>
 
-        {/* Bottom Bar */}
-        <div className="py-6 border-t border-border">
-          <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-            <div className="text-sm text-muted-foreground">
-              © {new Date().getFullYear()} GREIA. All rights reserved.
-            </div>
-            <div className="flex space-x-6">
+        {/* Bottom Section */}
+        <div className="mt-8 border-t border-gray-900/10 pt-8 md:flex md:items-center md:justify-between">
+          <div className="flex space-x-6 md:order-2">
+            {navigation.legal.map((item) => (
               <Link
-                href="/privacy"
-                className="text-sm text-muted-foreground hover:text-foreground"
+                key={item.name}
+                href={item.href}
+                className="text-sm leading-6 text-gray-600 hover:text-gray-900"
               >
-                Privacy Policy
+                {item.name}
               </Link>
-              <Link
-                href="/terms"
-                className="text-sm text-muted-foreground hover:text-foreground"
-              >
-                Terms of Service
-              </Link>
-              <Link
-                href="/cookies"
-                className="text-sm text-muted-foreground hover:text-foreground"
-              >
-                Cookie Policy
-              </Link>
-              <Link
-                href="/sitemap"
-                className="text-sm text-muted-foreground hover:text-foreground"
-              >
-                Sitemap
-              </Link>
-            </div>
+            ))}
           </div>
+          <p className="mt-8 text-sm leading-6 text-gray-600 md:order-1 md:mt-0">
+            &copy; {new Date().getFullYear()} GREIA. All rights reserved.
+          </p>
+        </div>
+
+        {/* App Store Badges */}
+        <div className="mt-8 flex items-center justify-center space-x-4">
+          <Link href="#" className="inline-block">
+            <img
+              src="/images/app-store-badge.svg"
+              alt="Download on the App Store"
+              className="h-10"
+            />
+          </Link>
+          <Link href="#" className="inline-block">
+            <img
+              src="/images/google-play-badge.svg"
+              alt="Get it on Google Play"
+              className="h-10"
+            />
+          </Link>
         </div>
       </div>
     </footer>
