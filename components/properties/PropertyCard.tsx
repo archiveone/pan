@@ -1,78 +1,136 @@
-import Image from 'next/image'
-import Link from 'next/link'
-import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+'use client';
+
+import { useState } from 'react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { motion } from 'framer-motion';
+import { Bed, Bath, Square, Heart, Share2 } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { AnalyticsTracker } from '@/components/analytics/AnalyticsTracker';
+import { formatCurrency } from '@/lib/utils';
 
 interface PropertyCardProps {
-  id: string
-  title: string
-  price: number
-  currency?: string
-  location: string
-  bedrooms?: number
-  bathrooms?: number
-  propertyType: string
-  listingType: 'sale' | 'rent'
-  imageUrl: string
+  property: {
+    id: string;
+    title: string;
+    description: string;
+    price: number;
+    currency: string;
+    images: string[];
+    bedrooms: number;
+    bathrooms: number;
+    squareMeters: number;
+    type: string;
+    status: string;
+    location: {
+      address: string;
+      city: string;
+      country: string;
+    };
+  };
 }
 
-export function PropertyCard({
-  id,
-  title,
-  price,
-  currency = 'GBP',
-  location,
-  bedrooms,
-  bathrooms,
-  propertyType,
-  listingType,
-  imageUrl,
-}: PropertyCardProps) {
+export function PropertyCard({ property }: PropertyCardProps) {
+  const [isHovered, setIsHovered] = useState(false);
+
   return (
-    <Link href={`/properties/${id}`}>
-      <Card className="overflow-hidden hover:shadow-lg transition-shadow">
-        <CardHeader className="p-0">
-          <div className="relative w-full h-48">
+    <>
+      <motion.div
+        className="group relative rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden"
+        whileHover={{ y: -5 }}
+        onHoverStart={() => setIsHovered(true)}
+        onHoverEnd={() => setIsHovered(false)}
+      >
+        {/* Property Image */}
+        <Link href={`/properties/${property.id}`}>
+          <div className="relative aspect-[16/9] overflow-hidden">
             <Image
-              src={imageUrl}
-              alt={title}
+              src={property.images[0]}
+              alt={property.title}
               fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              className="object-cover transition-transform group-hover:scale-105"
+              priority
             />
-            <Badge 
-              className="absolute top-2 right-2"
-              variant={listingType === 'sale' ? 'default' : 'secondary'}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+            
+            {/* Status Badge */}
+            <Badge
+              className="absolute top-2 left-2"
+              variant={property.status === 'FOR_SALE' ? 'default' : 'secondary'}
             >
-              {listingType === 'sale' ? 'For Sale' : 'For Rent'}
+              {property.status === 'FOR_SALE' ? 'For Sale' : 'For Rent'}
             </Badge>
+
+            {/* Action Buttons */}
+            <div className="absolute top-2 right-2 flex space-x-2">
+              <Button
+                variant="secondary"
+                size="icon"
+                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <Heart className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="secondary"
+                size="icon"
+                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <Share2 className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
-        </CardHeader>
-        <CardContent className="p-4">
-          <h3 className="text-lg font-semibold mb-2">{title}</h3>
-          <p className="text-xl font-bold text-primary">
-            {currency === 'GBP' ? '£' : currency} 
-            {price.toLocaleString()}
-            {listingType === 'rent' && '/month'}
-          </p>
-          <p className="text-muted-foreground">{location}</p>
-        </CardContent>
-        <CardFooter className="px-4 py-3 border-t flex justify-between">
-          <div className="flex items-center gap-4">
-            {bedrooms && (
-              <span className="flex items-center gap-1">
-                <span className="text-muted-foreground">{bedrooms} bed</span>
-              </span>
-            )}
-            {bathrooms && (
-              <span className="flex items-center gap-1">
-                <span className="text-muted-foreground">{bathrooms} bath</span>
-              </span>
-            )}
+        </Link>
+
+        {/* Property Details */}
+        <div className="p-4">
+          <div className="flex justify-between items-start mb-2">
+            <div>
+              <h3 className="font-semibold leading-none tracking-tight">
+                {property.title}
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                {property.location.city}, {property.location.country}
+              </p>
+            </div>
+            <div className="text-right">
+              <div className="font-bold text-lg">
+                {formatCurrency(property.price, property.currency)}
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {property.status === 'FOR_RENT' ? '/month' : ''}
+              </p>
+            </div>
           </div>
-          <Badge variant="outline">{propertyType}</Badge>
-        </CardFooter>
-      </Card>
-    </Link>
-  )
+
+          {/* Property Features */}
+          <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+            <div className="flex items-center">
+              <Bed className="h-4 w-4 mr-1" />
+              {property.bedrooms} beds
+            </div>
+            <div className="flex items-center">
+              <Bath className="h-4 w-4 mr-1" />
+              {property.bathrooms} baths
+            </div>
+            <div className="flex items-center">
+              <Square className="h-4 w-4 mr-1" />
+              {property.squareMeters}m²
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Analytics Tracking */}
+      {isHovered && (
+        <AnalyticsTracker
+          listingId={property.id}
+          listingType="PROPERTY"
+          searchQuery={undefined}
+          searchFilters={undefined}
+        />
+      )}
+    </>
+  );
 }
