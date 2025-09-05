@@ -1,187 +1,371 @@
-'use client';
-
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { MainHeader } from '@/components/layout/MainHeader';
+import { Footer } from '@/components/layout/Footer';
 import { motion } from 'framer-motion';
-import { 
-  Sun,
-  Moon,
-  Palette,
-  Bell,
-  Globe,
-  Lock,
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Separator } from '@/components/ui/separator';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   User,
+  Bell,
+  Moon,
+  Sun,
+  Globe,
   Shield,
-  ChevronRight,
+  CreditCard,
+  Key,
+  Mail,
+  Smartphone,
+  Eye,
+  Lock,
 } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { useTheme } from 'next-themes';
+export default function SettingsPage() {
+  const [isDark, setIsDark] = useState(false);
 
-type GradientTheme = 'blue' | 'sunset';
-
-interface SettingsSection {
-  title: string;
-  icon: any;
-  description: string;
-  href: string;
-}
-
-const settingsSections: SettingsSection[] = [
-  {
-    title: 'Profile',
-    icon: User,
-    description: 'Manage your personal information',
-    href: '/settings/profile',
-  },
-  {
-    title: 'Notifications',
-    icon: Bell,
-    description: 'Configure your notification preferences',
-    href: '/settings/notifications',
-  },
-  {
-    title: 'Language',
-    icon: Globe,
-    description: 'Change your language settings',
-    href: '/settings/language',
-  },
-  {
-    title: 'Privacy',
-    icon: Lock,
-    description: 'Control your privacy settings',
-    href: '/settings/privacy',
-  },
-  {
-    title: 'Security',
-    icon: Shield,
-    description: 'Manage your security preferences',
-    href: '/settings/security',
-  },
-];
-
-export default function Settings() {
-  const { theme, setTheme } = useTheme();
-  const [gradientTheme, setGradientTheme] = useState<GradientTheme>('blue');
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    // Load saved gradient theme from localStorage
-    const savedGradient = localStorage.getItem('gradientTheme');
-    if (savedGradient) {
-      setGradientTheme(savedGradient as GradientTheme);
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
     }
-  }, []);
-
-  const handleGradientChange = (value: GradientTheme) => {
-    setGradientTheme(value);
-    localStorage.setItem('gradientTheme', value);
-    // Update root element class for global styling
-    document.documentElement.classList.remove('gradient-blue', 'gradient-sunset');
-    document.documentElement.classList.add(`gradient-${value}`);
   };
 
-  if (!mounted) return null;
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1
+    }
+  };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">Settings</h1>
+    <div className="min-h-screen bg-gray-50">
+      <MainHeader />
 
-      <div className="grid gap-8">
-        {/* Theme Settings */}
-        <Card className="p-6">
-          <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-            <Palette className="w-5 h-5" />
-            Appearance
-          </h2>
+      <main className="py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8"
+          >
+            <h1 className="text-3xl font-bold">Settings</h1>
+            <p className="text-muted-foreground mt-2">
+              Manage your account settings and preferences
+            </p>
+          </motion.div>
 
-          <div className="space-y-6">
-            {/* Dark Mode Toggle */}
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  {theme === 'dark' ? (
-                    <Moon className="w-4 h-4" />
-                  ) : (
-                    <Sun className="w-4 h-4" />
-                  )}
-                  <Label>Dark Mode</Label>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Switch between light and dark themes
-                </p>
-              </div>
-              <Switch
-                checked={theme === 'dark'}
-                onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
-              />
-            </div>
+          <Tabs defaultValue="account" className="space-y-8">
+            <TabsList>
+              <TabsTrigger value="account">Account</TabsTrigger>
+              <TabsTrigger value="appearance">Appearance</TabsTrigger>
+              <TabsTrigger value="notifications">Notifications</TabsTrigger>
+              <TabsTrigger value="privacy">Privacy</TabsTrigger>
+              <TabsTrigger value="billing">Billing</TabsTrigger>
+            </TabsList>
 
-            {/* Gradient Theme Selection */}
-            <div className="space-y-4">
-              <Label>Gradient Theme</Label>
-              <RadioGroup
-                value={gradientTheme}
-                onValueChange={(value: GradientTheme) => handleGradientChange(value)}
-                className="grid gap-4"
+            {/* Account Settings */}
+            <TabsContent value="account">
+              <motion.div
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                className="grid gap-6"
               >
-                <div className={cn(
-                  "flex items-center space-x-4 p-4 border rounded-lg cursor-pointer",
-                  gradientTheme === 'blue' && "border-primary"
-                )}>
-                  <RadioGroupItem value="blue" id="blue" />
-                  <div className="flex-1">
-                    <Label htmlFor="blue">Blue Gradient</Label>
-                    <div className="h-2 w-full rounded-full greia-gradient-blue mt-2" />
-                  </div>
-                </div>
+                <motion.div variants={itemVariants}>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Profile Information</CardTitle>
+                      <CardDescription>
+                        Update your personal information and profile settings
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="firstName">First Name</Label>
+                          <Input id="firstName" placeholder="John" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="lastName">Last Name</Label>
+                          <Input id="lastName" placeholder="Doe" />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="email">Email</Label>
+                        <Input id="email" type="email" placeholder="john@example.com" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="phone">Phone Number</Label>
+                        <Input id="phone" type="tel" placeholder="+1 (555) 000-0000" />
+                      </div>
+                      <Button>Save Changes</Button>
+                    </CardContent>
+                  </Card>
+                </motion.div>
 
-                <div className={cn(
-                  "flex items-center space-x-4 p-4 border rounded-lg cursor-pointer",
-                  gradientTheme === 'sunset' && "border-primary"
-                )}>
-                  <RadioGroupItem value="sunset" id="sunset" />
-                  <div className="flex-1">
-                    <Label htmlFor="sunset">Sunset Gradient</Label>
-                    <div className="h-2 w-full rounded-full greia-gradient-sunset mt-2" />
-                  </div>
-                </div>
-              </RadioGroup>
-            </div>
-          </div>
-        </Card>
+                <motion.div variants={itemVariants}>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Security</CardTitle>
+                      <CardDescription>
+                        Manage your password and security preferences
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="currentPassword">Current Password</Label>
+                        <Input id="currentPassword" type="password" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="newPassword">New Password</Label>
+                        <Input id="newPassword" type="password" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                        <Input id="confirmPassword" type="password" />
+                      </div>
+                      <Button>Update Password</Button>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              </motion.div>
+            </TabsContent>
 
-        {/* Other Settings Sections */}
-        <div className="grid gap-4">
-          {settingsSections.map((section, index) => (
-            <motion.div
-              key={section.title}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <Card className="p-4 hover:bg-muted/50 transition-colors cursor-pointer">
-                <div className="flex items-center">
-                  <div className="p-2 rounded-full bg-primary/10 mr-4">
-                    <section.icon className="w-5 h-5 text-primary" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-medium">{section.title}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {section.description}
-                    </p>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                </div>
-              </Card>
-            </motion.div>
-          ))}
+            {/* Appearance Settings */}
+            <TabsContent value="appearance">
+              <motion.div
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+              >
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Appearance</CardTitle>
+                    <CardDescription>
+                      Customize how GREIA looks and feels
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>Theme</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Switch between light and dark mode
+                        </p>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Sun className="h-5 w-5" />
+                        <Switch
+                          checked={isDark}
+                          onCheckedChange={setIsDark}
+                        />
+                        <Moon className="h-5 w-5" />
+                      </div>
+                    </div>
+                    <Separator />
+                    <div className="space-y-2">
+                      <Label>Language</Label>
+                      <Select defaultValue="en">
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select language" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="en">English</SelectItem>
+                          <SelectItem value="es">Spanish</SelectItem>
+                          <SelectItem value="fr">French</SelectItem>
+                          <SelectItem value="de">German</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </TabsContent>
+
+            {/* Notifications Settings */}
+            <TabsContent value="notifications">
+              <motion.div
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+              >
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Notifications</CardTitle>
+                    <CardDescription>
+                      Choose what notifications you receive
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="space-y-4">
+                      {[
+                        {
+                          title: 'Email Notifications',
+                          description: 'Receive notifications via email',
+                          icon: Mail
+                        },
+                        {
+                          title: 'Push Notifications',
+                          description: 'Receive notifications on your device',
+                          icon: Smartphone
+                        },
+                        {
+                          title: 'Property Updates',
+                          description: 'Get notified about property changes',
+                          icon: Building2
+                        },
+                        {
+                          title: 'Messages',
+                          description: 'Receive message notifications',
+                          icon: MessageCircle
+                        }
+                      ].map((item, index) => (
+                        <div key={index} className="flex items-center justify-between">
+                          <div className="flex items-center space-x-4">
+                            <item.icon className="h-5 w-5 text-muted-foreground" />
+                            <div>
+                              <p className="font-medium">{item.title}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {item.description}
+                              </p>
+                            </div>
+                          </div>
+                          <Switch defaultChecked />
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </TabsContent>
+
+            {/* Privacy Settings */}
+            <TabsContent value="privacy">
+              <motion.div
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+              >
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Privacy</CardTitle>
+                    <CardDescription>
+                      Manage your privacy settings
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="space-y-4">
+                      {[
+                        {
+                          title: 'Profile Visibility',
+                          description: 'Control who can see your profile',
+                          icon: Eye
+                        },
+                        {
+                          title: 'Two-Factor Authentication',
+                          description: 'Add an extra layer of security',
+                          icon: Lock
+                        },
+                        {
+                          title: 'Data Sharing',
+                          description: 'Manage how your data is shared',
+                          icon: Shield
+                        }
+                      ].map((item, index) => (
+                        <div key={index} className="flex items-center justify-between">
+                          <div className="flex items-center space-x-4">
+                            <item.icon className="h-5 w-5 text-muted-foreground" />
+                            <div>
+                              <p className="font-medium">{item.title}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {item.description}
+                              </p>
+                            </div>
+                          </div>
+                          <Switch defaultChecked />
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </TabsContent>
+
+            {/* Billing Settings */}
+            <TabsContent value="billing">
+              <motion.div
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+              >
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Billing</CardTitle>
+                    <CardDescription>
+                      Manage your subscription and payment methods
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">Current Plan</p>
+                          <p className="text-sm text-muted-foreground">
+                            Professional Plan
+                          </p>
+                        </div>
+                        <Button variant="outline">Change Plan</Button>
+                      </div>
+                      <Separator />
+                      <div>
+                        <p className="font-medium mb-2">Payment Method</p>
+                        <div className="flex items-center space-x-4">
+                          <CreditCard className="h-5 w-5" />
+                          <div>
+                            <p>•••• •••• •••• 4242</p>
+                            <p className="text-sm text-muted-foreground">
+                              Expires 12/25
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <Button>Update Payment Method</Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </TabsContent>
+          </Tabs>
         </div>
-      </div>
+      </main>
+
+      <Footer />
     </div>
   );
 }
