@@ -1,162 +1,246 @@
-# GREIA - Life's Operating System
+# GREIA - Life's Operating System 🌟
 
-GREIA is a comprehensive platform that unifies Properties (buy/rent/sell), Services (trades/professional), Leisure (rentals/experiences), and Connect (social + CRM) with a freemium model.
+GREIA is a comprehensive platform that unifies Properties, Services, Leisure, and Connect into one super-app that serves as the digital fabric of everyday life.
 
-## Current Development Status (as of September 2, 2025)
+## 🎯 Vision
 
-### ✅ Properties Marketplace - Core Implementation
-1. **Database Schema**
-   - User & Auth models with roles (USER/AGENT/ADMIN)
-   - Property listings with rich metadata
-   - Views, favorites, enquiries tracking
-   - Agent profiles and verification
+One unified platform for lifestyle, property, and networking, bringing together:
+- Properties: Buy, rent, sell across residential, commercial, luxury
+- Services: Trades, contractors, professional services
+- Leisure: Rentals, experiences, events
+- Connect: Social feeds, CRM, networking
 
-2. **API Routes**
-   - `GET /api/properties` - List with filters/pagination
-   - `POST /api/properties` - Create new listing
-   - `GET/PUT/DELETE /api/properties/[id]` - Single property operations
+## 🚀 Features
 
-3. **React Components**
-   - PropertyCard & PropertyGrid components
-   - PropertyListingForm with validation
-   - Property details page with image gallery
-   - Responsive design implementation
+### Core Platform Features
+- Multi-marketplace architecture
+- Real-time messaging and notifications
+- Video calls with screen sharing
+- Built-in CRM for all users
+- Social networking
+- Unified listing flow
+- Booking and payment systems
+- Identity verification
+- Mobile-responsive design
 
-### ✅ Authentication System
-1. **NextAuth Integration**
-   - Google OAuth provider
-   - Credentials provider with bcrypt
-   - JWT session handling
-   - Role-based access control
+### New Features (September 2025)
+- Advanced search and filtering system
+- Real-time notification center
+- Comprehensive booking system
+- Stripe payment integration
+- Multi-currency support
+- Insurance options for bookings
+- Enhanced user verification
 
-2. **User Management**
-   - Registration API with validation
-   - Login/Signup pages
-   - Protected routes middleware
-   - Error handling pages
+## 🛠 Tech Stack
 
-### 🔄 Next Development Priorities
-
-1. **Image Upload System**
-   - AWS S3 integration
-   - Image optimization
-   - Gallery management
-   - Upload progress tracking
-
-2. **Real-time Features**
-   - Pusher integration
-   - Property view tracking
-   - Live notifications
-   - Chat functionality
-
-3. **Services Marketplace**
-   - Service provider profiles
-   - Service listing components
-   - Booking system
-   - Review system
-
-## Tech Stack
-
-- **Frontend**: Next.js 13 (App Router), TypeScript, Tailwind CSS
-- **UI Components**: shadcn/ui, Radix UI, Lucide Icons
-- **Backend**: Prisma + PostgreSQL
-- **Authentication**: NextAuth (Google + Credentials)
-- **Payments**: Stripe (Identity + Payments)
+- **Frontend**: Next.js 13+ (App Router), TypeScript, Tailwind CSS
+- **Backend**: Node.js, Prisma, PostgreSQL
+- **Authentication**: NextAuth.js (Google + Credentials)
+- **Payments**: Stripe (Payments, Connect, Identity)
 - **Real-time**: Pusher
-- **Storage**: AWS S3 (pending)
+- **UI Components**: shadcn/ui, Radix, Lucide icons
+- **Video Calls**: Twilio
+- **Animations**: Framer Motion
 
-## Getting Started
+## 📋 Prerequisites
 
-### Prerequisites
 - Node.js 18+
-- PostgreSQL
-- Google OAuth credentials
-- Stripe account
-- AWS account (for S3)
-- Pusher account
+- PostgreSQL 14+
+- Stripe Account
+- Pusher Account
+- Twilio Account
+- Google Cloud Account (for OAuth)
 
-### Environment Variables
-Create a `.env` file with:
+## 🔧 Installation
 
-\`\`\`env
-# Database
-DATABASE_URL=
+1. Clone the repository:
+   \`\`\`bash
+   git clone https://github.com/d4rent/griea-los.git
+   cd griea-los
+   \`\`\`
 
-# Authentication
-NEXTAUTH_URL=
-NEXTAUTH_SECRET=
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
+2. Install dependencies:
+   \`\`\`bash
+   bun install
+   # or
+   npm install
+   \`\`\`
 
-# Stripe
-STRIPE_SECRET_KEY=
-STRIPE_WEBHOOK_SECRET=
-STRIPE_PRICE_ID=
+3. Set up environment variables:
+   \`\`\`bash
+   cp .env.example .env.local
+   \`\`\`
 
-# Pusher (for real-time)
-PUSHER_APP_ID=
-PUSHER_KEY=
-PUSHER_SECRET=
-PUSHER_CLUSTER=
+4. Configure your environment variables:
 
-# AWS S3 (for image upload)
-AWS_ACCESS_KEY_ID=
-AWS_SECRET_ACCESS_KEY=
-AWS_REGION=
-S3_BUCKET_NAME=
-\`\`\`
+   \`\`\`env
+   # Base
+   NEXT_PUBLIC_APP_URL=http://localhost:3000
+   DATABASE_URL="postgresql://..."
 
-### Database Setup
+   # Authentication
+   NEXTAUTH_SECRET=your-secret-here
+   NEXTAUTH_URL=http://localhost:3000
+   GOOGLE_CLIENT_ID=your-google-client-id
+   GOOGLE_CLIENT_SECRET=your-google-client-secret
 
-1. Run Prisma migrations:
+   # Stripe Configuration
+   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
+   STRIPE_SECRET_KEY=sk_test_...
+   STRIPE_CLIENT_ID=ca_...
+   STRIPE_WEBHOOK_SECRET=whsec_...
+   STRIPE_CONNECT_WEBHOOK_SECRET=whsec_...
+   STRIPE_IDENTITY_TEMPLATE=vtpl_...
+   NEXT_PUBLIC_STRIPE_CONNECT_MODE=test
+   NEXT_PUBLIC_IDENTITY_RETURN_URL=http://localhost:3000/verify-identity/complete
+   NEXT_PUBLIC_IDENTITY_REFRESH_URL=http://localhost:3000/verify-identity/retry
+
+   # Pusher Configuration
+   NEXT_PUBLIC_PUSHER_APP_KEY=your-pusher-key
+   NEXT_PUBLIC_PUSHER_CLUSTER=your-pusher-cluster
+   PUSHER_APP_ID=your-pusher-app-id
+   PUSHER_SECRET=your-pusher-secret
+
+   # Twilio Configuration
+   TWILIO_ACCOUNT_SID=your-twilio-sid
+   TWILIO_AUTH_TOKEN=your-twilio-token
+   TWILIO_API_KEY=your-twilio-api-key
+   TWILIO_API_SECRET=your-twilio-api-secret
+   \`\`\`
+
+5. Initialize the database:
+   \`\`\`bash
+   npx prisma migrate dev
+   npx prisma generate
+   \`\`\`
+
+6. Start the development server:
+   \`\`\`bash
+   bun dev
+   # or
+   npm run dev
+   \`\`\`
+
+## 🔐 Stripe Integration Setup
+
+### 1. Required Stripe Products
+- Payments
+- Connect (Platform/Marketplace)
+- Identity
+- Webhooks
+
+### 2. Stripe Dashboard Configuration
+1. Enable required payment methods
+2. Set up Connect platform type
+3. Create Identity verification template
+4. Configure webhook endpoints
+
+### 3. Webhook Endpoints
+Configure two webhook endpoints in Stripe Dashboard:
+
+1. **Platform Events** (payments & identity)
+   - URL: \`https://your-domain.com/api/payment\`
+   - Events to listen for:
+     - payment_intent.succeeded
+     - payment_intent.payment_failed
+     - payment_intent.canceled
+     - identity.verification_session.verified
+     - identity.verification_session.requires_input
+
+2. **Connect Events**
+   - URL: \`https://your-domain.com/api/payment\`
+   - Enable "Listen to Connect events"
+   - Events to listen for:
+     - account.updated
+     - charge.succeeded
+     - payout.paid
+     - transfer.created
+
+### 4. Local Development
+For local webhook testing:
+1. Install Stripe CLI
+2. Run: \`stripe listen --forward-to localhost:3000/api/payment\`
+
+## 📱 Mobile Optimization
+
+The platform is fully responsive with:
+- Bottom navigation for mobile
+- Pull-to-refresh functionality
+- Bottom sheets for mobile forms
+- Touch-optimized interactions
+- Native-like animations
+
+## 🔒 Security Features
+
+- GDPR compliance
+- Data encryption
+- Secure payment processing
+- Identity verification
+- Input sanitization
+- Rate limiting
+- CSRF protection
+
+## 🌍 Localization
+
+- Multi-currency support
+- Timezone handling
+- Internationalized routing
+- RTL support
+- Language selection
+
+## 📈 Performance
+
+- Image optimization
+- Code splitting
+- Lazy loading
+- Caching strategies
+- API response optimization
+- Real-time updates
+
+## 🧪 Testing
+
+Run the test suite:
 \`\`\`bash
-npx prisma migrate dev
+bun test
+# or
+npm run test
 \`\`\`
 
-2. Seed initial data:
-\`\`\`bash
-npx prisma db seed
-\`\`\`
+## 📚 Documentation
 
-## Development Guidelines
+Additional documentation:
+- [API Documentation](docs/API.md)
+- [Component Library](docs/COMPONENTS.md)
+- [Database Schema](docs/SCHEMA.md)
+- [Testing Guide](docs/TESTING.md)
+- [Deployment Guide](docs/DEPLOYMENT.md)
 
-### Code Structure
-- `/app` - Next.js 13 app directory
-- `/components` - Reusable React components
-- `/lib` - Utility functions and configurations
-- `/hooks` - Custom React hooks
-- `/types` - TypeScript type definitions
-- `/prisma` - Database schema and migrations
+## 🤝 Contributing
 
-### API Routes
-- `/api/properties/*` - Property marketplace endpoints
-- `/api/auth/*` - Authentication endpoints
-- `/api/upload/*` - Image upload endpoints (pending)
-- `/api/services/*` - Service marketplace endpoints (pending)
+1. Fork the repository
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
 
-### Component Guidelines
-- Use TypeScript for all components
-- Implement proper error boundaries
-- Follow accessibility guidelines
-- Include loading states
-- Add proper documentation
+## 📄 License
 
-## Contributing
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-This project is being developed using a GitHub-only approach. All code changes are made directly through GitHub's API to ensure proper version control and backup.
+## 🙏 Acknowledgments
 
-### Development Process
-1. Create feature branch
-2. Implement changes via GitHub API
-3. Create pull request
-4. Review and merge
+- [Next.js](https://nextjs.org)
+- [Tailwind CSS](https://tailwindcss.com)
+- [shadcn/ui](https://ui.shadcn.com)
+- [Stripe](https://stripe.com)
+- [Pusher](https://pusher.com)
+- [Twilio](https://twilio.com)
 
-### Code Style
-- Follow TypeScript best practices
-- Use ESLint configuration
-- Format with Prettier
-- Write meaningful commit messages
+## 🆘 Support
 
-## License
+For support, email support@greia.dev or join our [Discord community](https://discord.gg/greia).
 
-Copyright © 2025 GREIA. All rights reserved.
+---
+
+Built with ❤️ by the GREIA team
