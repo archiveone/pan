@@ -13,11 +13,45 @@ import {
   ChevronRight,
   MapPin,
   Calendar,
+  Building,
+  Wrench,
+  PartyPopper,
+  Network,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+type SearchTab = 'properties' | 'services' | 'leisure' | 'connect';
+
+const searchTabs = [
+  {
+    id: 'properties',
+    label: 'Properties',
+    icon: Building,
+    placeholder: 'Search for properties...',
+  },
+  {
+    id: 'services',
+    label: 'Services',
+    icon: Wrench,
+    placeholder: 'Find local services...',
+  },
+  {
+    id: 'leisure',
+    label: 'Leisure',
+    icon: PartyPopper,
+    placeholder: 'Discover experiences...',
+  },
+  {
+    id: 'connect',
+    label: 'Connect',
+    icon: Network,
+    placeholder: 'Find people...',
+  },
+];
 
 const categories = [
   {
@@ -46,97 +80,115 @@ const categories = [
   },
 ];
 
-const featuredListings = [
-  {
-    id: 1,
-    type: 'property',
-    title: 'Luxury Apartment',
-    location: 'Dublin City Center',
-    image: '/images/listings/property-1.jpg',
-    price: '€2,500/month',
-  },
-  {
-    id: 2,
-    type: 'service',
-    title: 'Professional Plumber',
-    location: 'Greater Dublin Area',
-    image: '/images/listings/service-1.jpg',
-    price: 'From €80/hour',
-  },
-  {
-    id: 3,
-    type: 'leisure',
-    title: 'Summer Music Festival',
-    location: 'Phoenix Park',
-    image: '/images/listings/leisure-1.jpg',
-    price: '€45/ticket',
-  },
-];
-
 export default function Home() {
+  const [activeTab, setActiveTab] = useState<SearchTab>('properties');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchLocation, setSearchLocation] = useState('');
 
   return (
     <div className="min-h-screen">
-      {/* Hero Section */}
-      <section className="greia-hero">
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="text-center mb-12">
-            <div className="flex justify-center mb-6">
-              <Image
-                src="/images/greia-logo-white.png"
-                alt="GREIA"
-                width={200}
-                height={80}
-                className="h-20 w-auto"
+      {/* Hero Section with Curved Design */}
+      <section className="relative">
+        {/* Gradient Background */}
+        <div className="absolute inset-0 greia-gradient-blue overflow-hidden">
+          {/* Pattern Overlay */}
+          <div className="absolute inset-0 bg-[url('/images/pattern.svg')] opacity-10" />
+          
+          {/* Curved Shape */}
+          <div className="absolute bottom-0 left-0 right-0">
+            <svg
+              viewBox="0 0 1440 160"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-full h-auto"
+              preserveAspectRatio="none"
+            >
+              <path
+                d="M0 160V0C240 53.3333 480 80 720 80C960 80 1200 53.3333 1440 0V160H0Z"
+                fill="white"
               />
-            </div>
-            <h1 className="text-4xl md:text-6xl font-bold text-white mb-4">
-              Life's Operating System
-            </h1>
-            <p className="text-xl text-white/90 max-w-2xl mx-auto">
-              One platform for properties, services, leisure, and networking
-            </p>
+            </svg>
           </div>
+        </div>
 
-          {/* Search Section */}
-          <div className="max-w-4xl mx-auto">
-            <Card className="p-4 md:p-6">
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      placeholder="What are you looking for?"
-                      className="pl-10"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div className="flex-1">
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      placeholder="Location"
-                      className="pl-10"
-                      value={searchLocation}
-                      onChange={(e) => setSearchLocation(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <Button size="lg" className="greia-gradient-blue text-white">
-                  Search
-                </Button>
+        {/* Content */}
+        <div className="relative pt-24 pb-48">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-12">
+              <div className="flex justify-center mb-6">
+                <Image
+                  src="/images/greia-logo-white.png"
+                  alt="GREIA"
+                  width={200}
+                  height={80}
+                  className="h-20 w-auto"
+                />
               </div>
-            </Card>
+              <h1 className="text-4xl md:text-6xl font-bold text-white mb-4">
+                Life's Operating System
+              </h1>
+              <p className="text-xl text-white/90 max-w-2xl mx-auto">
+                One platform for properties, services, leisure, and networking
+              </p>
+            </div>
+
+            {/* Apple-style Search with Tabs */}
+            <div className="max-w-4xl mx-auto">
+              <Card className="p-4 md:p-6 backdrop-blur-xl bg-white/90">
+                <Tabs
+                  value={activeTab}
+                  onValueChange={(value) => setActiveTab(value as SearchTab)}
+                  className="mb-6"
+                >
+                  <TabsList className="grid grid-cols-4 gap-4">
+                    {searchTabs.map((tab) => (
+                      <TabsTrigger
+                        key={tab.id}
+                        value={tab.id}
+                        className="flex items-center gap-2 py-3"
+                      >
+                        <tab.icon className="w-4 h-4" />
+                        <span className="hidden md:inline">{tab.label}</span>
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+                </Tabs>
+
+                <div className="flex flex-col md:flex-row gap-4">
+                  <div className="flex-1">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        placeholder={searchTabs.find(tab => tab.id === activeTab)?.placeholder}
+                        className="pl-10 h-12 bg-white"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        placeholder="Location"
+                        className="pl-10 h-12 bg-white"
+                        value={searchLocation}
+                        onChange={(e) => setSearchLocation(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <Button size="lg" className="h-12 px-8 greia-gradient-blue text-white">
+                    Search
+                  </Button>
+                </div>
+              </Card>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Categories Section */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-16">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-12">
             Explore Categories
@@ -166,49 +218,13 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Featured Listings */}
-      <section className="py-16">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-12">
-            <h2 className="text-3xl font-bold">Featured Listings</h2>
-            <Button variant="outline">
-              View All
-              <ChevronRight className="ml-2 w-4 h-4" />
-            </Button>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {featuredListings.map((listing) => (
-              <Card key={listing.id} className="overflow-hidden group">
-                <div className="relative h-48">
-                  <Image
-                    src={listing.image}
-                    alt={listing.title}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                </div>
-                <div className="p-6">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                    <MapPin className="w-4 h-4" />
-                    {listing.location}
-                  </div>
-                  <h3 className="text-xl font-semibold mb-2">{listing.title}</h3>
-                  <div className="flex items-center justify-between">
-                    <span className="text-primary font-semibold">{listing.price}</span>
-                    <Button variant="ghost" size="sm">
-                      View Details
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* CTA Section */}
-      <section className="py-16 greia-gradient-blue">
-        <div className="container mx-auto px-4 text-center text-white">
+      <section className="py-16 greia-gradient-blue relative overflow-hidden">
+        {/* Pattern Overlay */}
+        <div className="absolute inset-0 bg-[url('/images/pattern.svg')] opacity-10" />
+        
+        {/* Content */}
+        <div className="container mx-auto px-4 relative z-10 text-center text-white">
           <h2 className="text-3xl md:text-4xl font-bold mb-6">
             Ready to Get Started?
           </h2>
