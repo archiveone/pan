@@ -29,7 +29,7 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
   ];
 
   return (
-    <nav className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-white px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
+    <nav className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 bg-white border-b border-gray-200 px-4 sm:gap-x-6 sm:px-6 lg:px-8">
       <button
         type="button"
         className="-m-2.5 p-2.5 text-gray-700 lg:hidden"
@@ -78,7 +78,7 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
               )}
               <span className="hidden lg:flex lg:items-center">
                 <span
-                  className="ml-4 text-sm font-semibold leading-6 text-gray-900"
+                  className="ml-4 text-sm font-medium text-gray-900"
                   aria-hidden="true"
                 >
                   {session?.user?.name}
