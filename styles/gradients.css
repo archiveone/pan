@@ -1,0 +1,189 @@
+/* GREIA Brand Gradients */
+
+/* Primary Gradient - Header & Footer Background */
+.greia-gradient {
+  background: linear-gradient(135deg, #2B59FF 0%, #BB2BFF 50%, #FF2B2B 100%);
+}
+
+/* Subtle Gradient - Card Backgrounds */
+.greia-gradient-subtle {
+  background: linear-gradient(135deg, 
+    rgba(43, 89, 255, 0.1) 0%,
+    rgba(187, 43, 255, 0.1) 50%,
+    rgba(255, 43, 43, 0.1) 100%
+  );
+}
+
+/* Text Gradient */
+.greia-text-gradient {
+  background: linear-gradient(135deg, #2B59FF 0%, #BB2BFF 50%, #FF2B2B 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Border Gradient */
+.greia-border-gradient {
+  position: relative;
+  border-radius: 0.5rem;
+  padding: 1px;
+  background: linear-gradient(135deg, #2B59FF 0%, #BB2BFF 50%, #FF2B2B 100%);
+}
+
+.greia-border-gradient::before {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: 0.4rem;
+  background: var(--background);
+}
+
+/* Button Gradient */
+.greia-button-gradient {
+  background: linear-gradient(135deg, #2B59FF 0%, #BB2BFF 50%, #FF2B2B 100%);
+  transition: opacity 0.2s ease;
+}
+
+.greia-button-gradient:hover {
+  opacity: 0.9;
+}
+
+/* Hover Gradient */
+.greia-hover-gradient {
+  position: relative;
+  overflow: hidden;
+}
+
+.greia-hover-gradient::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, 
+    rgba(43, 89, 255, 0.1) 0%,
+    rgba(187, 43, 255, 0.1) 50%,
+    rgba(255, 43, 43, 0.1) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.greia-hover-gradient:hover::after {
+  opacity: 1;
+}
+
+/* Animated Gradient Background */
+@keyframes greia-gradient-animation {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.greia-gradient-animated {
+  background: linear-gradient(135deg, #2B59FF 0%, #BB2BFF 50%, #FF2B2B 100%);
+  background-size: 200% 200%;
+  animation: greia-gradient-animation 10s ease infinite;
+}
+
+/* Gradient Overlay for Images */
+.greia-image-gradient {
+  position: relative;
+}
+
+.greia-image-gradient::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom,
+    transparent 0%,
+    rgba(0, 0, 0, 0.5) 100%
+  );
+}
+
+/* Glass Morphism with Gradient */
+.greia-glass {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.greia-glass-gradient {
+  position: relative;
+  overflow: hidden;
+}
+
+.greia-glass-gradient::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, 
+    rgba(43, 89, 255, 0.2) 0%,
+    rgba(187, 43, 255, 0.2) 50%,
+    rgba(255, 43, 43, 0.2) 100%
+  );
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Dark Mode Gradients */
+:root[class~="dark"] .greia-gradient-subtle {
+  background: linear-gradient(135deg, 
+    rgba(43, 89, 255, 0.15) 0%,
+    rgba(187, 43, 255, 0.15) 50%,
+    rgba(255, 43, 43, 0.15) 100%
+  );
+}
+
+:root[class~="dark"] .greia-glass {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Utility Classes */
+.greia-shadow {
+  box-shadow: 0 4px 6px -1px rgba(43, 89, 255, 0.1),
+              0 2px 4px -1px rgba(187, 43, 255, 0.06);
+}
+
+.greia-shadow-lg {
+  box-shadow: 0 10px 15px -3px rgba(43, 89, 255, 0.1),
+              0 4px 6px -2px rgba(187, 43, 255, 0.05);
+}
+
+.greia-ring {
+  box-shadow: 0 0 0 3px rgba(43, 89, 255, 0.1);
+}
+
+/* Loading Gradient Animation */
+@keyframes greia-loading {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.greia-loading {
+  position: relative;
+  overflow: hidden;
+}
+
+.greia-loading::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.2) 50%,
+    transparent 100%
+  );
+  animation: greia-loading 1.5s infinite;
+}
