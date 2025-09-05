@@ -1,4 +1,6 @@
-// This is your Prisma schema file
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,36 +10,46 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Core User Models
-model User {
-  id                String              @id @default(cuid())
-  name              String?
-  email             String?             @unique
-  emailVerified     DateTime?
-  image             String?
-  role              UserRole           @default(USER)
-  status            UserStatus         @default(ACTIVE)
-  stripeCustomerId  String?            @unique
-  accounts          Account[]
-  sessions          Session[]
-  properties        Property[]
-  services          Service[]
-  leisure           Leisure[]
-  bookings          Booking[]
-  messages          Message[]
-  threads           Thread[]
-  notifications     Notification[]
-  ownedWorkspaces   CRMWorkspace[]
-  workspaceMember   CRMWorkspaceMember[]
-  assignedTasks     CRMTask[]
-  assignedLeads     CRMLead[]
-  assignedDeals     CRMDeal[]
-  activities        CRMActivity[]
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
+enum UserRole {
+  USER
+  AGENT
+  ADMIN
 }
 
-// Auth Models
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  hashedPassword String?
+  role          UserRole  @default(USER)
+  verificationStatus VerificationStatus @default(UNVERIFIED)
+  stripeCustomerId String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // NextAuth.js fields
+  accounts      Account[]
+  sessions      Session[]
+
+  // Additional fields for user profile
+  phone         String?
+  address       String?
+  bio           String?   @db.Text
+  
+  // Verification documents
+  identityDocument String?
+  professionalLicense String?
+}
+
+// NextAuth.js required models
 model Account {
   id                 String  @id @default(cuid())
   userId             String
@@ -51,7 +63,8 @@ model Account {
   scope              String?
   id_token           String?  @db.Text
   session_state      String?
-  user               User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -71,303 +84,3 @@ model VerificationToken {
 
   @@unique([identifier, token])
 }
-
-// Property Models
-model Property {
-  id              String            @id @default(cuid())
-  title           String
-  description     String            @db.Text
-  type            PropertyType
-  status          PropertyStatus    @default(ACTIVE)
-  price           Float
-  currency        String            @default("GBP")
-  bedrooms        Int?
-  bathrooms       Int?
-  area            Float?
-  areaUnit        String?          @default("sqft")
-  location        Location?
-  features        Feature[]
-  images          Image[]
-  videos          Video[]
-  documents       Document[]
-  userId          String
-  user            User             @relation(fields: [userId], references: [id])
-  bookings        Booking[]
-  views           Int              @default(0)
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-}
-
-// Service Models
-model Service {
-  id              String            @id @default(cuid())
-  title           String
-  description     String            @db.Text
-  type            ServiceType
-  status          ServiceStatus     @default(ACTIVE)
-  price           Float
-  currency        String            @default("GBP")
-  duration        Int?             // in minutes
-  location        Location?
-  features        Feature[]
-  images          Image[]
-  videos          Video[]
-  documents       Document[]
-  userId          String
-  user            User             @relation(fields: [userId], references: [id])
-  bookings        Booking[]
-  views           Int              @default(0)
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-}
-
-// Leisure Models
-model Leisure {
-  id              String            @id @default(cuid())
-  title           String
-  description     String            @db.Text
-  type            LeisureType
-  status          LeisureStatus    @default(ACTIVE)
-  price           Float
-  currency        String            @default("GBP")
-  duration        Int?             // in minutes
-  location        Location?
-  features        Feature[]
-  images          Image[]
-  videos          Video[]
-  documents       Document[]
-  userId          String
-  user            User             @relation(fields: [userId], references: [id])
-  bookings        Booking[]
-  views           Int              @default(0)
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-}
-
-// Booking Models
-model Booking {
-  id              String            @id @default(cuid())
-  userId          String
-  user            User             @relation(fields: [userId], references: [id])
-  propertyId      String?
-  property        Property?        @relation(fields: [propertyId], references: [id])
-  serviceId       String?
-  service         Service?         @relation(fields: [serviceId], references: [id])
-  leisureId       String?
-  leisure         Leisure?         @relation(fields: [leisureId], references: [id])
-  status          BookingStatus    @default(PENDING)
-  startDate       DateTime
-  endDate         DateTime?
-  totalAmount     Float
-  currency        String           @default("GBP")
-  paymentStatus   PaymentStatus    @default(PENDING)
-  paymentIntentId String?
-  notes           String?          @db.Text
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-}
-
-// Messaging Models
-model Thread {
-  id              String            @id @default(cuid())
-  participants    User[]
-  messages        Message[]
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-}
-
-model Message {
-  id              String            @id @default(cuid())
-  content         String            @db.Text
-  threadId        String
-  thread          Thread           @relation(fields: [threadId], references: [id])
-  userId          String
-  user            User             @relation(fields: [userId], references: [id])
-  read            Boolean          @default(false)
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-}
-
-// Notification Models
-model Notification {
-  id              String            @id @default(cuid())
-  userId          String
-  user            User             @relation(fields: [userId], references: [id])
-  type            NotificationType
-  title           String
-  message         String
-  read            Boolean          @default(false)
-  data            Json?
-  createdAt       DateTime         @default(now())
-}
-
-// Supporting Models
-model Location {
-  id              String            @id @default(cuid())
-  address         String
-  city            String
-  state           String?
-  country         String
-  postalCode      String
-  latitude        Float?
-  longitude       Float?
-  propertyId      String?          @unique
-  property        Property?        @relation(fields: [propertyId], references: [id])
-  serviceId       String?          @unique
-  service         Service?         @relation(fields: [serviceId], references: [id])
-  leisureId       String?          @unique
-  leisure         Leisure?         @relation(fields: [leisureId], references: [id])
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-}
-
-model Feature {
-  id              String            @id @default(cuid())
-  name            String
-  value           String
-  icon            String?
-  propertyId      String?
-  property        Property?        @relation(fields: [propertyId], references: [id])
-  serviceId       String?
-  service         Service?         @relation(fields: [serviceId], references: [id])
-  leisureId       String?
-  leisure         Leisure?         @relation(fields: [leisureId], references: [id])
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-}
-
-model Image {
-  id              String            @id @default(cuid())
-  url             String
-  alt             String?
-  propertyId      String?
-  property        Property?        @relation(fields: [propertyId], references: [id])
-  serviceId       String?
-  service         Service?         @relation(fields: [serviceId], references: [id])
-  leisureId       String?
-  leisure         Leisure?         @relation(fields: [leisureId], references: [id])
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-}
-
-model Video {
-  id              String            @id @default(cuid())
-  url             String
-  title           String?
-  propertyId      String?
-  property        Property?        @relation(fields: [propertyId], references: [id])
-  serviceId       String?
-  service         Service?         @relation(fields: [serviceId], references: [id])
-  leisureId       String?
-  leisure         Leisure?         @relation(fields: [leisureId], references: [id])
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-}
-
-model Document {
-  id              String            @id @default(cuid())
-  url             String
-  name            String
-  type            String
-  size            Int
-  propertyId      String?
-  property        Property?        @relation(fields: [propertyId], references: [id])
-  serviceId       String?
-  service         Service?         @relation(fields: [serviceId], references: [id])
-  leisureId       String?
-  leisure         Leisure?         @relation(fields: [leisureId], references: [id])
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-}
-
-// [Previous CRM Models remain unchanged...]
-
-// New Enums
-enum UserRole {
-  ADMIN
-  AGENT
-  USER
-}
-
-enum UserStatus {
-  ACTIVE
-  INACTIVE
-  SUSPENDED
-}
-
-enum PropertyType {
-  HOUSE
-  APARTMENT
-  CONDO
-  VILLA
-  OFFICE
-  RETAIL
-  INDUSTRIAL
-  LAND
-}
-
-enum PropertyStatus {
-  ACTIVE
-  PENDING
-  SOLD
-  RENTED
-  INACTIVE
-}
-
-enum ServiceType {
-  CLEANING
-  MAINTENANCE
-  RENOVATION
-  MOVING
-  INSPECTION
-  PHOTOGRAPHY
-  STAGING
-  OTHER
-}
-
-enum ServiceStatus {
-  ACTIVE
-  PENDING
-  BOOKED
-  INACTIVE
-}
-
-enum LeisureType {
-  RENTAL
-  EXPERIENCE
-  EVENT
-  TOUR
-  CLASS
-  OTHER
-}
-
-enum LeisureStatus {
-  ACTIVE
-  PENDING
-  BOOKED
-  INACTIVE
-}
-
-enum BookingStatus {
-  PENDING
-  CONFIRMED
-  CANCELLED
-  COMPLETED
-}
-
-enum PaymentStatus {
-  PENDING
-  PAID
-  FAILED
-  REFUNDED
-}
-
-enum NotificationType {
-  BOOKING
-  MESSAGE
-  SYSTEM
-  PAYMENT
-  REMINDER
-}
-
-// [Previous CRM Enums remain unchanged...]
