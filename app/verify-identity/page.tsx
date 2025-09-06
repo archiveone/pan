@@ -1,66 +1,54 @@
-import { getServerSession } from 'next-auth';
+import { Metadata } from 'next';
+import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
-import { VerifyIdentity } from '@/components/verify-identity';
-import prismadb from '@/lib/prismadb';
+import { VerifyIdentityForm } from './components/verify-identity-form';
+
+export const metadata: Metadata = {
+  title: 'Verify Identity - GREIA',
+  description: 'Verify your identity to access all features of GREIA platform.',
+};
 
 export default async function VerifyIdentityPage() {
   const session = await getServerSession(authOptions);
 
-  if (!session?.user?.email) {
+  if (!session?.user) {
     redirect('/auth/signin');
-  }
-
-  // Get user's verification status
-  const user = await prismadb.user.findUnique({
-    where: {
-      email: session.user.email,
-    },
-    select: {
-      verificationStatus: true,
-      verificationError: true,
-    },
-  });
-
-  if (user?.verificationStatus === 'VERIFIED') {
-    redirect('/dashboard');
   }
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-2xl mx-auto">
-        <div className="bg-card rounded-lg shadow-lg p-6">
-          {user?.verificationStatus === 'PENDING' ? (
-            <div className="text-center space-y-4">
-              <h2 className="text-2xl font-bold">Verification in Progress</h2>
-              <p className="text-muted-foreground">
-                Your identity verification is being processed. This usually takes a few minutes.
-                You'll be notified once the verification is complete.
-              </p>
-              <div className="animate-pulse flex justify-center">
-                <div className="w-8 h-8 bg-primary/20 rounded-full"></div>
-              </div>
-            </div>
-          ) : user?.verificationStatus === 'FAILED' ? (
-            <div className="text-center space-y-4">
-              <h2 className="text-2xl font-bold text-destructive">Verification Failed</h2>
-              <p className="text-muted-foreground">
-                {user.verificationError || 'There was an issue verifying your identity.'}
-              </p>
-              <VerifyIdentity />
-            </div>
-          ) : (
-            <VerifyIdentity />
-          )}
-          
-          <div className="mt-8 border-t pt-6">
-            <h3 className="font-semibold mb-2">Why do we need to verify your identity?</h3>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>• To ensure the security of our marketplace</li>
-              <li>• To protect all users from fraud</li>
-              <li>• To comply with regulatory requirements</li>
-              <li>• To maintain trust in our community</li>
+        <h1 className="text-3xl font-bold mb-6">Verify Your Identity</h1>
+        
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">Why verify your identity?</h2>
+            <p className="text-gray-600">
+              Identity verification helps us maintain a safe and trusted platform for all users.
+              Verified users get access to:
+            </p>
+            
+            <ul className="list-disc list-inside text-gray-600 ml-4">
+              <li>Full access to property listings</li>
+              <li>Ability to create listings</li>
+              <li>Direct messaging with other users</li>
+              <li>Participation in private marketplace</li>
+              <li>Enhanced trust and visibility</li>
             </ul>
+
+            <div className="mt-6">
+              <h2 className="text-xl font-semibold mb-4">What you'll need:</h2>
+              <ul className="list-disc list-inside text-gray-600 ml-4">
+                <li>A valid government-issued photo ID</li>
+                <li>A device with a camera for selfie verification</li>
+                <li>About 5 minutes of your time</li>
+              </ul>
+            </div>
+
+            <div className="mt-8">
+              <VerifyIdentityForm />
+            </div>
           </div>
         </div>
       </div>
