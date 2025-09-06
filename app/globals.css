@@ -1,224 +1,133 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
- 
+
 @layer base {
   :root {
+    /* Apple-like color palette */
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-
+    --foreground: 240 10% 3.9%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
- 
+    --card-foreground: 240 10% 3.9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
- 
-    --primary: 222.2 47.4% 11.2%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 221.2 83.2% 53.3%;
     --primary-foreground: 210 40% 98%;
- 
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
- 
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
- 
     --accent: 210 40% 96.1%;
     --accent-foreground: 222.2 47.4% 11.2%;
- 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
- 
-    --radius: 0.5rem;
-
-    /* Custom GREIA Colors */
-    --greia-blue: 201 100% 50%;
-    --greia-green: 142 76% 36%;
-    --greia-purple: 262 83% 58%;
-    --greia-orange: 24 100% 50%;
-    --greia-red: 0 100% 50%;
-    --greia-yellow: 48 100% 50%;
-
-    /* Property Status Colors */
-    --property-available: var(--greia-green);
-    --property-pending: var(--greia-orange);
-    --property-sold: var(--greia-red);
-    --property-featured: var(--greia-purple);
-
-    /* Service Status Colors */
-    --service-available: var(--greia-green);
-    --service-busy: var(--greia-orange);
-    --service-unavailable: var(--greia-red);
-    --service-featured: var(--greia-purple);
-
-    /* Leisure Status Colors */
-    --leisure-available: var(--greia-green);
-    --leisure-limited: var(--greia-orange);
-    --leisure-booked: var(--greia-red);
-    --leisure-featured: var(--greia-purple);
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.75rem;
   }
- 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
- 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
- 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
- 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
- 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
- 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
- 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
- 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
- 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-  }
-}
- 
-@layer base {
+
   * {
     @apply border-border;
   }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Apple-like typography */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-sf-pro text-gray-900 tracking-tight;
+  }
+
+  h1 {
+    @apply text-4xl font-semibold;
+  }
+
+  h2 {
+    @apply text-3xl font-semibold;
+  }
+
+  h3 {
+    @apply text-2xl font-medium;
+  }
+
+  p {
+    @apply font-sf-pro text-gray-600;
   }
 }
 
-/* Custom Utilities */
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
-
-  .text-shadow {
-    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  }
-
-  .text-shadow-lg {
-    text-shadow: 0 4px 8px rgba(0,0,0,0.2);
-  }
-
-  .hover-lift {
-    @apply transition-transform duration-200 hover:-translate-y-1;
-  }
-
-  .hover-scale {
-    @apply transition-transform duration-200 hover:scale-105;
-  }
-
-  .glass-effect {
-    @apply bg-white/80 backdrop-blur-md;
-  }
-
-  .dark .glass-effect {
-    @apply bg-gray-900/80;
-  }
-}
-
-/* Custom Components */
+/* Apple-like components */
 @layer components {
-  .card-hover {
-    @apply hover:shadow-lg transition-shadow duration-200;
+  .nav-link {
+    @apply text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors;
   }
 
-  .property-card {
-    @apply rounded-lg overflow-hidden bg-white shadow-md hover:shadow-xl transition-shadow duration-200;
+  .btn-primary {
+    @apply bg-blue-600 text-white rounded-lg px-4 py-2 text-sm font-medium 
+           hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 
+           focus:ring-offset-2 transition-colors;
   }
 
-  .service-card {
-    @apply rounded-lg overflow-hidden bg-white shadow-md hover:shadow-xl transition-shadow duration-200;
+  .btn-secondary {
+    @apply bg-gray-100 text-gray-900 rounded-lg px-4 py-2 text-sm font-medium 
+           hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 
+           focus:ring-offset-2 transition-colors;
   }
 
-  .leisure-card {
-    @apply rounded-lg overflow-hidden bg-white shadow-md hover:shadow-xl transition-shadow duration-200;
+  .card {
+    @apply bg-white rounded-2xl shadow-sm border border-gray-200 
+           hover:shadow-md transition-shadow duration-200;
   }
 
-  .status-badge {
-    @apply px-2 py-1 rounded-full text-xs font-medium;
+  .input {
+    @apply block w-full rounded-lg border-gray-200 shadow-sm 
+           focus:border-blue-500 focus:ring-blue-500 sm:text-sm;
   }
 
-  .price-tag {
-    @apply text-lg font-bold text-primary;
+  /* Apple-like glassmorphism */
+  .glass {
+    @apply bg-white/80 backdrop-blur-xl border border-white/20;
   }
 
-  .rating-stars {
-    @apply flex items-center text-yellow-400;
+  /* Apple-like grid */
+  .apple-grid {
+    @apply grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
   }
 
-  .amenity-icon {
-    @apply w-5 h-5 text-gray-500;
-  }
-
-  .feature-list {
-    @apply space-y-2 text-sm text-gray-600;
-  }
-
-  .contact-button {
-    @apply w-full py-2 px-4 bg-primary text-white rounded-lg hover:opacity-90 transition-opacity;
-  }
-
-  .share-button {
-    @apply p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors;
-  }
-
-  .favorite-button {
-    @apply p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors text-gray-600 hover:text-red-500;
+  /* Apple-like transitions */
+  .transition-apple {
+    @apply transition-all duration-300 ease-in-out;
   }
 }
 
-/* Animations */
-@keyframes float {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-  100% { transform: translateY(0px); }
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-.animate-float {
-  animation: float 3s ease-in-out infinite;
+::-webkit-scrollbar-track {
+  @apply bg-gray-100;
 }
 
-@keyframes pulse-soft {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 rounded-full hover:bg-gray-400 transition-colors;
 }
 
-.animate-pulse-soft {
-  animation: pulse-soft 2s ease-in-out infinite;
+/* Apple-like animations */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-/* Responsive Design Helpers */
-@layer utilities {
-  .container-padding {
-    @apply px-4 sm:px-6 lg:px-8;
-  }
-
-  .section-spacing {
-    @apply py-12 sm:py-16 lg:py-24;
-  }
-
-  .grid-responsive {
-    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6;
-  }
-
-  .flex-responsive {
-    @apply flex flex-col sm:flex-row;
-  }
+.animate-fade-up {
+  animation: fade-up 0.5s ease-out forwards;
 }
