@@ -1,136 +1,140 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { Bed, Bath, Square, Heart, Share2 } from 'lucide-react';
-
-import { Button } from '@/components/ui/button';
+import { Property } from '@/lib/types/property';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { AnalyticsTracker } from '@/components/analytics/AnalyticsTracker';
-import { formatCurrency } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { HeartIcon, MapPinIcon, BedDoubleIcon, BathIcon, RulerIcon } from 'lucide-react';
+import { formatCurrency } from '@/lib/utils/format';
+import { cn } from '@/lib/utils';
 
 interface PropertyCardProps {
-  property: {
-    id: string;
-    title: string;
-    description: string;
-    price: number;
-    currency: string;
-    images: string[];
-    bedrooms: number;
-    bathrooms: number;
-    squareMeters: number;
-    type: string;
-    status: string;
-    location: {
-      address: string;
-      city: string;
-      country: string;
-    };
-  };
+  property: Property;
+  onFavorite?: (propertyId: string) => void;
+  isFavorited?: boolean;
+  className?: string;
 }
 
-export function PropertyCard({ property }: PropertyCardProps) {
-  const [isHovered, setIsHovered] = useState(false);
+export function PropertyCard({
+  property,
+  onFavorite,
+  isFavorited,
+  className,
+}: PropertyCardProps) {
+  const {
+    id,
+    title,
+    price,
+    currency,
+    address,
+    images,
+    bedrooms,
+    bathrooms,
+    size,
+    type,
+    listingType,
+    isVerified,
+    _count,
+  } = property;
+
+  const mainImage = images[0]?.url || '/images/property-placeholder.jpg';
+  const formattedPrice = formatCurrency(price, currency);
+  const location = `${address.city}, ${address.country}`;
 
   return (
-    <>
-      <motion.div
-        className="group relative rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden"
-        whileHover={{ y: -5 }}
-        onHoverStart={() => setIsHovered(true)}
-        onHoverEnd={() => setIsHovered(false)}
-      >
-        {/* Property Image */}
-        <Link href={`/properties/${property.id}`}>
-          <div className="relative aspect-[16/9] overflow-hidden">
-            <Image
-              src={property.images[0]}
-              alt={property.title}
-              fill
-              className="object-cover transition-transform group-hover:scale-105"
-              priority
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-            
-            {/* Status Badge */}
-            <Badge
-              className="absolute top-2 left-2"
-              variant={property.status === 'FOR_SALE' ? 'default' : 'secondary'}
-            >
-              {property.status === 'FOR_SALE' ? 'For Sale' : 'For Rent'}
-            </Badge>
-
-            {/* Action Buttons */}
-            <div className="absolute top-2 right-2 flex space-x-2">
-              <Button
-                variant="secondary"
-                size="icon"
-                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <Heart className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="secondary"
-                size="icon"
-                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <Share2 className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+    <Card className={cn('group overflow-hidden', className)}>
+      <div className="relative aspect-[4/3]">
+        <Link href={`/properties/${id}`}>
+          <Image
+            src={mainImage}
+            alt={title}
+            fill
+            className="object-cover transition-transform group-hover:scale-105"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          />
         </Link>
-
-        {/* Property Details */}
-        <div className="p-4">
-          <div className="flex justify-between items-start mb-2">
-            <div>
-              <h3 className="font-semibold leading-none tracking-tight">
-                {property.title}
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                {property.location.city}, {property.location.country}
-              </p>
-            </div>
-            <div className="text-right">
-              <div className="font-bold text-lg">
-                {formatCurrency(property.price, property.currency)}
+        {onFavorite && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-2 top-2 bg-white/80 hover:bg-white"
+            onClick={() => onFavorite(id)}
+          >
+            <HeartIcon
+              className={cn(
+                'h-5 w-5',
+                isFavorited ? 'fill-red-500 text-red-500' : 'text-gray-500'
+              )}
+            />
+          </Button>
+        )}
+        <div className="absolute bottom-2 left-2 flex gap-2">
+          <Badge variant={listingType === 'RENT' ? 'secondary' : 'default'}>
+            {listingType === 'RENT' ? 'For Rent' : 'For Sale'}
+          </Badge>
+          <Badge variant="outline" className="bg-white/80">
+            {type}
+          </Badge>
+          {isVerified && (
+            <Badge variant="secondary" className="bg-green-500 text-white">
+              Verified
+            </Badge>
+          )}
+        </div>
+      </div>
+      <CardContent className="p-4">
+        <Link href={`/properties/${id}`}>
+          <h3 className="line-clamp-1 text-lg font-semibold hover:text-primary">
+            {title}
+          </h3>
+        </Link>
+        <div className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
+          <MapPinIcon className="h-4 w-4" />
+          <span>{location}</span>
+        </div>
+        <div className="mt-4 flex items-center justify-between">
+          <div className="flex gap-4 text-sm">
+            {bedrooms && (
+              <div className="flex items-center gap-1">
+                <BedDoubleIcon className="h-4 w-4" />
+                <span>{bedrooms} bed</span>
               </div>
-              <p className="text-sm text-muted-foreground">
-                {property.status === 'FOR_RENT' ? '/month' : ''}
-              </p>
-            </div>
-          </div>
-
-          {/* Property Features */}
-          <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-            <div className="flex items-center">
-              <Bed className="h-4 w-4 mr-1" />
-              {property.bedrooms} beds
-            </div>
-            <div className="flex items-center">
-              <Bath className="h-4 w-4 mr-1" />
-              {property.bathrooms} baths
-            </div>
-            <div className="flex items-center">
-              <Square className="h-4 w-4 mr-1" />
-              {property.squareMeters}m²
-            </div>
+            )}
+            {bathrooms && (
+              <div className="flex items-center gap-1">
+                <BathIcon className="h-4 w-4" />
+                <span>{bathrooms} bath</span>
+              </div>
+            )}
+            {size && (
+              <div className="flex items-center gap-1">
+                <RulerIcon className="h-4 w-4" />
+                <span>{size} m²</span>
+              </div>
+            )}
           </div>
         </div>
-      </motion.div>
-
-      {/* Analytics Tracking */}
-      {isHovered && (
-        <AnalyticsTracker
-          listingId={property.id}
-          listingType="PROPERTY"
-          searchQuery={undefined}
-          searchFilters={undefined}
-        />
-      )}
-    </>
+        <div className="mt-4 flex items-end justify-between">
+          <div>
+            <p className="text-2xl font-bold">{formattedPrice}</p>
+            {listingType === 'RENT' && (
+              <p className="text-sm text-muted-foreground">per month</p>
+            )}
+          </div>
+          {_count && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              {_count.favorites > 0 && (
+                <div className="flex items-center gap-1">
+                  <HeartIcon className="h-4 w-4 fill-current" />
+                  <span>{_count.favorites}</span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
