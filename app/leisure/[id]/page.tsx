@@ -1,584 +1,462 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Image from 'next/image';
-import { motion } from 'framer-motion';
-import {
-  MapPin,
-  Calendar,
-  Clock,
-  Users,
-  Star,
-  Info,
-  CheckCircle,
-  X,
-  CreditCard,
-  Shield,
-  ChevronRight,
-  ChevronLeft,
-} from 'lucide-react';
+import { useState } from "react";
+import Image from "next/image";
+import { 
+  HeartIcon,
+  ShareIcon,
+  MapPinIcon,
+  ClockIcon,
+  CurrencyEuroIcon,
+  CalendarIcon,
+  UserGroupIcon,
+  ChevronRightIcon,
+  StarIcon,
+  GlobeEuropeAfricaIcon,
+  UsersIcon,
+} from "@heroicons/react/24/outline";
+import { HeartIcon as HeartIconSolid, StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
 
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { Separator } from '@/components/ui/separator';
-import { loadStripe } from '@stripe/stripe-js';
-
-// Initialize Stripe
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
-
-// Sample leisure item data
-const leisureItem = {
-  id: 1,
-  type: 'event',
-  title: 'Summer Music Festival 2025',
-  description: `Join us for three days of incredible live music featuring top international artists! Experience:
-
-  • Multiple stages with diverse genres
-  • Food and drink villages
-  • VIP areas and experiences
-  • Art installations
-  • Silent disco
-  • Camping facilities
-  
-  Line-up includes international headliners and local talents across various genres including rock, pop, electronic, and indie music.`,
-  location: 'Phoenix Park, Dublin',
-  dates: {
-    start: '2025-07-15',
-    end: '2025-07-17',
-  },
-  times: {
-    doors: '12:00 PM',
-    end: '11:00 PM',
-  },
-  pricing: {
-    regular: {
-      name: 'Regular Ticket',
-      price: 45,
-      description: 'General admission for one day',
-    },
-    vip: {
-      name: 'VIP Pass',
-      price: 120,
-      description: 'VIP access with exclusive areas and benefits',
-    },
-    weekend: {
-      name: 'Weekend Pass',
-      price: 110,
-      description: 'Three-day general admission',
-    },
-  },
+// Sample data - would come from API
+const experience = {
+  id: "1",
+  title: "Luxury Yacht Charter Experience",
+  price: "€1,500/day",
+  location: "Mediterranean Sea",
+  description: "Embark on an unforgettable journey aboard our luxury yacht. Experience the ultimate in maritime luxury with a fully crewed vessel, gourmet catering, and access to exclusive Mediterranean destinations. Perfect for special occasions or luxury vacations.",
+  highlights: [
+    "Professional Crew",
+    "Gourmet Catering",
+    "Water Sports Equipment",
+    "Premium Bar Service",
+    "Sunset Cruise Option",
+    "Private Chef",
+    "Personalized Itinerary",
+    "VIP Concierge",
+  ],
   images: [
-    '/images/leisure/festival-1.jpg',
-    '/images/leisure/festival-2.jpg',
-    '/images/leisure/festival-3.jpg',
+    "/images/leisure/yacht-1.jpg",
+    "/images/leisure/yacht-2.jpg",
+    "/images/leisure/yacht-3.jpg",
+    "/images/leisure/yacht-4.jpg",
   ],
-  category: 'Music',
-  capacity: 5000,
-  remaining: 750,
-  rating: 4.8,
-  reviews: 245,
-  featured: true,
-  organizer: {
-    name: 'EventPro Ireland',
-    image: '/images/organizers/eventpro.jpg',
-    verified: true,
-    experience: '10+ years',
-    events: 150,
+  provider: {
+    name: "Emma Williams",
+    image: "/images/connect/profile-3.jpg",
+    rating: 4.9,
+    reviews: 92,
+    response: "Usually responds within 1 hour",
+    experience: "10+ years",
+    languages: ["English", "French", "Italian"],
   },
-  amenities: [
-    'Food & Drink',
-    'Restrooms',
-    'First Aid',
-    'Security',
-    'ATM',
-    'Parking',
-  ],
-  faqs: [
+  details: {
+    duration: "Full Day (8 hours)",
+    groupSize: "Up to 12 guests",
+    includes: [
+      "Professional captain and crew",
+      "Fuel and docking fees",
+      "Gourmet lunch and snacks",
+      "Premium beverages",
+      "Water sports equipment",
+      "Towels and amenities",
+    ],
+    excludes: [
+      "Additional hours beyond 8 hours",
+      "Special catering requests",
+      "Transportation to/from marina",
+      "Gratuities",
+    ],
+  },
+  destinations: [
     {
-      question: 'What items are prohibited?',
-      answer: 'Glass bottles, outside food/drink, professional cameras, drones, weapons',
+      name: "Saint-Tropez Bay",
+      description: "Explore the glamorous French Riviera coastline",
+      image: "/images/leisure/destination-1.jpg",
     },
     {
-      question: 'Is there parking available?',
-      answer: 'Yes, paid parking is available on-site. We recommend using public transport.',
+      name: "Porquerolles Islands",
+      description: "Discover pristine beaches and crystal-clear waters",
+      image: "/images/leisure/destination-2.jpg",
     },
-    // Add more FAQs...
+    {
+      name: "Calanques National Park",
+      description: "Visit dramatic limestone cliff formations",
+      image: "/images/leisure/destination-3.jpg",
+    },
   ],
   reviews: [
     {
-      id: 1,
-      user: {
-        name: 'John D.',
-        image: '/images/users/user-1.jpg',
-      },
+      id: "1",
+      author: "James Anderson",
       rating: 5,
-      date: '2024-07-20',
-      comment: 'Amazing festival! Great organization and fantastic lineup.',
+      date: "1 week ago",
+      content: "An absolutely incredible experience. The crew was professional, the yacht was immaculate, and the entire day was perfectly organized.",
+      image: "/images/reviews/review-1.jpg",
     },
-    // Add more reviews...
+    {
+      id: "2",
+      author: "Isabella Martinez",
+      rating: 5,
+      date: "2 weeks ago",
+      content: "Worth every penny! The service was impeccable and the destinations were breathtaking. Will definitely book again.",
+      image: "/images/reviews/review-2.jpg",
+    },
+  ],
+  availableDates: [
+    "2025-09-07",
+    "2025-09-08",
+    "2025-09-10",
+    "2025-09-11",
+    "2025-09-12",
   ],
 };
 
 export default function LeisureDetailPage() {
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [ticketType, setTicketType] = useState('regular');
-  const [quantity, setQuantity] = useState(1);
-  const [showBooking, setShowBooking] = useState(false);
-  const [currentStep, setCurrentStep] = useState(1);
-  const [paymentMethod, setPaymentMethod] = useState('card');
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-
-  // Calculate total price
-  const selectedTicket = leisureItem.pricing[ticketType as keyof typeof leisureItem.pricing];
-  const totalPrice = selectedTicket.price * quantity;
-
-  // Handle booking steps
-  const nextStep = () => setCurrentStep((prev) => Math.min(prev + 1, 3));
-  const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 1));
-
-  // Handle payment
-  const handlePayment = async () => {
-    try {
-      const stripe = await stripePromise;
-      if (!stripe) throw new Error('Stripe failed to initialize');
-
-      // Create payment intent on your backend
-      const response = await fetch('/api/create-payment-intent', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          amount: totalPrice * 100, // Convert to cents
-          currency: 'eur',
-          ticketType,
-          quantity,
-        }),
-      });
-
-      const { clientSecret } = await response.json();
-
-      // Confirm payment with Stripe
-      const result = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: {
-          card: elements.getElement('card')!,
-          billing_details: {
-            name: 'Customer Name', // Add form for this
-          },
-        },
-      });
-
-      if (result.error) {
-        console.error(result.error);
-        // Handle error
-      } else {
-        // Payment successful
-        // Update booking status
-        setCurrentStep(3);
-      }
-    } catch (error) {
-      console.error(error);
-      // Handle error
-    }
-  };
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(0);
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
-      <section className="relative h-[70vh]">
-        <div className="absolute inset-0">
-          <Image
-            src={leisureItem.images[currentImageIndex]}
-            alt={leisureItem.title}
-            fill
-            className="object-cover"
-          />
-          <div className="absolute inset-0 bg-black/20" />
-        </div>
-
-        <div className="absolute inset-0 flex items-center justify-between px-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-white hover:bg-black/20"
-            onClick={() => setCurrentImageIndex((prev) => 
-              prev === 0 ? leisureItem.images.length - 1 : prev - 1
-            )}
-          >
-            <ChevronLeft className="w-8 h-8" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-white hover:bg-black/20"
-            onClick={() => setCurrentImageIndex((prev) => 
-              prev === leisureItem.images.length - 1 ? 0 : prev + 1
-            )}
-          >
-            <ChevronRight className="w-8 h-8" />
-          </Button>
-        </div>
-      </section>
-
-      <div className="container mx-auto px-4 -mt-20 relative z-10">
-        <Card className="p-6 md:p-8 mb-8">
-          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <Badge>{leisureItem.category}</Badge>
-                {leisureItem.featured && (
-                  <Badge variant="secondary">Featured</Badge>
-                )}
-              </div>
-              <h1 className="text-3xl font-bold mb-2">{leisureItem.title}</h1>
-              <div className="flex items-center gap-4 text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  <MapPin className="w-4 h-4" />
-                  {leisureItem.location}
-                </div>
-                <div className="flex items-center gap-1">
-                  <Calendar className="w-4 h-4" />
-                  {new Date(leisureItem.dates.start).toLocaleDateString()} - 
-                  {new Date(leisureItem.dates.end).toLocaleDateString()}
-                </div>
+      {/* Image Gallery */}
+      <div className="relative h-[70vh] w-full">
+        <Image
+          src={experience.images[selectedImage]}
+          alt={experience.title}
+          className="object-cover"
+          fill
+          priority
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+        
+        {/* Navigation */}
+        <div className="absolute top-0 left-0 right-0 glass border-b border-white/20">
+          <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between">
+              <button onClick={() => window.history.back()} className="text-white">
+                Back
+              </button>
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => setIsFavorite(!isFavorite)}
+                  className="glass rounded-full p-2"
+                >
+                  {isFavorite ? (
+                    <HeartIconSolid className="h-6 w-6 text-red-500" />
+                  ) : (
+                    <HeartIcon className="h-6 w-6 text-white" />
+                  )}
+                </button>
+                <button className="glass rounded-full p-2">
+                  <ShareIcon className="h-6 w-6 text-white" />
+                </button>
               </div>
             </div>
-            <div className="flex flex-col items-end">
-              <div className="text-3xl font-bold text-primary">
-                From €{Math.min(...Object.values(leisureItem.pricing).map(p => p.price))}
-              </div>
-              <Button
-                className="mt-4"
-                onClick={() => setShowBooking(true)}
-              >
-                Book Now
-              </Button>
-            </div>
           </div>
-        </Card>
+        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="md:col-span-2 space-y-8">
-            {/* Description */}
-            <Card className="p-6">
-              <h2 className="text-2xl font-semibold mb-4">About This Event</h2>
-              <p className="whitespace-pre-line text-muted-foreground">
-                {leisureItem.description}
-              </p>
-            </Card>
-
-            {/* Amenities */}
-            <Card className="p-6">
-              <h2 className="text-2xl font-semibold mb-4">Amenities</h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {leisureItem.amenities.map((amenity) => (
-                  <div key={amenity} className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-primary" />
-                    <span>{amenity}</span>
-                  </div>
-                ))}
-              </div>
-            </Card>
-
-            {/* FAQs */}
-            <Card className="p-6">
-              <h2 className="text-2xl font-semibold mb-4">Frequently Asked Questions</h2>
-              <div className="space-y-4">
-                {leisureItem.faqs.map((faq, index) => (
-                  <div key={index}>
-                    <h3 className="font-medium mb-2">{faq.question}</h3>
-                    <p className="text-muted-foreground">{faq.answer}</p>
-                    {index < leisureItem.faqs.length - 1 && (
-                      <Separator className="my-4" />
-                    )}
-                  </div>
-                ))}
-              </div>
-            </Card>
-
-            {/* Reviews */}
-            <Card className="p-6">
-              <h2 className="text-2xl font-semibold mb-4">Reviews</h2>
-              <div className="space-y-6">
-                {leisureItem.reviews.map((review) => (
-                  <div key={review.id} className="flex items-start gap-4">
-                    <Image
-                      src={review.user.image}
-                      alt={review.user.name}
-                      width={40}
-                      height={40}
-                      className="rounded-full"
-                    />
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{review.user.name}</span>
-                        <span className="text-sm text-muted-foreground">
-                          {new Date(review.date).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1 my-1">
-                        {Array.from({ length: review.rating }).map((_, i) => (
-                          <Star
-                            key={i}
-                            className="w-4 h-4 text-yellow-400"
-                            fill="currentColor"
-                          />
-                        ))}
-                      </div>
-                      <p className="text-muted-foreground">{review.comment}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
-          </div>
-
-          <div>
-            {/* Organizer Card */}
-            <Card className="p-6 mb-6">
-              <div className="flex items-center gap-4 mb-4">
-                <Image
-                  src={leisureItem.organizer.image}
-                  alt={leisureItem.organizer.name}
-                  width={60}
-                  height={60}
-                  className="rounded-full"
+        {/* Thumbnail Navigation */}
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2">
+          <div className="glass rounded-full p-2">
+            <div className="flex items-center space-x-2">
+              {experience.images.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setSelectedImage(index)}
+                  className={`h-2 w-2 rounded-full transition-all ${
+                    selectedImage === index ? "bg-white" : "bg-white/50"
+                  }`}
                 />
-                <div>
-                  <h3 className="font-semibold">{leisureItem.organizer.name}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {leisureItem.organizer.experience} experience
-                  </p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div className="text-center p-3 bg-muted rounded-lg">
-                  <div className="font-medium">{leisureItem.organizer.events}+</div>
-                  <div className="text-sm text-muted-foreground">Events</div>
-                </div>
-                <div className="text-center p-3 bg-muted rounded-lg">
-                  <div className="font-medium">{leisureItem.rating}</div>
-                  <div className="text-sm text-muted-foreground">Rating</div>
-                </div>
-              </div>
-              <Button variant="outline" className="w-full">
-                Contact Organizer
-              </Button>
-            </Card>
-
-            {/* Quick Info Card */}
-            <Card className="p-6">
-              <h3 className="font-semibold mb-4">Event Information</h3>
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <Clock className="w-5 h-5 text-primary" />
-                  <div>
-                    <div className="font-medium">Duration</div>
-                    <div className="text-sm text-muted-foreground">
-                      {leisureItem.times.doors} - {leisureItem.times.end}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Users className="w-5 h-5 text-primary" />
-                  <div>
-                    <div className="font-medium">Capacity</div>
-                    <div className="text-sm text-muted-foreground">
-                      {leisureItem.remaining} tickets remaining
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Shield className="w-5 h-5 text-primary" />
-                  <div>
-                    <div className="font-medium">Safety Measures</div>
-                    <div className="text-sm text-muted-foreground">
-                      Security and medical staff on-site
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </Card>
+              ))}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Booking Dialog */}
-      <Dialog open={showBooking} onOpenChange={setShowBooking}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Book Tickets</DialogTitle>
-          </DialogHeader>
+      {/* Content */}
+      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 gap-12 lg:grid-cols-3">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Header */}
+            <div>
+              <h1 className="text-3xl font-semibold text-gray-900">
+                {experience.title}
+              </h1>
+              <div className="mt-2 flex items-center space-x-2 text-gray-500">
+                <MapPinIcon className="h-5 w-5" />
+                <span>{experience.location}</span>
+              </div>
+              <div className="mt-4 flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <ClockIcon className="h-5 w-5 text-gray-400" />
+                  <span>{experience.details.duration}</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <UsersIcon className="h-5 w-5 text-gray-400" />
+                  <span>{experience.details.groupSize}</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <StarIcon className="h-5 w-5 text-gray-400" />
+                  <span>{experience.provider.rating} ({experience.provider.reviews} reviews)</span>
+                </div>
+              </div>
+            </div>
 
-          {currentStep === 1 && (
+            {/* Description */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold text-gray-900">About the Experience</h2>
+              <p className="text-gray-600 leading-relaxed">
+                {experience.description}
+              </p>
+            </div>
+
+            {/* Highlights */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold text-gray-900">Experience Highlights</h2>
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                {experience.highlights.map((highlight) => (
+                  <div
+                    key={highlight}
+                    className="flex items-center space-x-2 text-gray-600"
+                  >
+                    <ChevronRightIcon className="h-4 w-4 text-blue-500" />
+                    <span>{highlight}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* What's Included */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold text-gray-900">What's Included</h2>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-3">
+                  <h3 className="font-medium text-gray-900">Included:</h3>
+                  {experience.details.includes.map((item) => (
+                    <div
+                      key={item}
+                      className="flex items-center space-x-2 text-gray-600"
+                    >
+                      <ChevronRightIcon className="h-4 w-4 text-green-500" />
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="space-y-3">
+                  <h3 className="font-medium text-gray-900">Not Included:</h3>
+                  {experience.details.excludes.map((item) => (
+                    <div
+                      key={item}
+                      className="flex items-center space-x-2 text-gray-600"
+                    >
+                      <ChevronRightIcon className="h-4 w-4 text-red-500" />
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Destinations */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold text-gray-900">Destinations</h2>
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {experience.destinations.map((destination) => (
+                  <div key={destination.name} className="group relative">
+                    <div className="relative aspect-[4/3] overflow-hidden rounded-xl">
+                      <Image
+                        src={destination.image}
+                        alt={destination.name}
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                        fill
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                      <div className="absolute bottom-4 left-4 right-4">
+                        <h3 className="text-lg font-medium text-white">
+                          {destination.name}
+                        </h3>
+                        <p className="mt-1 text-sm text-white/80">
+                          {destination.description}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Reviews */}
             <div className="space-y-6">
-              <div>
-                <Label>Select Ticket Type</Label>
-                <Select value={ticketType} onValueChange={setTicketType}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(leisureItem.pricing).map(([key, value]) => (
-                      <SelectItem key={key} value={key}>
-                        {value.name} - €{value.price}
-                      </SelectItem>
+              <h2 className="text-xl font-semibold text-gray-900">Guest Reviews</h2>
+              <div className="space-y-6">
+                {experience.reviews.map((review) => (
+                  <div key={review.id} className="card p-6">
+                    <div className="flex items-start space-x-4">
+                      <div className="relative h-12 w-12">
+                        <Image
+                          src={review.image}
+                          alt={review.author}
+                          className="rounded-full object-cover"
+                          fill
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-medium text-gray-900">
+                            {review.author}
+                          </h3>
+                          <span className="text-sm text-gray-500">
+                            {review.date}
+                          </span>
+                        </div>
+                        <div className="mt-1 flex items-center">
+                          {[...Array(5)].map((_, i) => (
+                            <StarIconSolid
+                              key={i}
+                              className={`h-4 w-4 ${
+                                i < review.rating
+                                  ? "text-yellow-400"
+                                  : "text-gray-300"
+                              }`}
+                            />
+                          ))}
+                        </div>
+                        <p className="mt-2 text-gray-600">{review.content}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Booking Card */}
+            <div className="card p-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-2xl font-semibold text-gray-900">
+                  {experience.price}
+                </h3>
+                <div className="flex items-center">
+                  <StarIconSolid className="h-5 w-5 text-yellow-400" />
+                  <span className="ml-1 text-sm text-gray-600">
+                    {experience.provider.rating}
+                  </span>
+                </div>
+              </div>
+              
+              <div className="mt-6 space-y-4">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Select Date
+                  </label>
+                  <select className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    {experience.availableDates.map((date) => (
+                      <option key={date} value={date}>
+                        {new Date(date).toLocaleDateString('en-GB', {
+                          weekday: 'long',
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        })}
+                      </option>
                     ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {selectedTicket.description}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Number of Guests
+                  </label>
+                  <select className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    {[...Array(12)].map((_, i) => (
+                      <option key={i + 1} value={i + 1}>
+                        {i + 1} {i === 0 ? 'guest' : 'guests'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="mt-6 space-y-3">
+                <button className="btn-primary w-full">Book Now</button>
+                <button className="btn-secondary w-full">Contact Host</button>
+              </div>
+
+              <p className="mt-4 text-center text-sm text-gray-500">
+                Free cancellation up to 24 hours before the experience
+              </p>
+            </div>
+
+            {/* Provider Card */}
+            <div className="card p-6">
+              <div className="flex items-center space-x-4">
+                <div className="relative h-16 w-16">
+                  <Image
+                    src={experience.provider.image}
+                    alt={experience.provider.name}
+                    className="rounded-full object-cover"
+                    fill
+                  />
+                </div>
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900">
+                    {experience.provider.name}
+                  </h3>
+                  <div className="mt-1 flex items-center">
+                    <div className="flex items-center">
+                      {[...Array(5)].map((_, i) => (
+                        <StarIconSolid
+                          key={i}
+                          className={`h-4 w-4 ${
+                            i < Math.floor(experience.provider.rating)
+                              ? "text-yellow-400"
+                              : "text-gray-300"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <span className="ml-2 text-sm text-gray-500">
+                      ({experience.provider.reviews} reviews)
+                    </span>
+                  </div>
+                  <p className="mt-1 text-sm text-gray-500">
+                    {experience.provider.response}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4">
+                <h4 className="text-sm font-medium text-gray-900">Languages</h4>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {experience.provider.languages.map((language) => (
+                    <span
+                      key={language}
+                      className="glass rounded-full px-2.5 py-0.5 text-xs font-medium text-gray-900"
+                    >
+                      {language}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Location */}
+            <div className="card p-6">
+              <h3 className="text-lg font-medium text-gray-900">Location</h3>
+              <div className="mt-4">
+                <div className="aspect-[16/9] w-full overflow-hidden rounded-lg bg-gray-100">
+                  {/* Map would go here */}
+                  <div className="h-full w-full bg-gray-200" />
+                </div>
+                <p className="mt-2 text-sm text-gray-600">
+                  Exact location provided after booking
                 </p>
               </div>
-
-              <div>
-                <Label>Quantity</Label>
-                <Select
-                  value={quantity.toString()}
-                  onValueChange={(value) => setQuantity(parseInt(value))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => (
-                      <SelectItem key={num} value={num.toString()}>
-                        {num} {num === 1 ? 'ticket' : 'tickets'}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex items-center justify-between font-medium">
-                <span>Total Price:</span>
-                <span className="text-xl">€{totalPrice}</span>
-              </div>
             </div>
-          )}
-
-          {currentStep === 2 && (
-            <div className="space-y-6">
-              <div>
-                <Label>Payment Method</Label>
-                <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="card">Credit/Debit Card</SelectItem>
-                    <SelectItem value="stripe">Stripe</SelectItem>
-                    <SelectItem value="paypal">PayPal</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {paymentMethod === 'card' && (
-                <div className="space-y-4">
-                  <div>
-                    <Label>Card Number</Label>
-                    <Input placeholder="1234 5678 9012 3456" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>Expiry Date</Label>
-                      <Input placeholder="MM/YY" />
-                    </div>
-                    <div>
-                      <Label>CVV</Label>
-                      <Input placeholder="123" />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="bg-muted p-4 rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <span>Tickets ({quantity}x)</span>
-                  <span>€{totalPrice}</span>
-                </div>
-                <div className="flex items-center justify-between mb-2">
-                  <span>Booking Fee</span>
-                  <span>€{(totalPrice * 0.05).toFixed(2)}</span>
-                </div>
-                <Separator className="my-2" />
-                <div className="flex items-center justify-between font-medium">
-                  <span>Total</span>
-                  <span>€{(totalPrice * 1.05).toFixed(2)}</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {currentStep === 3 && (
-            <div className="text-center py-6">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="w-8 h-8 text-green-600" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Booking Confirmed!</h3>
-              <p className="text-muted-foreground mb-6">
-                Your tickets have been sent to your email.
-              </p>
-              <div className="bg-muted p-4 rounded-lg text-left">
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div>Booking Reference:</div>
-                  <div className="font-medium">FEST12345</div>
-                  <div>Event:</div>
-                  <div className="font-medium">{leisureItem.title}</div>
-                  <div>Date:</div>
-                  <div className="font-medium">
-                    {new Date(leisureItem.dates.start).toLocaleDateString()}
-                  </div>
-                  <div>Tickets:</div>
-                  <div className="font-medium">
-                    {quantity}x {selectedTicket.name}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <DialogFooter>
-            {currentStep < 3 ? (
-              <div className="flex justify-between w-full">
-                {currentStep > 1 && (
-                  <Button variant="outline" onClick={prevStep}>
-                    Back
-                  </Button>
-                )}
-                <Button
-                  className={currentStep > 1 ? '' : 'ml-auto'}
-                  onClick={currentStep === 2 ? handlePayment : nextStep}
-                >
-                  {currentStep === 2 ? 'Pay Now' : 'Continue'}
-                </Button>
-              </div>
-            ) : (
-              <Button onClick={() => setShowBooking(false)}>Close</Button>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
