@@ -1,428 +1,348 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { motion } from 'framer-motion';
-import {
-  Star,
-  MapPin,
-  Clock,
-  Calendar,
-  Phone,
-  Mail,
-  CheckCircle,
-  Shield,
-  Award,
-  ThumbsUp,
-  MessageCircle,
-  ChevronRight,
-  Euro,
-  Users,
-  FileText,
-  Briefcase,
-} from 'lucide-react';
+import { useState } from "react";
+import Image from "next/image";
+import { 
+  HeartIcon,
+  ShareIcon,
+  MapPinIcon,
+  ClockIcon,
+  CurrencyEuroIcon,
+  CalendarIcon,
+  UserGroupIcon,
+  ChevronRightIcon,
+  StarIcon,
+} from "@heroicons/react/24/outline";
+import { HeartIcon as HeartIconSolid, StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
 
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-
-// Sample service provider data
-const provider = {
-  id: 1,
-  name: "Mike's Plumbing Services",
-  title: 'Professional Plumbing Services',
-  description: `With over 12 years of experience, we provide comprehensive plumbing services for residential and commercial properties. Our team of certified plumbers is available 24/7 for emergency callouts.
-
-Key Services:
-• Emergency Repairs
-• Installation & Upgrades
-• Maintenance & Inspections
-• Bathroom & Kitchen Fitting
-• Leak Detection & Repair
-• Heating System Services`,
-  location: 'Dublin City',
-  coverage: ['Dublin City', 'South Dublin', 'North Dublin'],
-  rating: 4.8,
-  reviews: 156,
-  responseTime: '1 hour',
-  completedJobs: 450,
-  experience: '12 years',
-  team: 5,
-  verified: true,
-  insurance: {
-    provider: 'SafeGuard Insurance',
-    coverage: '€2,000,000',
-    verified: true,
-  },
-  certifications: [
-    {
-      name: 'Master Plumber License',
-      issuer: 'Plumbing Federation of Ireland',
-      year: 2015,
-    },
-    {
-      name: 'Gas Safety Certified',
-      issuer: 'Gas Networks Ireland',
-      year: 2018,
-    },
+// Sample data - would come from API
+const service = {
+  id: "1",
+  title: "Premium Interior Design Service",
+  price: "€150/hour",
+  location: "Paris, France",
+  description: "Expert interior design services tailored to luxury properties. Our team of experienced designers creates bespoke solutions that blend elegance with functionality, ensuring each space tells its own unique story.",
+  expertise: [
+    "Residential Design",
+    "Commercial Spaces",
+    "Luxury Homes",
+    "Hotel Design",
+    "Space Planning",
+    "Custom Furniture",
+    "Color Consultation",
+    "Lighting Design",
   ],
-  services: [
-    {
-      name: 'Emergency Plumbing',
-      price: '€120/hour',
-      duration: '1-2 hours',
-      description: 'Available 24/7 for urgent plumbing issues',
-    },
-    {
-      name: 'Bathroom Installation',
-      price: 'From €2,500',
-      duration: '2-3 days',
-      description: 'Complete bathroom fitting service',
-    },
-    {
-      name: 'Boiler Service',
-      price: '€95',
-      duration: '1 hour',
-      description: 'Annual boiler maintenance and inspection',
-    },
+  images: [
+    "/images/services/interior-1.jpg",
+    "/images/services/interior-2.jpg",
+    "/images/services/interior-3.jpg",
+    "/images/services/interior-4.jpg",
   ],
-  availability: {
-    hours: '8:00 AM - 6:00 PM',
-    days: 'Monday - Saturday',
-    emergency: '24/7',
+  provider: {
+    name: "Michael Chen",
+    image: "/images/connect/profile-2.jpg",
+    rating: 4.9,
+    reviews: 156,
+    response: "Usually responds within 30 minutes",
+    experience: "15+ years",
+    languages: ["English", "French", "Mandarin"],
   },
-  gallery: [
-    '/images/services/plumbing-1.jpg',
-    '/images/services/plumbing-2.jpg',
-    '/images/services/plumbing-3.jpg',
+  portfolio: [
+    {
+      title: "Luxury Apartment Renovation",
+      location: "16th Arrondissement, Paris",
+      image: "/images/services/portfolio-1.jpg",
+    },
+    {
+      title: "Boutique Hotel Design",
+      location: "Saint-Germain-des-Prés, Paris",
+      image: "/images/services/portfolio-2.jpg",
+    },
+    {
+      title: "Historic Mansion Restoration",
+      location: "Loire Valley",
+      image: "/images/services/portfolio-3.jpg",
+    },
   ],
   reviews: [
     {
-      id: 1,
-      user: {
-        name: 'John Smith',
-        image: '/images/users/user-1.jpg',
-      },
+      id: "1",
+      author: "Sophie Martin",
       rating: 5,
-      date: '2025-08-28',
-      comment: 'Excellent service! Fixed our emergency leak quickly and professionally.',
-      response: {
-        date: '2025-08-28',
-        comment: 'Thank you for your kind review, John! We're glad we could help.',
-      },
+      date: "2 weeks ago",
+      content: "Exceptional service and attention to detail. Michael transformed our space beyond our expectations.",
+      image: "/images/reviews/review-1.jpg",
     },
-    // Add more reviews...
+    {
+      id: "2",
+      author: "Jean-Pierre Dubois",
+      rating: 5,
+      date: "1 month ago",
+      content: "Professional, creative, and a pleasure to work with. The results were stunning.",
+      image: "/images/reviews/review-2.jpg",
+    },
   ],
 };
 
-export default function ServiceProviderPage() {
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [selectedService, setSelectedService] = useState(provider.services[0].name);
-  const [showGallery, setShowGallery] = useState(false);
+export default function ServiceDetailPage() {
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(0);
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
-      <section className="bg-white border-b">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex flex-col md:flex-row gap-8">
-            <div className="md:w-2/3">
-              <div className="flex items-start gap-4 mb-6">
-                <Image
-                  src={provider.gallery[0]}
-                  alt={provider.name}
-                  width={120}
-                  height={120}
-                  className="rounded-lg"
-                />
-                <div>
-                  <h1 className="text-3xl font-bold mb-2">{provider.name}</h1>
-                  <div className="flex items-center gap-4 text-muted-foreground mb-2">
-                    <div className="flex items-center">
-                      <MapPin className="w-4 h-4 mr-1" />
-                      {provider.location}
-                    </div>
-                    <div className="flex items-center">
-                      <Clock className="w-4 h-4 mr-1" />
-                      {provider.responseTime} response
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center">
-                      <Star className="w-4 h-4 text-yellow-400" />
-                      <span className="ml-1 font-medium">{provider.rating}</span>
-                    </div>
-                    <span className="text-sm text-muted-foreground">
-                      ({provider.reviews} reviews)
-                    </span>
-                    {provider.verified && (
-                      <Badge className="bg-green-500 ml-2">Verified</Badge>
-                    )}
-                  </div>
-                </div>
+      {/* Image Gallery */}
+      <div className="relative h-[70vh] w-full">
+        <Image
+          src={service.images[selectedImage]}
+          alt={service.title}
+          className="object-cover"
+          fill
+          priority
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+        
+        {/* Navigation */}
+        <div className="absolute top-0 left-0 right-0 glass border-b border-white/20">
+          <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between">
+              <button onClick={() => window.history.back()} className="text-white">
+                Back
+              </button>
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => setIsFavorite(!isFavorite)}
+                  className="glass rounded-full p-2"
+                >
+                  {isFavorite ? (
+                    <HeartIconSolid className="h-6 w-6 text-red-500" />
+                  ) : (
+                    <HeartIcon className="h-6 w-6 text-white" />
+                  )}
+                </button>
+                <button className="glass rounded-full p-2">
+                  <ShareIcon className="h-6 w-6 text-white" />
+                </button>
               </div>
-
-              <div className="grid grid-cols-3 gap-4 mb-8">
-                <Card className="p-4 text-center">
-                  <Briefcase className="w-6 h-6 mx-auto mb-2 text-primary" />
-                  <div className="font-medium">{provider.completedJobs}+</div>
-                  <div className="text-sm text-muted-foreground">Jobs Done</div>
-                </Card>
-                <Card className="p-4 text-center">
-                  <Award className="w-6 h-6 mx-auto mb-2 text-primary" />
-                  <div className="font-medium">{provider.experience}</div>
-                  <div className="text-sm text-muted-foreground">Experience</div>
-                </Card>
-                <Card className="p-4 text-center">
-                  <Users className="w-6 h-6 mx-auto mb-2 text-primary" />
-                  <div className="font-medium">{provider.team}</div>
-                  <div className="text-sm text-muted-foreground">Team Size</div>
-                </Card>
-              </div>
-
-              <div className="space-y-2 mb-6">
-                <h2 className="text-xl font-semibold">About Us</h2>
-                <p className="text-muted-foreground whitespace-pre-line">
-                  {provider.description}
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                <h2 className="text-xl font-semibold">Certifications & Insurance</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {provider.certifications.map((cert) => (
-                    <Card key={cert.name} className="p-4">
-                      <div className="flex items-start gap-3">
-                        <Award className="w-5 h-5 text-primary mt-1" />
-                        <div>
-                          <div className="font-medium">{cert.name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {cert.issuer} • {cert.year}
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                  <Card className="p-4">
-                    <div className="flex items-start gap-3">
-                      <Shield className="w-5 h-5 text-primary mt-1" />
-                      <div>
-                        <div className="font-medium">Public Liability Insurance</div>
-                        <div className="text-sm text-muted-foreground">
-                          {provider.insurance.coverage} coverage
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                </div>
-              </div>
-            </div>
-
-            <div className="md:w-1/3">
-              <Card className="p-6 sticky top-4">
-                <h3 className="text-lg font-semibold mb-4">Book a Service</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium mb-1 block">
-                      Select Service
-                    </label>
-                    <Select
-                      value={selectedService}
-                      onValueChange={setSelectedService}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Choose a service" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {provider.services.map((service) => (
-                          <SelectItem key={service.name} value={service.name}>
-                            {service.name} - {service.price}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium mb-1 block">
-                      Select Date
-                    </label>
-                    <CalendarComponent
-                      mode="single"
-                      selected={selectedDate}
-                      onSelect={setSelectedDate}
-                      className="rounded-md border"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium mb-1 block">
-                      Preferred Time
-                    </label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select time" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="morning">Morning (8AM - 12PM)</SelectItem>
-                        <SelectItem value="afternoon">Afternoon (12PM - 4PM)</SelectItem>
-                        <SelectItem value="evening">Evening (4PM - 8PM)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <Button className="w-full">Book Now</Button>
-
-                  <div className="text-sm text-muted-foreground text-center">
-                    <Clock className="w-4 h-4 inline-block mr-1" />
-                    Usually responds within {provider.responseTime}
-                  </div>
-                </div>
-              </Card>
             </div>
           </div>
         </div>
-      </section>
 
-      {/* Services & Reviews */}
-      <section className="py-12">
-        <div className="container mx-auto px-4">
-          <Tabs defaultValue="services">
-            <TabsList className="mb-8">
-              <TabsTrigger value="services">Services & Pricing</TabsTrigger>
-              <TabsTrigger value="gallery">Gallery</TabsTrigger>
-              <TabsTrigger value="reviews">Reviews</TabsTrigger>
-            </TabsList>
+        {/* Thumbnail Navigation */}
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2">
+          <div className="glass rounded-full p-2">
+            <div className="flex items-center space-x-2">
+              {service.images.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setSelectedImage(index)}
+                  className={`h-2 w-2 rounded-full transition-all ${
+                    selectedImage === index ? "bg-white" : "bg-white/50"
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
 
-            <TabsContent value="services">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {provider.services.map((service) => (
-                  <Card key={service.name} className="p-6">
-                    <h3 className="text-lg font-semibold mb-2">{service.name}</h3>
-                    <p className="text-muted-foreground mb-4">
-                      {service.description}
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-xl font-semibold text-primary">
-                          {service.price}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          Duration: {service.duration}
-                        </div>
-                      </div>
-                      <Button>Book Now</Button>
-                    </div>
-                  </Card>
-                ))}
+      {/* Content */}
+      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 gap-12 lg:grid-cols-3">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Header */}
+            <div>
+              <h1 className="text-3xl font-semibold text-gray-900">
+                {service.title}
+              </h1>
+              <div className="mt-2 flex items-center space-x-2 text-gray-500">
+                <MapPinIcon className="h-5 w-5" />
+                <span>{service.location}</span>
               </div>
-            </TabsContent>
+              <div className="mt-4 flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <ClockIcon className="h-5 w-5 text-gray-400" />
+                  <span>{service.provider.experience}</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <StarIcon className="h-5 w-5 text-gray-400" />
+                  <span>{service.provider.rating} ({service.provider.reviews} reviews)</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <CurrencyEuroIcon className="h-5 w-5 text-gray-400" />
+                  <span>{service.price}</span>
+                </div>
+              </div>
+            </div>
 
-            <TabsContent value="gallery">
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {provider.gallery.map((image, index) => (
+            {/* Description */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold text-gray-900">About the Service</h2>
+              <p className="text-gray-600 leading-relaxed">
+                {service.description}
+              </p>
+            </div>
+
+            {/* Expertise */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold text-gray-900">Areas of Expertise</h2>
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                {service.expertise.map((item) => (
                   <div
-                    key={index}
-                    className="relative aspect-square cursor-pointer"
-                    onClick={() => setShowGallery(true)}
+                    key={item}
+                    className="flex items-center space-x-2 text-gray-600"
                   >
-                    <Image
-                      src={image}
-                      alt={`Gallery image ${index + 1}`}
-                      fill
-                      className="object-cover rounded-lg"
-                    />
+                    <ChevronRightIcon className="h-4 w-4 text-blue-500" />
+                    <span>{item}</span>
                   </div>
                 ))}
               </div>
-            </TabsContent>
+            </div>
 
-            <TabsContent value="reviews">
-              <div className="space-y-6">
-                {provider.reviews.map((review) => (
-                  <Card key={review.id} className="p-6">
-                    <div className="flex items-start gap-4">
+            {/* Portfolio */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold text-gray-900">Portfolio</h2>
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {service.portfolio.map((item) => (
+                  <div key={item.title} className="group relative">
+                    <div className="relative aspect-[4/3] overflow-hidden rounded-xl">
                       <Image
-                        src={review.user.image}
-                        alt={review.user.name}
-                        width={40}
-                        height={40}
-                        className="rounded-full"
+                        src={item.image}
+                        alt={item.title}
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                        fill
                       />
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between mb-2">
-                          <div>
-                            <div className="font-medium">{review.user.name}</div>
-                            <div className="text-sm text-muted-foreground">
-                              {new Date(review.date).toLocaleDateString()}
-                            </div>
-                          </div>
-                          <div className="flex items-center">
-                            {Array.from({ length: review.rating }).map((_, i) => (
-                              <Star
-                                key={i}
-                                className="w-4 h-4 text-yellow-400"
-                                fill="currentColor"
-                              />
-                            ))}
-                          </div>
-                        </div>
-                        <p className="text-muted-foreground mb-4">
-                          {review.comment}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                      <div className="absolute bottom-4 left-4 right-4">
+                        <h3 className="text-lg font-medium text-white">
+                          {item.title}
+                        </h3>
+                        <p className="mt-1 text-sm text-white/80">
+                          {item.location}
                         </p>
-                        {review.response && (
-                          <Card className="p-4 bg-muted">
-                            <div className="text-sm font-medium mb-1">
-                              Response from {provider.name}
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              {review.response.comment}
-                            </div>
-                          </Card>
-                        )}
                       </div>
                     </div>
-                  </Card>
+                  </div>
                 ))}
               </div>
-            </TabsContent>
-          </Tabs>
-        </div>
-      </section>
+            </div>
 
-      {/* Gallery Dialog */}
-      <Dialog open={showGallery} onOpenChange={setShowGallery}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>Gallery</DialogTitle>
-          </DialogHeader>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {provider.gallery.map((image, index) => (
-              <div key={index} className="relative aspect-square">
-                <Image
-                  src={image}
-                  alt={`Gallery image ${index + 1}`}
-                  fill
-                  className="object-cover rounded-lg"
-                />
+            {/* Reviews */}
+            <div className="space-y-6">
+              <h2 className="text-xl font-semibold text-gray-900">Client Reviews</h2>
+              <div className="space-y-6">
+                {service.reviews.map((review) => (
+                  <div key={review.id} className="card p-6">
+                    <div className="flex items-start space-x-4">
+                      <div className="relative h-12 w-12">
+                        <Image
+                          src={review.image}
+                          alt={review.author}
+                          className="rounded-full object-cover"
+                          fill
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-medium text-gray-900">
+                            {review.author}
+                          </h3>
+                          <span className="text-sm text-gray-500">
+                            {review.date}
+                          </span>
+                        </div>
+                        <div className="mt-1 flex items-center">
+                          {[...Array(5)].map((_, i) => (
+                            <StarIconSolid
+                              key={i}
+                              className={`h-4 w-4 ${
+                                i < review.rating
+                                  ? "text-yellow-400"
+                                  : "text-gray-300"
+                              }`}
+                            />
+                          ))}
+                        </div>
+                        <p className="mt-2 text-gray-600">{review.content}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
           </div>
-        </DialogContent>
-      </Dialog>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Provider Card */}
+            <div className="card p-6">
+              <div className="flex items-center space-x-4">
+                <div className="relative h-16 w-16">
+                  <Image
+                    src={service.provider.image}
+                    alt={service.provider.name}
+                    className="rounded-full object-cover"
+                    fill
+                  />
+                </div>
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900">
+                    {service.provider.name}
+                  </h3>
+                  <div className="mt-1 flex items-center">
+                    <div className="flex items-center">
+                      {[...Array(5)].map((_, i) => (
+                        <StarIconSolid
+                          key={i}
+                          className={`h-4 w-4 ${
+                            i < Math.floor(service.provider.rating)
+                              ? "text-yellow-400"
+                              : "text-gray-300"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <span className="ml-2 text-sm text-gray-500">
+                      ({service.provider.reviews} reviews)
+                    </span>
+                  </div>
+                  <p className="mt-1 text-sm text-gray-500">
+                    {service.provider.response}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4">
+                <h4 className="text-sm font-medium text-gray-900">Languages</h4>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {service.provider.languages.map((language) => (
+                    <span
+                      key={language}
+                      className="glass rounded-full px-2.5 py-0.5 text-xs font-medium text-gray-900"
+                    >
+                      {language}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="mt-6 space-y-3">
+                <button className="btn-primary w-full">Book Consultation</button>
+                <button className="btn-secondary w-full">Send Message</button>
+              </div>
+            </div>
+
+            {/* Booking Calendar */}
+            <div className="card p-6">
+              <h3 className="text-lg font-medium text-gray-900">
+                Check Availability
+              </h3>
+              <div className="mt-4">
+                {/* Calendar component would go here */}
+                <div className="h-64 w-full rounded-lg bg-gray-100" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
