@@ -1,321 +1,181 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { motion } from 'framer-motion';
-import {
-  Search,
-  MapPin,
-  Star,
-  Filter,
-  Clock,
-  Calendar,
-  Briefcase,
-  Award,
-  Shield,
-  CheckCircle,
-  Euro,
-  Users,
-} from 'lucide-react';
+import PageLayout from "@/components/layout/page-layout";
+import { ChevronRightIcon } from "@heroicons/react/24/outline";
+import Image from "next/image";
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
-import { Slider } from '@/components/ui/slider';
-import { Switch } from '@/components/ui/switch';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
-// Sample service categories
-const serviceCategories = [
-  { id: 'trades', name: 'Trades & Construction', icon: Briefcase },
-  { id: 'home', name: 'Home Services', icon: Home },
-  { id: 'health', name: 'Health & Wellness', icon: Heart },
-  { id: 'education', name: 'Education & Tutoring', icon: GraduationCap },
-  { id: 'tech', name: 'Technology', icon: Laptop },
-  { id: 'events', name: 'Events & Entertainment', icon: Music },
-];
-
-// Sample services data
+// Sample data
 const services = [
   {
-    id: 1,
-    title: 'Professional Plumbing Services',
-    provider: {
-      name: "Mike's Plumbing",
-      image: '/images/providers/plumber-1.jpg',
-      verified: true,
-      rating: 4.8,
-      reviews: 156,
-      experience: '12 years',
-    },
-    category: 'trades',
-    location: 'Dublin City',
-    price: 'From €80/hour',
-    availability: 'Available Today',
-    description: 'Expert plumbing services for residential and commercial properties. Emergency callouts available.',
-    services: [
-      'Emergency Repairs',
-      'Installation',
-      'Maintenance',
-      'Bathroom Fitting',
-    ],
-    insurance: true,
-    certifications: ['Licensed', 'Insured', 'SafeWork Certified'],
-    response: '1 hour',
-    images: ['/images/services/plumbing-1.jpg'],
+    id: "1",
+    title: "Home Cleaning",
+    description: "Professional cleaning services for your home",
+    price: "From €50/hour",
+    rating: 4.8,
+    reviews: 128,
+    imageUrl: "/images/services/cleaning.jpg",
+    category: "Home Services",
   },
-  // Add more services...
+  {
+    id: "2",
+    title: "Plumbing",
+    description: "Expert plumbing repairs and installations",
+    price: "From €80/hour",
+    rating: 4.9,
+    reviews: 256,
+    imageUrl: "/images/services/plumbing.jpg",
+    category: "Maintenance",
+  },
+  {
+    id: "3",
+    title: "Interior Design",
+    description: "Transform your space with professional design",
+    price: "From €150/hour",
+    rating: 5.0,
+    reviews: 64,
+    imageUrl: "/images/services/interior-design.jpg",
+    category: "Design",
+  },
 ];
 
-// Filter options
-const sortOptions = [
-  { value: 'rating', label: 'Top Rated' },
-  { value: 'price_low', label: 'Price: Low to High' },
-  { value: 'price_high', label: 'Price: High to Low' },
-  { value: 'availability', label: 'Availability' },
+const categories = [
+  "All Services",
+  "Home Services",
+  "Maintenance",
+  "Design",
+  "Landscaping",
+  "Security",
 ];
 
-const availabilityOptions = [
-  { value: 'today', label: 'Available Today' },
-  { value: 'week', label: 'This Week' },
-  { value: 'weekend', label: 'Weekend' },
-  { value: 'anytime', label: 'Anytime' },
-];
+function ServiceCard({ service }: { service: typeof services[0] }) {
+  return (
+    <div className="group relative animate-fade-up">
+      <div className="card overflow-hidden">
+        <div className="relative aspect-[4/3] overflow-hidden rounded-t-2xl">
+          <Image
+            src={service.imageUrl}
+            alt={service.title}
+            className="object-cover object-center transition-transform duration-300 group-hover:scale-105"
+            fill
+            sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+        </div>
+
+        <div className="p-6">
+          <div className="space-y-3">
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="text-lg font-medium leading-6 text-gray-900">
+                  {service.title}
+                </h3>
+                <p className="mt-1 text-sm text-gray-500">{service.category}</p>
+              </div>
+              <p className="text-lg font-medium text-gray-900">{service.price}</p>
+            </div>
+
+            <p className="text-sm text-gray-600">{service.description}</p>
+
+            <div className="flex items-center gap-2">
+              <div className="flex items-center">
+                {[...Array(5)].map((_, i) => (
+                  <svg
+                    key={i}
+                    className={`h-4 w-4 ${
+                      i < Math.floor(service.rating)
+                        ? "text-yellow-400"
+                        : "text-gray-300"
+                    }`}
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 15.585l-6.327 3.323 1.209-7.037L.172 7.282l7.046-1.024L10 0l2.782 6.258 7.046 1.024-4.71 4.589 1.209 7.037z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                ))}
+              </div>
+              <span className="text-sm text-gray-500">
+                ({service.reviews} reviews)
+              </span>
+            </div>
+          </div>
+
+          <div className="mt-6 flex items-center gap-3">
+            <button className="btn-primary flex-1">Book Now</button>
+            <button className="btn-secondary flex-1">Learn More</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function ServicesPage() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [location, setLocation] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [priceRange, setPriceRange] = useState([0, 200]);
-  const [sortBy, setSortBy] = useState('rating');
-  const [availability, setAvailability] = useState('anytime');
-  const [verifiedOnly, setVerifiedOnly] = useState(false);
-  const [viewType, setViewType] = useState<'grid' | 'list'>('grid');
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
-      <section className="bg-primary text-white py-12">
-        <div className="container mx-auto px-4">
-          <h1 className="text-4xl font-bold mb-4">Find Trusted Service Providers</h1>
-          <p className="text-xl opacity-90 mb-8">
-            Connect with verified professionals for all your service needs
-          </p>
-
-          {/* Search Bar */}
-          <Card className="p-4 bg-white/10 backdrop-blur-lg">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-primary" />
-                  <Input
-                    placeholder="What service do you need?"
-                    className="pl-10 bg-white text-black"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="flex-1">
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-primary" />
-                  <Input
-                    placeholder="Location"
-                    className="pl-10 bg-white text-black"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                  />
-                </div>
-              </div>
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button variant="secondary" className="w-full md:w-auto">
-                    <Filter className="w-4 h-4 mr-2" />
-                    Filters
-                  </Button>
-                </SheetTrigger>
-                <SheetContent>
-                  <SheetHeader>
-                    <SheetTitle>Filter Services</SheetTitle>
-                  </SheetHeader>
-                  <div className="py-4 space-y-6">
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">
-                        Price Range (€/hour)
-                      </label>
-                      <Slider
-                        value={priceRange}
-                        onValueChange={setPriceRange}
-                        min={0}
-                        max={200}
-                        step={10}
-                      />
-                      <div className="flex justify-between mt-2 text-sm text-muted-foreground">
-                        <span>€{priceRange[0]}</span>
-                        <span>€{priceRange[1]}</span>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">
-                        Availability
-                      </label>
-                      <Select value={availability} onValueChange={setAvailability}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select availability" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {availabilityOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <label className="text-sm font-medium">Verified Only</label>
-                        <p className="text-sm text-muted-foreground">
-                          Show only verified providers
-                        </p>
-                      </div>
-                      <Switch
-                        checked={verifiedOnly}
-                        onCheckedChange={setVerifiedOnly}
-                      />
-                    </div>
-                  </div>
-                </SheetContent>
-              </Sheet>
-              <Button className="w-full md:w-auto">Search</Button>
-            </div>
-          </Card>
-        </div>
-      </section>
-
+    <PageLayout
+      header={{
+        title: "Professional Services",
+        description: "Find trusted professionals for all your needs",
+      }}
+    >
       {/* Categories */}
-      <section className="py-8 bg-white">
-        <div className="container mx-auto px-4">
-          <Tabs defaultValue="all" className="w-full">
-            <TabsList className="w-full justify-start overflow-x-auto">
-              <TabsTrigger value="all">All Services</TabsTrigger>
-              {serviceCategories.map((category) => (
-                <TabsTrigger key={category.id} value={category.id}>
-                  <category.icon className="w-4 h-4 mr-2" />
-                  {category.name}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
+      <div className="glass mb-12 rounded-2xl p-4">
+        <div className="flex items-center gap-4 overflow-x-auto py-2">
+          {categories.map((category) => (
+            <button
+              key={category}
+              className="whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+              {category}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Featured services */}
+      <section className="space-y-8">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-semibold text-gray-900">
+            Featured Services
+          </h2>
+          <a
+            href="#"
+            className="group flex items-center text-sm font-medium text-blue-600"
+          >
+            View all
+            <ChevronRightIcon className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
+          </a>
+        </div>
+        <div className="apple-grid">
+          {services.map((service) => (
+            <ServiceCard key={service.id} service={service} />
+          ))}
         </div>
       </section>
 
-      {/* Results Section */}
-      <section className="py-8">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h2 className="text-2xl font-bold">
-                {services.length} Services Available
-              </h2>
-              <p className="text-muted-foreground">
-                Browse through our verified providers
-              </p>
-            </div>
-            <div className="flex items-center gap-4">
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-[160px]">
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  {sortOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className={viewType === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-6'}>
-            {services.map((service) => (
-              <Link href={`/services/${service.id}`} key={service.id}>
-                <Card className={`overflow-hidden group hover:shadow-lg transition-shadow ${
-                  viewType === 'list' ? 'flex' : ''
-                }`}>
-                  <div className={`relative ${viewType === 'list' ? 'w-1/3' : ''}`}>
-                    <div className="relative h-48 overflow-hidden">
-                      <Image
-                        src={service.images[0]}
-                        alt={service.title}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    </div>
-                    {service.provider.verified && (
-                      <Badge className="absolute top-2 right-2 bg-green-500">
-                        Verified
-                      </Badge>
-                    )}
-                  </div>
-                  <div className={`p-4 ${viewType === 'list' ? 'w-2/3' : ''}`}>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                      <MapPin className="w-4 h-4" />
-                      {service.location}
-                    </div>
-                    <h3 className="text-lg font-semibold mb-1">{service.title}</h3>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      {service.provider.name}
-                    </p>
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="flex items-center">
-                        <Star className="w-4 h-4 text-yellow-400" />
-                        <span className="ml-1 font-medium">
-                          {service.provider.rating}
-                        </span>
-                      </div>
-                      <span className="text-sm text-muted-foreground">
-                        ({service.provider.reviews} reviews)
-                      </span>
-                      <Badge variant="outline" className="ml-auto">
-                        {service.availability}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-primary font-semibold">
-                        {service.price}
-                      </span>
-                      <Button variant="ghost" size="sm">
-                        View Profile
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
-              </Link>
-            ))}
-          </div>
+      {/* Popular categories */}
+      <section className="mt-16 space-y-8">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-semibold text-gray-900">
+            Popular Categories
+          </h2>
+          <a
+            href="#"
+            className="group flex items-center text-sm font-medium text-blue-600"
+          >
+            View all
+            <ChevronRightIcon className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
+          </a>
+        </div>
+        <div className="apple-grid">
+          {services.map((service) => (
+            <ServiceCard key={service.id} service={service} />
+          ))}
         </div>
       </section>
-    </div>
+    </PageLayout>
   );
 }
