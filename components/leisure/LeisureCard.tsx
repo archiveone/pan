@@ -1,180 +1,184 @@
-'use client';
-
-import { useState } from 'react';
-import Image from 'next/image';
+import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { Star, MapPin, Calendar, Users, Clock, Share2, Heart } from 'lucide-react';
-
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { AnalyticsTracker } from '@/components/analytics/AnalyticsTracker';
-import { formatCurrency } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
+import { useState } from 'react';
+import { useToast } from '@/components/ui/use-toast';
+import { useRouter } from 'next/navigation';
+import { Loader2, Star, Calendar } from 'lucide-react';
 
 interface LeisureCardProps {
   leisure: {
     id: string;
     title: string;
     description: string;
-    type: string;
-    category: string;
-    price: {
-      amount: number;
-      currency: string;
-      unit: string;
-    };
-    rating: number;
-    reviewCount: number;
-    capacity: number;
-    duration: string;
-    location: {
-      address: string;
-      city: string;
-      country: string;
-    };
-    availability: {
-      status: string;
-      nextAvailable?: string;
-    };
-    images: string[];
+    type: 'RENTAL' | 'EXPERIENCE' | 'EVENT';
+    price: number;
+    location: string;
+    status: string;
+    isFeatured: boolean;
+    availability: Date[];
     provider: {
       id: string;
       name: string;
-      avatar: string;
-      verified: boolean;
+      rating?: number;
+      totalReviews: number;
+      isVerified: boolean;
     };
+    createdAt: Date;
   };
+  showActions?: boolean;
+  isOwner?: boolean;
 }
 
-export function LeisureCard({ leisure }: LeisureCardProps) {
-  const [isHovered, setIsHovered] = useState(false);
+export function LeisureCard({ leisure, showActions = false, isOwner = false }: LeisureCardProps) {
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+  const router = useRouter();
+
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this listing?')) return;
+
+    setIsLoading(true);
+
+    try {
+      const response = await fetch(`/api/leisure?id=${leisure.id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) throw new Error('Failed to delete listing');
+
+      toast({
+        title: 'Success',
+        description: 'Your leisure listing has been deleted.',
+      });
+
+      router.refresh();
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete listing. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const nextAvailability = leisure.availability
+    .filter(date => new Date(date) > new Date())
+    .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())[0];
+
+  const typeColors = {
+    RENTAL: 'bg-blue-100 text-blue-800',
+    EXPERIENCE: 'bg-purple-100 text-purple-800',
+    EVENT: 'bg-green-100 text-green-800',
+  };
 
   return (
-    <>
-      <motion.div
-        className="group relative rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden"
-        whileHover={{ y: -5 }}
-        onHoverStart={() => setIsHovered(true)}
-        onHoverEnd={() => setIsHovered(false)}
-      >
-        {/* Leisure Image */}
-        <Link href={`/leisure/${leisure.id}`}>
-          <div className="relative aspect-[16/9] overflow-hidden">
-            <Image
-              src={leisure.images[0]}
-              alt={leisure.title}
-              fill
-              className="object-cover transition-transform group-hover:scale-105"
-              priority
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-            
-            {/* Category Badge */}
-            <Badge className="absolute top-2 left-2">
-              {leisure.category}
-            </Badge>
-
-            {/* Action Buttons */}
-            <div className="absolute top-2 right-2 flex space-x-2">
-              <Button
-                variant="secondary"
-                size="icon"
-                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+    <Card className={leisure.isFeatured ? 'border-primary' : ''}>
+      <CardHeader>
+        <div className="flex items-start justify-between">
+          <div>
+            <h3 className="text-lg font-semibold">
+              <Link
+                href={`/leisure/${leisure.id}`}
+                className="hover:text-primary hover:underline"
               >
-                <Heart className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="secondary"
-                size="icon"
-                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <Share2 className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </Link>
-
-        {/* Leisure Details */}
-        <div className="p-4">
-          {/* Provider Info */}
-          <div className="flex items-center space-x-2 mb-2">
-            <Image
-              src={leisure.provider.avatar}
-              alt={leisure.provider.name}
-              width={32}
-              height={32}
-              className="rounded-full"
-            />
-            <div>
-              <span className="font-medium">{leisure.provider.name}</span>
-              <div className="flex items-center text-sm text-muted-foreground">
-                <Star className="h-4 w-4 text-yellow-400 mr-1" />
-                {leisure.rating} ({leisure.reviewCount} reviews)
-              </div>
-            </div>
-          </div>
-
-          {/* Title and Price */}
-          <div className="flex justify-between items-start mb-2">
-            <div>
-              <h3 className="font-semibold leading-none tracking-tight">
                 {leisure.title}
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                {leisure.location.city}, {leisure.location.country}
-              </p>
+              </Link>
+            </h3>
+            <div className="mt-1 flex items-center space-x-2 text-sm text-muted-foreground">
+              <span>{leisure.location}</span>
+              <span>•</span>
+              <span>
+                Posted {formatDistanceToNow(new Date(leisure.createdAt), { addSuffix: true })}
+              </span>
             </div>
-            <div className="text-right">
-              <div className="font-bold">
-                {formatCurrency(leisure.price.amount, leisure.price.currency)}
+          </div>
+          <div className="flex items-center space-x-2">
+            {leisure.isFeatured && (
+              <Badge variant="default">Featured</Badge>
+            )}
+            <Badge
+              variant="secondary"
+              className={typeColors[leisure.type]}
+            >
+              {leisure.type.charAt(0) + leisure.type.slice(1).toLowerCase()}
+            </Badge>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <p className="line-clamp-2 text-muted-foreground">{leisure.description}</p>
+        
+        <div className="mt-4 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <div className="flex items-center">
+              <Star className="mr-1 h-4 w-4 text-yellow-400" />
+              <span className="font-medium">
+                {leisure.provider.rating?.toFixed(1) || 'N/A'}
+              </span>
+            </div>
+            <span className="text-sm text-muted-foreground">
+              ({leisure.provider.totalReviews} reviews)
+            </span>
+            {leisure.provider.isVerified && (
+              <Badge variant="secondary">Verified</Badge>
+            )}
+          </div>
+          <div className="text-right">
+            <div className="text-lg font-semibold">€{leisure.price.toFixed(2)}</div>
+            {nextAvailability && (
+              <div className="flex items-center text-sm text-muted-foreground">
+                <Calendar className="mr-1 h-4 w-4" />
+                {new Date(nextAvailability).toLocaleDateString()}
               </div>
-              <p className="text-sm text-muted-foreground">
-                per {leisure.price.unit}
-              </p>
-            </div>
-          </div>
-
-          {/* Features */}
-          <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-            <div className="flex items-center">
-              <Users className="h-4 w-4 mr-1" />
-              Up to {leisure.capacity}
-            </div>
-            <div className="flex items-center">
-              <Clock className="h-4 w-4 mr-1" />
-              {leisure.duration}
-            </div>
-            <div className="flex items-center">
-              <MapPin className="h-4 w-4 mr-1" />
-              {leisure.location.city}
-            </div>
-          </div>
-
-          {/* Availability */}
-          <div className="mt-4">
-            {leisure.availability.status === 'AVAILABLE' ? (
-              <Button className="w-full">
-                <Calendar className="mr-2 h-4 w-4" />
-                Book Now
-              </Button>
-            ) : (
-              <Button variant="outline" className="w-full" disabled>
-                Next Available: {leisure.availability.nextAvailable}
-              </Button>
             )}
           </div>
         </div>
-      </motion.div>
+      </CardContent>
 
-      {/* Analytics Tracking */}
-      {isHovered && (
-        <AnalyticsTracker
-          listingId={leisure.id}
-          listingType="LEISURE"
-          searchQuery={undefined}
-          searchFilters={undefined}
-        />
+      {(showActions || isOwner) && (
+        <CardFooter className="border-t pt-4">
+          <div className="flex w-full items-center justify-between">
+            <div className="text-sm text-muted-foreground">
+              {leisure.availability.length} available {leisure.availability.length === 1 ? 'time slot' : 'time slots'}
+            </div>
+            <div className="flex space-x-2">
+              {isOwner && (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => router.push(`/leisure/edit/${leisure.id}`)}
+                    disabled={isLoading}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={handleDelete}
+                    disabled={isLoading}
+                  >
+                    {isLoading && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    Delete
+                  </Button>
+                </>
+              )}
+              {!isOwner && showActions && (
+                <Button
+                  onClick={() => router.push(`/leisure/${leisure.id}`)}
+                >
+                  View Details
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardFooter>
       )}
-    </>
+    </Card>
   );
 }
