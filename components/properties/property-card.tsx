@@ -32,54 +32,82 @@ export function PropertyCard({
   const [isFavorite, setIsFavorite] = useState(false);
 
   return (
-    <div className="group relative">
-      <div className="aspect-h-3 aspect-w-4 overflow-hidden rounded-lg bg-gray-100">
-        <Image
-          src={imageUrl}
-          alt={title}
-          className="object-cover object-center"
-          width={800}
-          height={600}
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-        {isFeatured && (
-          <div className="absolute left-4 top-4">
-            <span className="inline-flex items-center rounded-full bg-blue-600 px-2 py-1 text-xs font-medium text-white">
-              Featured
-            </span>
-          </div>
-        )}
-        <button
-          onClick={() => setIsFavorite(!isFavorite)}
-          className="absolute right-4 top-4 rounded-full bg-white p-2 shadow-md hover:bg-gray-100"
-        >
-          {isFavorite ? (
-            <HeartIconSolid className="h-5 w-5 text-red-500" />
-          ) : (
-            <HeartIcon className="h-5 w-5 text-gray-400" />
+    <div className="group relative animate-fade-up">
+      {/* Card with Apple-like glass morphism */}
+      <div className="card overflow-hidden">
+        {/* Image container */}
+        <div className="relative aspect-[4/3] overflow-hidden rounded-t-2xl">
+          <Image
+            src={imageUrl}
+            alt={title}
+            className="object-cover object-center transition-transform duration-300 group-hover:scale-105"
+            fill
+            sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+          />
+          {/* Gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+          
+          {/* Featured badge */}
+          {isFeatured && (
+            <div className="absolute left-4 top-4">
+              <span className="glass px-3 py-1 text-xs font-medium text-gray-900">
+                Featured
+              </span>
+            </div>
           )}
-        </button>
-      </div>
-      <div className="mt-4 space-y-2">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-medium text-gray-900">
-            <Link href={`/properties/${id}`}>
-              <span aria-hidden="true" className="absolute inset-0" />
-              {title}
-            </Link>
-          </h3>
-          <p className="text-lg font-medium text-blue-600">€{price.toLocaleString()}</p>
+
+          {/* Favorite button */}
+          <button
+            onClick={() => setIsFavorite(!isFavorite)}
+            className="absolute right-4 top-4 glass rounded-full p-2 transition-apple"
+          >
+            {isFavorite ? (
+              <HeartIconSolid className="h-5 w-5 text-red-500" />
+            ) : (
+              <HeartIcon className="h-5 w-5 text-gray-700" />
+            )}
+          </button>
         </div>
-        <p className="text-sm text-gray-500">{location}</p>
-        <div className="flex items-center gap-4 text-sm text-gray-500">
-          <div className="flex items-center gap-1">
-            <span className="font-medium">{bedrooms}</span> beds
+
+        {/* Content */}
+        <div className="p-6">
+          <div className="space-y-3">
+            {/* Title and Price */}
+            <div className="flex items-start justify-between">
+              <h3 className="text-lg font-medium leading-6 text-gray-900">
+                <Link href={`/properties/${id}`} className="hover:underline">
+                  {title}
+                </Link>
+              </h3>
+              <p className="text-lg font-medium text-gray-900">
+                €{price.toLocaleString()}
+              </p>
+            </div>
+
+            {/* Location */}
+            <p className="text-sm text-gray-500">{location}</p>
+
+            {/* Stats */}
+            <div className="flex items-center gap-6 text-sm text-gray-500">
+              <div className="flex items-center gap-1">
+                <span className="font-medium">{bedrooms}</span>
+                <span>bed{bedrooms !== 1 ? "s" : ""}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="font-medium">{bathrooms}</span>
+                <span>bath{bathrooms !== 1 ? "s" : ""}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="font-medium">{size}</span>
+                <span>m²</span>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-1">
-            <span className="font-medium">{bathrooms}</span> baths
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="font-medium">{size}</span> m²
+
+          {/* Action buttons */}
+          <div className="mt-6 flex items-center gap-3">
+            <button className="btn-primary flex-1">View Details</button>
+            <button className="btn-secondary flex-1">Contact Agent</button>
           </div>
         </div>
       </div>
