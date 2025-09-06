@@ -1,360 +1,276 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
-import {
-  MapPin,
-  BedDouble,
-  Bath,
-  Square,
-  Calendar,
-  Phone,
-  Mail,
-  Heart,
-  Share,
-  ChevronLeft,
-  ChevronRight,
-  Check,
-  X,
-} from 'lucide-react';
+import { useState } from "react";
+import Image from "next/image";
+import { 
+  HeartIcon,
+  ShareIcon,
+  MapPinIcon,
+  HomeIcon,
+  CurrencyEuroIcon,
+  CalendarIcon,
+  UserGroupIcon,
+  ChevronRightIcon,
+} from "@heroicons/react/24/outline";
+import { HeartIcon as HeartIconSolid } from "@heroicons/react/24/solid";
 
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-
-// Sample property data
+// Sample data - would come from API
 const property = {
-  id: 1,
-  title: 'Modern Apartment in City Center',
-  description: `Beautiful modern apartment with stunning city views and high-end finishes. This exceptional property features:
-
-  • Open-plan living and dining area
-  • Fully equipped modern kitchen
-  • Master bedroom with ensuite
-  • Second bedroom with built-in wardrobes
-  • Spacious balcony with city views
-  • Secure underground parking
-  • 24/7 concierge service
-  • Residents' gym and lounge`,
-  location: 'Dublin 2',
-  address: '123 Main Street, Dublin 2, D02 AB12',
-  price: 2500,
-  type: 'Apartment',
-  status: 'For Rent',
-  beds: 2,
-  baths: 2,
-  sqm: 85,
+  id: "1",
+  title: "Luxury Penthouse with Sea View",
+  price: 1250000,
+  location: "Monaco, French Riviera",
+  description: "Stunning penthouse apartment with panoramic sea views, featuring premium finishes and exclusive amenities. This exceptional property offers the perfect blend of luxury and comfort in one of the most prestigious locations.",
   features: [
-    'Parking',
-    'Balcony',
-    'Gym',
-    'Elevator',
-    'Security',
-    'Storage',
-    'Pet Friendly',
-    'Furnished',
-  ],
-  amenities: [
-    'Air Conditioning',
-    'Central Heating',
-    'Dishwasher',
-    'Washing Machine',
-    'High-Speed Internet',
-    'Smart Home System',
+    "3 Bedrooms",
+    "2.5 Bathrooms",
+    "180 m² Living Space",
+    "50 m² Terrace",
+    "2 Parking Spaces",
+    "24/7 Concierge",
+    "Private Pool",
+    "Smart Home System",
   ],
   images: [
-    '/images/properties/apartment-1.jpg',
-    '/images/properties/apartment-2.jpg',
-    '/images/properties/apartment-3.jpg',
-    '/images/properties/apartment-4.jpg',
+    "/images/properties/penthouse-1.jpg",
+    "/images/properties/penthouse-2.jpg",
+    "/images/properties/penthouse-3.jpg",
+    "/images/properties/penthouse-4.jpg",
   ],
   agent: {
-    name: 'Sarah Johnson',
-    image: '/images/agents/agent-1.jpg',
-    phone: '+353 1 234 5678',
-    email: 'sarah.johnson@greia.com',
-    experience: '8 years',
-    listings: 45,
+    name: "Sarah Johnson",
+    image: "/images/connect/profile-1.jpg",
+    rating: 4.9,
+    reviews: 128,
+    response: "Usually responds within 1 hour",
   },
-  video: '/videos/property-tour.mp4',
-  virtualTour: 'https://my.matterport.com/show/?m=example',
-  floorPlan: '/images/properties/floor-plan.jpg',
+  amenities: [
+    "Air Conditioning",
+    "Floor Heating",
+    "Wine Cellar",
+    "Home Theater",
+    "Gym Access",
+    "Storage Room",
+  ],
   nearbyPlaces: [
-    { name: 'City Center Shopping', distance: '0.2 km' },
-    { name: 'Central Park', distance: '0.5 km' },
-    { name: 'Metro Station', distance: '0.3 km' },
-    { name: 'International School', distance: '1.2 km' },
+    "Monte Carlo Casino (5 min)",
+    "Port Hercule (8 min)",
+    "Larvotto Beach (10 min)",
+    "Monaco Train Station (12 min)",
   ],
 };
 
 export default function PropertyDetailPage() {
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [showGallery, setShowGallery] = useState(false);
-
-  const nextImage = () => {
-    setCurrentImageIndex((prev) =>
-      prev === property.images.length - 1 ? 0 : prev + 1
-    );
-  };
-
-  const prevImage = () => {
-    setCurrentImageIndex((prev) =>
-      prev === 0 ? property.images.length - 1 : prev - 1
-    );
-  };
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(0);
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Image Gallery */}
-      <section className="relative h-[70vh]">
-        <div className="absolute inset-0">
-          <Image
-            src={property.images[currentImageIndex]}
-            alt={property.title}
-            fill
-            className="object-cover"
-          />
-          <div className="absolute inset-0 bg-black/20" />
-        </div>
-
-        <div className="absolute inset-0 flex items-center justify-between px-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-white hover:bg-black/20"
-            onClick={prevImage}
-          >
-            <ChevronLeft className="w-8 h-8" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-white hover:bg-black/20"
-            onClick={nextImage}
-          >
-            <ChevronRight className="w-8 h-8" />
-          </Button>
-        </div>
-
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
-          {property.images.map((_, index) => (
-            <button
-              key={index}
-              className={`w-2 h-2 rounded-full ${
-                index === currentImageIndex ? 'bg-white' : 'bg-white/50'
-              }`}
-              onClick={() => setCurrentImageIndex(index)}
-            />
-          ))}
-        </div>
-
-        <Button
-          className="absolute bottom-4 right-4 bg-black/50 hover:bg-black/70"
-          onClick={() => setShowGallery(true)}
-        >
-          View All Photos
-        </Button>
-      </section>
-
-      <div className="container mx-auto px-4 -mt-20 relative z-10">
-        <Card className="p-6 md:p-8 mb-8">
-          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <Badge>{property.status}</Badge>
-                <Badge variant="outline">{property.type}</Badge>
-              </div>
-              <h1 className="text-3xl font-bold mb-2">{property.title}</h1>
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <MapPin className="w-4 h-4" />
-                {property.address}
-              </div>
-            </div>
-            <div className="flex flex-col items-end">
-              <div className="text-3xl font-bold text-primary">
-                €{property.price}
-                <span className="text-base font-normal text-muted-foreground">
-                  /month
-                </span>
-              </div>
-              <div className="flex gap-2 mt-4">
-                <Button variant="outline" size="icon">
-                  <Heart className="w-4 h-4" />
-                </Button>
-                <Button variant="outline" size="icon">
-                  <Share className="w-4 h-4" />
-                </Button>
-                <Button>Schedule Viewing</Button>
+      <div className="relative h-[70vh] w-full">
+        <Image
+          src={property.images[selectedImage]}
+          alt={property.title}
+          className="object-cover"
+          fill
+          priority
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+        
+        {/* Navigation */}
+        <div className="absolute top-0 left-0 right-0 glass border-b border-white/20">
+          <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between">
+              <button onClick={() => window.history.back()} className="text-white">
+                Back
+              </button>
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => setIsFavorite(!isFavorite)}
+                  className="glass rounded-full p-2"
+                >
+                  {isFavorite ? (
+                    <HeartIconSolid className="h-6 w-6 text-red-500" />
+                  ) : (
+                    <HeartIcon className="h-6 w-6 text-white" />
+                  )}
+                </button>
+                <button className="glass rounded-full p-2">
+                  <ShareIcon className="h-6 w-6 text-white" />
+                </button>
               </div>
             </div>
           </div>
+        </div>
 
-          <div className="grid grid-cols-3 md:grid-cols-4 gap-4 mt-6 p-4 bg-muted rounded-lg">
-            <div className="flex items-center gap-2">
-              <BedDouble className="w-5 h-5 text-muted-foreground" />
-              <div>
-                <div className="font-medium">{property.beds}</div>
-                <div className="text-sm text-muted-foreground">Bedrooms</div>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Bath className="w-5 h-5 text-muted-foreground" />
-              <div>
-                <div className="font-medium">{property.baths}</div>
-                <div className="text-sm text-muted-foreground">Bathrooms</div>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Square className="w-5 h-5 text-muted-foreground" />
-              <div>
-                <div className="font-medium">{property.sqm}</div>
-                <div className="text-sm text-muted-foreground">Square Meters</div>
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="md:col-span-2 space-y-8">
-            {/* Property Details */}
-            <Card className="p-6">
-              <h2 className="text-2xl font-semibold mb-4">Property Details</h2>
-              <p className="whitespace-pre-line text-muted-foreground">
-                {property.description}
-              </p>
-            </Card>
-
-            {/* Features & Amenities */}
-            <Card className="p-6">
-              <h2 className="text-2xl font-semibold mb-4">Features & Amenities</h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {property.features.map((feature) => (
-                  <div key={feature} className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-primary" />
-                    <span>{feature}</span>
-                  </div>
-                ))}
-              </div>
-            </Card>
-
-            {/* Location & Nearby */}
-            <Card className="p-6">
-              <h2 className="text-2xl font-semibold mb-4">Location</h2>
-              <div className="aspect-video relative rounded-lg overflow-hidden mb-6">
-                {/* Add map component here */}
-                <div className="absolute inset-0 bg-muted" />
-              </div>
-              <h3 className="text-lg font-medium mb-3">Nearby Places</h3>
-              <div className="grid grid-cols-2 gap-4">
-                {property.nearbyPlaces.map((place) => (
-                  <div key={place.name} className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-primary" />
-                    <span>{place.name}</span>
-                    <span className="text-sm text-muted-foreground">
-                      ({place.distance})
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </Card>
-          </div>
-
-          <div className="space-y-8">
-            {/* Agent Card */}
-            <Card className="p-6">
-              <div className="flex items-center gap-4 mb-4">
-                <Image
-                  src={property.agent.image}
-                  alt={property.agent.name}
-                  width={60}
-                  height={60}
-                  className="rounded-full"
+        {/* Thumbnail Navigation */}
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2">
+          <div className="glass rounded-full p-2">
+            <div className="flex items-center space-x-2">
+              {property.images.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setSelectedImage(index)}
+                  className={`h-2 w-2 rounded-full transition-all ${
+                    selectedImage === index ? "bg-white" : "bg-white/50"
+                  }`}
                 />
-                <div>
-                  <h3 className="font-semibold">{property.agent.name}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {property.agent.experience} experience
-                  </p>
-                </div>
-              </div>
-              <div className="space-y-3">
-                <Button variant="outline" className="w-full">
-                  <Phone className="w-4 h-4 mr-2" />
-                  {property.agent.phone}
-                </Button>
-                <Button variant="outline" className="w-full">
-                  <Mail className="w-4 h-4 mr-2" />
-                  Email Agent
-                </Button>
-              </div>
-            </Card>
-
-            {/* Schedule Viewing */}
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Schedule a Viewing</h3>
-              <div className="space-y-4">
-                <CalendarComponent
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={setSelectedDate}
-                  className="rounded-md border"
-                />
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select time" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {/* Add time slots */}
-                  </SelectContent>
-                </Select>
-                <Button className="w-full">Request Viewing</Button>
-              </div>
-            </Card>
+              ))}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Full Gallery Dialog */}
-      <Dialog open={showGallery} onOpenChange={setShowGallery}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>Property Gallery</DialogTitle>
-          </DialogHeader>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {property.images.map((image, index) => (
-              <div
-                key={index}
-                className="relative aspect-square cursor-pointer"
-                onClick={() => {
-                  setCurrentImageIndex(index);
-                  setShowGallery(false);
-                }}
-              >
-                <Image
-                  src={image}
-                  alt={`Property image ${index + 1}`}
-                  fill
-                  className="object-cover rounded-lg"
-                />
+      {/* Content */}
+      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 gap-12 lg:grid-cols-3">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Header */}
+            <div>
+              <h1 className="text-3xl font-semibold text-gray-900">
+                {property.title}
+              </h1>
+              <div className="mt-2 flex items-center space-x-2 text-gray-500">
+                <MapPinIcon className="h-5 w-5" />
+                <span>{property.location}</span>
               </div>
-            ))}
+              <div className="mt-4 flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <HomeIcon className="h-5 w-5 text-gray-400" />
+                  <span>180 m²</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <UserGroupIcon className="h-5 w-5 text-gray-400" />
+                  <span>3 Bedrooms</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <CurrencyEuroIcon className="h-5 w-5 text-gray-400" />
+                  <span>€{property.price.toLocaleString()}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Description */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold text-gray-900">Description</h2>
+              <p className="text-gray-600 leading-relaxed">
+                {property.description}
+              </p>
+            </div>
+
+            {/* Features */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold text-gray-900">Features</h2>
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                {property.features.map((feature) => (
+                  <div
+                    key={feature}
+                    className="flex items-center space-x-2 text-gray-600"
+                  >
+                    <ChevronRightIcon className="h-4 w-4 text-blue-500" />
+                    <span>{feature}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Location */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold text-gray-900">Location</h2>
+              <div className="aspect-[16/9] w-full overflow-hidden rounded-2xl bg-gray-100">
+                {/* Map would go here */}
+                <div className="h-full w-full bg-gray-200" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                {property.nearbyPlaces.map((place) => (
+                  <div
+                    key={place}
+                    className="flex items-center space-x-2 text-gray-600"
+                  >
+                    <MapPinIcon className="h-4 w-4 text-blue-500" />
+                    <span>{place}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-        </DialogContent>
-      </Dialog>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Agent Card */}
+            <div className="card p-6">
+              <div className="flex items-center space-x-4">
+                <div className="relative h-16 w-16">
+                  <Image
+                    src={property.agent.image}
+                    alt={property.agent.name}
+                    className="rounded-full object-cover"
+                    fill
+                  />
+                </div>
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900">
+                    {property.agent.name}
+                  </h3>
+                  <div className="mt-1 flex items-center">
+                    <div className="flex items-center">
+                      {[...Array(5)].map((_, i) => (
+                        <svg
+                          key={i}
+                          className={`h-4 w-4 ${
+                            i < Math.floor(property.agent.rating)
+                              ? "text-yellow-400"
+                              : "text-gray-300"
+                          }`}
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                      ))}
+                    </div>
+                    <span className="ml-2 text-sm text-gray-500">
+                      ({property.agent.reviews} reviews)
+                    </span>
+                  </div>
+                  <p className="mt-1 text-sm text-gray-500">
+                    {property.agent.response}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-6 space-y-3">
+                <button className="btn-primary w-full">Contact Agent</button>
+                <button className="btn-secondary w-full">Schedule Viewing</button>
+              </div>
+            </div>
+
+            {/* Amenities */}
+            <div className="card p-6">
+              <h3 className="text-lg font-medium text-gray-900">Amenities</h3>
+              <div className="mt-4 grid grid-cols-1 gap-3">
+                {property.amenities.map((amenity) => (
+                  <div
+                    key={amenity}
+                    className="flex items-center space-x-2 text-gray-600"
+                  >
+                    <ChevronRightIcon className="h-4 w-4 text-blue-500" />
+                    <span>{amenity}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Similar Properties */}
+            <div className="card p-6">
+              <h3 className="text-lg font-medium text-gray-900">
+                Similar Properties
+              </h3>
+              {/* Would map through similar properties here */}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
