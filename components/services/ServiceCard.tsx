@@ -1,164 +1,193 @@
-'use client';
-
-import { useState } from 'react';
-import Image from 'next/image';
+import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { Star, MapPin, Clock, Briefcase, Shield, Share2 } from 'lucide-react';
-
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { AnalyticsTracker } from '@/components/analytics/AnalyticsTracker';
-import { formatCurrency } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
+import { ServicePaymentModal } from './ServicePaymentModal';
+import { useState } from 'react';
+import { useToast } from '@/components/ui/use-toast';
+import { useRouter } from 'next/navigation';
+import { Loader2, Star } from 'lucide-react';
 
 interface ServiceCardProps {
   service: {
     id: string;
     title: string;
     description: string;
+    category: string;
+    price: number;
+    duration?: string;
+    location: string;
+    status: string;
+    paidUntil?: Date;
+    isFeatured: boolean;
     provider: {
       id: string;
       name: string;
-      avatar: string;
-      rating: number;
-      reviewCount: number;
-      verified: boolean;
-      experience: number;
+      rating?: number;
+      totalReviews: number;
+      isVerified: boolean;
     };
-    category: string;
-    price: {
-      amount: number;
-      currency: string;
-      unit: string;
-    };
-    location: {
-      address: string;
-      city: string;
-      country: string;
-    };
-    availability: {
-      status: string;
-      nextAvailable?: string;
-    };
-    images: string[];
+    createdAt: Date;
   };
+  showActions?: boolean;
+  isOwner?: boolean;
 }
 
-export function ServiceCard({ service }: ServiceCardProps) {
-  const [isHovered, setIsHovered] = useState(false);
+export function ServiceCard({ service, showActions = false, isOwner = false }: ServiceCardProps) {
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+  const router = useRouter();
+
+  const handleExtendListing = async (paymentIntentId: string) => {
+    setIsPaymentModalOpen(false);
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('/api/services', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: service.id,
+          action: 'confirm_extension',
+          paymentIntentId,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to extend service');
+
+      toast({
+        title: 'Success',
+        description: 'Your service listing has been extended for another week.',
+      });
+
+      router.refresh();
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to extend service listing. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const daysUntilExpiration = service.paidUntil
+    ? Math.ceil((new Date(service.paidUntil).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+    : 0;
 
   return (
     <>
-      <motion.div
-        className="group relative rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden"
-        whileHover={{ y: -5 }}
-        onHoverStart={() => setIsHovered(true)}
-        onHoverEnd={() => setIsHovered(false)}
-      >
-        {/* Service Image */}
-        <Link href={`/services/${service.id}`}>
-          <div className="relative aspect-[16/9] overflow-hidden">
-            <Image
-              src={service.images[0]}
-              alt={service.title}
-              fill
-              className="object-cover transition-transform group-hover:scale-105"
-              priority
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-            
-            {/* Category Badge */}
-            <Badge className="absolute top-2 left-2">
-              {service.category}
-            </Badge>
-
-            {/* Availability Badge */}
-            <Badge
-              variant={service.availability.status === 'AVAILABLE' ? 'default' : 'secondary'}
-              className="absolute top-2 right-2"
-            >
-              {service.availability.status === 'AVAILABLE' ? 'Available Now' : 'Next Available: ' + service.availability.nextAvailable}
-            </Badge>
-          </div>
-        </Link>
-
-        {/* Service Details */}
-        <div className="p-4">
-          {/* Provider Info */}
-          <div className="flex items-center space-x-2 mb-2">
-            <Image
-              src={service.provider.avatar}
-              alt={service.provider.name}
-              width={32}
-              height={32}
-              className="rounded-full"
-            />
+      <Card className={service.isFeatured ? 'border-primary' : ''}>
+        <CardHeader>
+          <div className="flex items-start justify-between">
             <div>
-              <div className="flex items-center">
-                <span className="font-medium">{service.provider.name}</span>
-                {service.provider.verified && (
-                  <Shield className="h-4 w-4 text-primary ml-1" />
-                )}
-              </div>
-              <div className="flex items-center text-sm text-muted-foreground">
-                <Star className="h-4 w-4 text-yellow-400 mr-1" />
-                {service.provider.rating} ({service.provider.reviewCount} reviews)
+              <h3 className="text-lg font-semibold">
+                <Link
+                  href={`/services/${service.id}`}
+                  className="hover:text-primary hover:underline"
+                >
+                  {service.title}
+                </Link>
+              </h3>
+              <div className="mt-1 flex items-center space-x-2 text-sm text-muted-foreground">
+                <span>{service.location}</span>
+                <span>•</span>
+                <span>
+                  Posted {formatDistanceToNow(new Date(service.createdAt), { addSuffix: true })}
+                </span>
               </div>
             </div>
+            <div className="flex items-center space-x-2">
+              {service.isFeatured && (
+                <Badge variant="default">Featured</Badge>
+              )}
+              <Badge variant="outline">{service.category}</Badge>
+            </div>
           </div>
-
-          {/* Service Title and Price */}
-          <div className="flex justify-between items-start mb-2">
-            <div>
-              <h3 className="font-semibold leading-none tracking-tight">
-                {service.title}
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                {service.location.city}, {service.location.country}
-              </p>
+        </CardHeader>
+        <CardContent>
+          <p className="line-clamp-2 text-muted-foreground">{service.description}</p>
+          
+          <div className="mt-4 flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <div className="flex items-center">
+                <Star className="mr-1 h-4 w-4 text-yellow-400" />
+                <span className="font-medium">
+                  {service.provider.rating?.toFixed(1) || 'N/A'}
+                </span>
+              </div>
+              <span className="text-sm text-muted-foreground">
+                ({service.provider.totalReviews} reviews)
+              </span>
+              {service.provider.isVerified && (
+                <Badge variant="secondary">Verified</Badge>
+              )}
             </div>
             <div className="text-right">
-              <div className="font-bold">
-                {formatCurrency(service.price.amount, service.price.currency)}
+              <div className="text-lg font-semibold">€{service.price.toFixed(2)}</div>
+              {service.duration && (
+                <div className="text-sm text-muted-foreground">{service.duration}</div>
+              )}
+            </div>
+          </div>
+        </CardContent>
+
+        {(showActions || isOwner) && (
+          <CardFooter className="border-t pt-4">
+            <div className="flex w-full items-center justify-between">
+              {isOwner && service.paidUntil && (
+                <div className="text-sm text-muted-foreground">
+                  {daysUntilExpiration > 0
+                    ? `Expires in ${daysUntilExpiration} days`
+                    : 'Listing expired'}
+                </div>
+              )}
+              <div className="flex space-x-2">
+                {isOwner && (
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={() => router.push(`/services/edit/${service.id}`)}
+                      disabled={isLoading}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      onClick={() => setIsPaymentModalOpen(true)}
+                      disabled={isLoading}
+                    >
+                      {isLoading && (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      )}
+                      Extend Listing
+                    </Button>
+                  </>
+                )}
+                {!isOwner && showActions && (
+                  <Button
+                    onClick={() => router.push(`/services/${service.id}`)}
+                  >
+                    View Details
+                  </Button>
+                )}
               </div>
-              <p className="text-sm text-muted-foreground">
-                per {service.price.unit}
-              </p>
             </div>
-          </div>
+          </CardFooter>
+        )}
+      </Card>
 
-          {/* Service Features */}
-          <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-            <div className="flex items-center">
-              <Briefcase className="h-4 w-4 mr-1" />
-              {service.provider.experience}+ years
-            </div>
-            <div className="flex items-center">
-              <MapPin className="h-4 w-4 mr-1" />
-              {service.location.city}
-            </div>
-            <div className="flex items-center">
-              <Clock className="h-4 w-4 mr-1" />
-              {service.availability.status}
-            </div>
-          </div>
-
-          {/* Action Button */}
-          <Button className="w-full mt-4" variant="default">
-            Book Now
-          </Button>
-        </div>
-      </motion.div>
-
-      {/* Analytics Tracking */}
-      {isHovered && (
-        <AnalyticsTracker
-          listingId={service.id}
-          listingType="SERVICE"
-          searchQuery={undefined}
-          searchFilters={undefined}
-        />
-      )}
+      <ServicePaymentModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        onSuccess={handleExtendListing}
+        mode="extend"
+        serviceId={service.id}
+      />
     </>
   );
 }
