@@ -1,22 +1,23 @@
 import { prisma } from '@/lib/prisma';
 import { stripe } from '@/lib/stripe';
-import { SubscriptionTier, UserRole, PropertyStatus } from '@prisma/client';
+import { SubscriptionTier, ListingType } from '@prisma/client';
 
 export const FREE_TIER_LIMITS = {
-  monthlyListings: 3,
+  leisureListings: 3,
   featuredListings: false,
   analytics: false,
   crm: false,
-  privateMarketplace: false,
 };
 
 export const PRO_TIER_LIMITS = {
-  monthlyListings: 999999, // Unlimited
+  leisureListings: 999999, // Unlimited
   featuredListings: true,
   analytics: true,
   crm: true,
-  privateMarketplace: true,
 };
+
+// Service listing weekly fee in EUR
+export const SERVICE_LISTING_FEE = 10;
 
 export async function updateUserSubscription(
   userId: string,
@@ -28,28 +29,31 @@ export async function updateUserSubscription(
     where: { id: userId },
     data: {
       subscriptionTier: tier,
-      monthlyListingQuota: limits.monthlyListings,
+      monthlyLeisureQuota: limits.leisureListings,
       hasAnalyticsAccess: limits.analytics,
       hasCrmAccess: limits.crm,
       hasFeatureListings: limits.featuredListings,
-      hasPrivateMarketplace: limits.privateMarketplace,
       // If downgrading to FREE, reset subscription end date
       subscriptionEnds: tier === 'FREE' ? null : undefined,
     },
   });
 }
 
-export async function checkListingQuota(userId: string): Promise<boolean> {
+export async function checkLeisureQuota(userId: string): Promise<boolean> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
-      monthlyListingQuota: true,
-      monthlyListingsUsed: true,
+      monthlyLeisureQuota: true,
+      monthlyLeisureUsed: true,
       quotaResetDate: true,
+      subscriptionTier: true,
     },
   });
 
   if (!user) return false;
+
+  // PRO users have unlimited listings
+  if (user.subscriptionTier === 'PRO') return true;
 
   // Reset quota if it's a new month
   if (
@@ -59,7 +63,7 @@ export async function checkListingQuota(userId: string): Promise<boolean> {
     await prisma.user.update({
       where: { id: userId },
       data: {
-        monthlyListingsUsed: 0,
+        monthlyLeisureUsed: 0,
         quotaResetDate: new Date(
           new Date().getFullYear(),
           new Date().getMonth() + 1,
@@ -70,14 +74,14 @@ export async function checkListingQuota(userId: string): Promise<boolean> {
     return true;
   }
 
-  return user.monthlyListingsUsed < user.monthlyListingQuota;
+  return user.monthlyLeisureUsed < user.monthlyLeisureQuota;
 }
 
-export async function incrementListingCount(userId: string) {
+export async function incrementLeisureCount(userId: string) {
   await prisma.user.update({
     where: { id: userId },
     data: {
-      monthlyListingsUsed: { increment: 1 },
+      monthlyLeisureUsed: { increment: 1 },
       // Set reset date if not set
       quotaResetDate: {
         set: new Date(
@@ -90,9 +94,10 @@ export async function incrementListingCount(userId: string) {
   });
 }
 
-export async function handlePropertySubmission(
+export async function handleListingSubmission(
   userId: string,
-  propertyData: any
+  listingData: any,
+  listingType: ListingType
 ) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -105,45 +110,65 @@ export async function handlePropertySubmission(
 
   if (!user) throw new Error('User not found');
 
-  // Check if user has available quota
-  const hasQuota = await checkListingQuota(userId);
-  if (!hasQuota) {
-    throw new Error('Monthly listing quota exceeded');
-  }
+  switch (listingType) {
+    case 'PROPERTY':
+      // Properties are always free
+      return await prisma.property.create({
+        data: {
+          ...listingData,
+          ownerId: userId,
+          isFeatured: user.subscriptionTier === 'PRO' && listingData.isFeatured,
+        },
+      });
 
-  // Determine marketplace placement based on role
-  const inAgentMarketplace = user.role === 'LANDLORD';
-  const inPublicMarketplace = user.role === 'AGENT' && user.isVerified;
+    case 'SERVICE':
+      // Services require weekly payment
+      if (!listingData.paymentIntentId) {
+        throw new Error('Payment required for service listing');
+      }
+      
+      // Verify payment
+      const paymentIntent = await stripe.paymentIntents.retrieve(
+        listingData.paymentIntentId
+      );
+      
+      if (paymentIntent.status !== 'succeeded') {
+        throw new Error('Payment not completed');
+      }
 
-  // Create property with appropriate status
-  const property = await prisma.property.create({
-    data: {
-      ...propertyData,
-      ownerId: userId,
-      status: determineInitialStatus(user.role),
-      inAgentMarketplace,
-      inPublicMarketplace,
-      // Featured listing only available for PRO users
-      isFeatured: user.subscriptionTier === 'PRO' && propertyData.isFeatured,
-    },
-  });
+      // Calculate expiration date (1 week from now)
+      const paidUntil = new Date();
+      paidUntil.setDate(paidUntil.getDate() + 7);
 
-  // Increment the user's listing count
-  await incrementListingCount(userId);
+      return await prisma.service.create({
+        data: {
+          ...listingData,
+          providerId: userId,
+          paidUntil,
+          isFeatured: user.subscriptionTier === 'PRO' && listingData.isFeatured,
+        },
+      });
 
-  return property;
-}
+    case 'LEISURE':
+      // Check leisure listing quota for free users
+      if (user.subscriptionTier === 'FREE') {
+        const hasQuota = await checkLeisureQuota(userId);
+        if (!hasQuota) {
+          throw new Error('Monthly leisure listing quota exceeded');
+        }
+        await incrementLeisureCount(userId);
+      }
 
-function determineInitialStatus(role: UserRole): PropertyStatus {
-  switch (role) {
-    case 'ADMIN':
-      return 'ACTIVE';
-    case 'AGENT':
-      return 'PENDING_REVIEW'; // Requires admin review
-    case 'LANDLORD':
-      return 'PENDING_REVIEW'; // Goes to agent marketplace
+      return await prisma.leisure.create({
+        data: {
+          ...listingData,
+          ownerId: userId,
+          isFeatured: user.subscriptionTier === 'PRO' && listingData.isFeatured,
+        },
+      });
+
     default:
-      return 'DRAFT';
+      throw new Error('Invalid listing type');
   }
 }
 
@@ -190,4 +215,21 @@ export async function createProSubscription(
   });
 
   return subscription;
+}
+
+export async function createServiceListingPayment(amount: number = SERVICE_LISTING_FEE) {
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount: amount * 100, // Convert to cents
+    currency: 'eur',
+    payment_method_types: ['card'],
+    metadata: {
+      type: 'service_listing',
+      duration: '1_week',
+    },
+  });
+
+  return {
+    clientSecret: paymentIntent.client_secret,
+    paymentIntentId: paymentIntent.id,
+  };
 }
