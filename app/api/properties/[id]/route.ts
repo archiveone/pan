@@ -1,28 +1,17 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
+import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import prisma from '@/lib/prisma';
+import { PropertyService } from '@/lib/services/propertyService';
+import { PropertyUpdateInput } from '@/lib/types/property';
 
-// GET /api/properties/[id] - Get a single property
+const propertyService = new PropertyService();
+
 export async function GET(
   req: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const property = await prisma.property.findUnique({
-      where: { id: params.id },
-      include: {
-        owner: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            image: true,
-          },
-        },
-      },
-    });
-
+    const property = await propertyService.getProperty(params.id);
     if (!property) {
       return NextResponse.json(
         { error: 'Property not found' },
@@ -30,24 +19,33 @@ export async function GET(
       );
     }
 
+    const session = await getServerSession(authOptions);
+    if (property.isPrivate && (!session?.user || (
+      property.ownerId !== session.user.id &&
+      property.agentId !== session.user.id
+    ))) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     return NextResponse.json(property);
   } catch (error) {
-    console.error('Property fetch error:', error);
+    console.error('Error getting property:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch property' },
+      { error: 'Failed to get property' },
       { status: 500 }
     );
   }
 }
 
-// PATCH /api/properties/[id] - Update a property
-export async function PATCH(
+export async function PUT(
   req: Request,
   { params }: { params: { id: string } }
 ) {
   try {
     const session = await getServerSession(authOptions);
-    
     if (!session?.user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -55,30 +53,30 @@ export async function PATCH(
       );
     }
 
-    const body = await req.json();
-
-    // Verify ownership
-    const existingProperty = await prisma.property.findUnique({
-      where: { id: params.id },
-      select: { ownerId: true },
-    });
-
-    if (!existingProperty || existingProperty.ownerId !== session.user.id) {
+    const property = await propertyService.getProperty(params.id);
+    if (!property) {
       return NextResponse.json(
-        { error: 'Not authorized to update this property' },
-        { status: 403 }
+        { error: 'Property not found' },
+        { status: 404 }
       );
     }
 
-    // Update property
-    const property = await prisma.property.update({
-      where: { id: params.id },
-      data: body,
-    });
+    // Check if user has permission to update
+    if (
+      property.ownerId !== session.user.id &&
+      property.agentId !== session.user.id
+    ) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
 
-    return NextResponse.json(property);
+    const data: PropertyUpdateInput = await req.json();
+    const updatedProperty = await propertyService.updateProperty(params.id, data);
+    return NextResponse.json(updatedProperty);
   } catch (error) {
-    console.error('Property update error:', error);
+    console.error('Error updating property:', error);
     return NextResponse.json(
       { error: 'Failed to update property' },
       { status: 500 }
@@ -86,14 +84,12 @@ export async function PATCH(
   }
 }
 
-// DELETE /api/properties/[id] - Delete a property
 export async function DELETE(
   req: Request,
   { params }: { params: { id: string } }
 ) {
   try {
     const session = await getServerSession(authOptions);
-    
     if (!session?.user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -101,27 +97,26 @@ export async function DELETE(
       );
     }
 
-    // Verify ownership
-    const existingProperty = await prisma.property.findUnique({
-      where: { id: params.id },
-      select: { ownerId: true },
-    });
-
-    if (!existingProperty || existingProperty.ownerId !== session.user.id) {
+    const property = await propertyService.getProperty(params.id);
+    if (!property) {
       return NextResponse.json(
-        { error: 'Not authorized to delete this property' },
-        { status: 403 }
+        { error: 'Property not found' },
+        { status: 404 }
       );
     }
 
-    // Delete property
-    await prisma.property.delete({
-      where: { id: params.id },
-    });
+    // Check if user has permission to delete
+    if (property.ownerId !== session.user.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
 
-    return NextResponse.json({ message: 'Property deleted successfully' });
+    await propertyService.deleteProperty(params.id);
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Property deletion error:', error);
+    console.error('Error deleting property:', error);
     return NextResponse.json(
       { error: 'Failed to delete property' },
       { status: 500 }
