@@ -1,0 +1,198 @@
+// Property Types
+enum PropertyType {
+  RESIDENTIAL
+  COMMERCIAL
+  LUXURY
+  TIMESHARE
+  LAND
+  INDUSTRIAL
+}
+
+// Property Status
+enum PropertyStatus {
+  AVAILABLE
+  UNDER_CONTRACT
+  SOLD
+  RENTED
+  OFF_MARKET
+  DRAFT
+}
+
+// Property Listing Type
+enum ListingType {
+  SALE
+  RENT
+  AUCTION
+  PRIVATE_SALE
+}
+
+// Property Features
+model PropertyFeature {
+  id          String    @id @default(cuid())
+  name        String
+  icon        String?
+  category    String
+  properties  Property[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// Property Model
+model Property {
+  id              String          @id @default(cuid())
+  title           String
+  description     String
+  type            PropertyType
+  status          PropertyStatus  @default(DRAFT)
+  listingType     ListingType
+  price           Decimal
+  currency        String          @default("GBP")
+  size            Float?          // in square meters
+  bedrooms        Int?
+  bathrooms       Int?
+  features        PropertyFeature[]
+  address         Address         @relation(fields: [addressId], references: [id])
+  addressId       String          @unique
+  images          PropertyImage[]
+  documents       PropertyDocument[]
+  virtualTour     String?         // URL to virtual tour
+  floorPlan       String?         // URL to floor plan
+  energyRating    String?
+  owner           User            @relation("OwnedProperties", fields: [ownerId], references: [id])
+  ownerId         String
+  agent           User?           @relation("ManagedProperties", fields: [agentId], references: [id])
+  agentId         String?
+  isPrivate       Boolean         @default(false)
+  isVerified      Boolean         @default(false)
+  viewings        Viewing[]
+  offers          Offer[]
+  valuations      Valuation[]
+  favorites       Favorite[]
+  reviews         Review[]
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  publishedAt     DateTime?
+
+  @@index([type])
+  @@index([status])
+  @@index([listingType])
+  @@index([ownerId])
+  @@index([agentId])
+  @@fulltext([title, description])
+}
+
+// Property Images
+model PropertyImage {
+  id          String    @id @default(cuid())
+  url         String
+  caption     String?
+  order       Int       @default(0)
+  property    Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyId  String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([propertyId])
+}
+
+// Property Documents
+model PropertyDocument {
+  id          String    @id @default(cuid())
+  name        String
+  url         String
+  type        String    // e.g., "pdf", "doc"
+  size        Int       // in bytes
+  property    Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyId  String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([propertyId])
+}
+
+// Property Viewings
+model Viewing {
+  id          String    @id @default(cuid())
+  property    Property  @relation(fields: [propertyId], references: [id])
+  propertyId  String
+  user        User      @relation(fields: [userId], references: [id])
+  userId      String
+  datetime    DateTime
+  status      String    // "pending", "confirmed", "cancelled", "completed"
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([propertyId])
+  @@index([userId])
+}
+
+// Property Offers
+model Offer {
+  id          String    @id @default(cuid())
+  property    Property  @relation(fields: [propertyId], references: [id])
+  propertyId  String
+  user        User      @relation(fields: [userId], references: [id])
+  userId      String
+  amount      Decimal
+  currency    String    @default("GBP")
+  status      String    // "pending", "accepted", "rejected", "withdrawn"
+  message     String?
+  validUntil  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([propertyId])
+  @@index([userId])
+}
+
+// Property Valuations
+model Valuation {
+  id          String    @id @default(cuid())
+  property    Property  @relation(fields: [propertyId], references: [id])
+  propertyId  String
+  agent       User      @relation(fields: [agentId], references: [id])
+  agentId     String
+  amount      Decimal
+  currency    String    @default("GBP")
+  report      String?   // URL to valuation report
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([propertyId])
+  @@index([agentId])
+}
+
+// Property Favorites
+model Favorite {
+  id          String    @id @default(cuid())
+  property    Property  @relation(fields: [propertyId], references: [id])
+  propertyId  String
+  user        User      @relation(fields: [userId], references: [id])
+  userId      String
+  createdAt   DateTime  @default(now())
+
+  @@unique([propertyId, userId])
+  @@index([propertyId])
+  @@index([userId])
+}
+
+// Property Reviews
+model Review {
+  id          String    @id @default(cuid())
+  property    Property  @relation(fields: [propertyId], references: [id])
+  propertyId  String
+  user        User      @relation(fields: [userId], references: [id])
+  userId      String
+  rating      Int       @db.SmallInt
+  title       String
+  content     String
+  photos      String[]
+  isVerified  Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([propertyId])
+  @@index([userId])
+}
