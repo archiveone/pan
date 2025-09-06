@@ -5,114 +5,79 @@ import { Menu, Transition } from "@headlessui/react";
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
 import {
-  Bars3Icon,
+  MagnifyingGlassIcon,
   BellIcon,
   UserCircleIcon,
-  MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
 import { classNames } from "@/lib/utils";
 import { Logo } from "@/components/ui/logo";
 
-interface NavbarProps {
-  onMenuClick: () => void;
-}
-
-const mainNavigation = [
+const navigation = [
   { name: "Properties", href: "/properties" },
   { name: "Services", href: "/services" },
   { name: "Leisure", href: "/leisure" },
   { name: "Connect", href: "/connect" },
 ];
 
-export default function Navbar({ onMenuClick }: NavbarProps) {
+export default function Navbar() {
   const { data: session } = useSession();
 
-  const userNavigation = [
-    { name: "Your Profile", href: "/profile" },
-    { name: "Settings", href: "/settings" },
-    {
-      name: "Sign out",
-      href: "#",
-      onClick: () => signOut({ callbackUrl: "/" }),
-    },
-  ];
-
   return (
-    <header className="sticky top-0 z-40">
-      {/* Main header with gradient */}
-      <div className="bg-gradient-to-r from-blue-600 via-blue-500 to-blue-400">
+    <header className="fixed inset-x-0 top-0 z-50">
+      {/* Main navigation - Apple-style glass effect */}
+      <nav className="glass">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-20 items-center justify-between">
+          <div className="flex h-16 items-center justify-between">
             <div className="flex items-center">
-              <button
-                type="button"
-                className="lg:hidden -m-2.5 p-2.5 text-white"
-                onClick={onMenuClick}
-              >
-                <span className="sr-only">Open sidebar</span>
-                <Bars3Icon className="h-6 w-6" aria-hidden="true" />
-              </button>
-              <div className="lg:ml-0 ml-4">
-                <Logo variant="light" />
-              </div>
+              <Logo variant="dark" className="h-8 w-auto" />
             </div>
 
-            {/* Main Navigation */}
-            <nav className="hidden lg:flex lg:space-x-8">
-              {mainNavigation.map((item) => (
+            {/* Center navigation */}
+            <div className="hidden lg:flex lg:items-center lg:space-x-8">
+              {navigation.map((item) => (
                 <Link
                   key={item.name}
                   href={item.href}
-                  className="text-white hover:text-gray-100 px-3 py-2 text-sm font-medium"
+                  className="nav-link"
                 >
                   {item.name}
                 </Link>
               ))}
-            </nav>
+            </div>
 
-            <div className="flex items-center gap-x-4 lg:gap-x-6">
+            {/* Right section */}
+            <div className="flex items-center space-x-6">
               {/* Search */}
               <button
                 type="button"
-                className="-m-2.5 p-2.5 text-white hover:text-gray-100"
+                className="text-gray-700 hover:text-gray-900 transition-apple"
               >
                 <span className="sr-only">Search</span>
-                <MagnifyingGlassIcon className="h-6 w-6" aria-hidden="true" />
+                <MagnifyingGlassIcon className="h-5 w-5" />
               </button>
 
               {/* Notifications */}
               <button
                 type="button"
-                className="-m-2.5 p-2.5 text-white hover:text-gray-100"
+                className="text-gray-700 hover:text-gray-900 transition-apple"
               >
-                <span className="sr-only">View notifications</span>
-                <BellIcon className="h-6 w-6" aria-hidden="true" />
+                <span className="sr-only">Notifications</span>
+                <BellIcon className="h-5 w-5" />
               </button>
 
               {/* Profile dropdown */}
               <Menu as="div" className="relative">
-                <Menu.Button className="-m-1.5 flex items-center p-1.5">
+                <Menu.Button className="flex items-center">
                   <span className="sr-only">Open user menu</span>
                   {session?.user?.image ? (
                     <img
-                      className="h-8 w-8 rounded-full border-2 border-white"
                       src={session.user.image}
                       alt=""
+                      className="h-8 w-8 rounded-full"
                     />
                   ) : (
-                    <UserCircleIcon
-                      className="h-8 w-8 text-white"
-                      aria-hidden="true"
-                    />
+                    <UserCircleIcon className="h-8 w-8 text-gray-700" />
                   )}
-                  <span className="hidden lg:flex lg:items-center">
-                    <span
-                      className="ml-4 text-sm font-medium text-white"
-                      aria-hidden="true"
-                    >
-                      {session?.user?.name}
-                    </span>
-                  </span>
                 </Menu.Button>
                 <Transition
                   as={Fragment}
@@ -123,43 +88,64 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                   leaveFrom="transform opacity-100 scale-100"
                   leaveTo="transform opacity-0 scale-95"
                 >
-                  <Menu.Items className="absolute right-0 z-10 mt-2.5 w-32 origin-top-right rounded-md bg-white py-2 shadow-lg ring-1 ring-gray-900/5 focus:outline-none">
-                    {userNavigation.map((item) => (
-                      <Menu.Item key={item.name}>
-                        {({ active }) => (
-                          <Link
-                            href={item.href}
-                            onClick={item.onClick}
-                            className={classNames(
-                              active ? "bg-gray-50" : "",
-                              "block px-3 py-1 text-sm leading-6 text-gray-900"
-                            )}
-                          >
-                            {item.name}
-                          </Link>
-                        )}
-                      </Menu.Item>
-                    ))}
+                  <Menu.Items className="absolute right-0 mt-2 w-48 origin-top-right rounded-lg bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                    <Menu.Item>
+                      {({ active }) => (
+                        <Link
+                          href="/profile"
+                          className={classNames(
+                            active ? "bg-gray-50" : "",
+                            "block px-4 py-2 text-sm text-gray-700"
+                          )}
+                        >
+                          Your Profile
+                        </Link>
+                      )}
+                    </Menu.Item>
+                    <Menu.Item>
+                      {({ active }) => (
+                        <Link
+                          href="/settings"
+                          className={classNames(
+                            active ? "bg-gray-50" : "",
+                            "block px-4 py-2 text-sm text-gray-700"
+                          )}
+                        >
+                          Settings
+                        </Link>
+                      )}
+                    </Menu.Item>
+                    <Menu.Item>
+                      {({ active }) => (
+                        <button
+                          onClick={() => signOut()}
+                          className={classNames(
+                            active ? "bg-gray-50" : "",
+                            "block w-full text-left px-4 py-2 text-sm text-gray-700"
+                          )}
+                        >
+                          Sign out
+                        </button>
+                      )}
+                    </Menu.Item>
                   </Menu.Items>
                 </Transition>
               </Menu>
             </div>
           </div>
         </div>
-      </div>
+      </nav>
 
-      {/* Search bar - can be toggled */}
-      <div className="border-b border-gray-200 bg-white">
+      {/* Search bar with glass effect */}
+      <div className="glass border-t border-white/20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-12 items-center">
-            <div className="flex-1 flex items-center">
-              <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
-              <input
-                type="text"
-                placeholder="Search..."
-                className="ml-3 block w-full border-0 py-1.5 text-gray-900 placeholder:text-gray-400 focus:ring-0 sm:text-sm sm:leading-6"
-              />
-            </div>
+            <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search properties, services, or experiences..."
+              className="ml-3 flex-1 border-0 bg-transparent text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-0 sm:text-sm"
+            />
           </div>
         </div>
       </div>
