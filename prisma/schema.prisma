@@ -21,21 +21,21 @@ enum SubscriptionTier {
   PRO
 }
 
-enum PropertyStatus {
+enum ListingType {
+  PROPERTY      // Always free
+  SERVICE       // Paid weekly
+  LEISURE       // Free with quota
+}
+
+enum ListingStatus {
   DRAFT           // Initial creation
   PENDING_REVIEW  // Submitted for review
   APPROVED        // Approved by admin/agent
   ACTIVE          // Live on the platform
   INACTIVE        // Temporarily hidden
   REJECTED        // Rejected by admin/agent
-  SOLD            // Property sold
-  RENTED          // Property rented
-}
-
-enum ListingType {
-  SALE
-  RENT
-  AUCTION
+  EXPIRED         // Service listing payment expired
+  COMPLETED       // For services/leisure that are done
 }
 
 enum PropertyType {
@@ -45,6 +45,19 @@ enum PropertyType {
   TIMESHARE
   LAND
   INDUSTRIAL
+}
+
+enum ServiceCategory {
+  TRADES
+  PROFESSIONAL
+  SPECIALIST
+  OTHER
+}
+
+enum LeisureType {
+  RENTAL        // Cars, boats, venues
+  EXPERIENCE    // Tours, activities
+  EVENT         // Gigs, shows
 }
 
 model User {
@@ -61,31 +74,36 @@ model User {
   stripeVerificationId String?
   isVerified         Boolean         @default(false)
   
-  // Agent/Landlord specific fields
+  // Agent/Professional specific fields
   companyName        String?
   licenseNumber      String?         // For agents
   licenseVerified    Boolean         @default(false)
-  agentRating       Float?          // Average rating for agents
+  rating            Float?          // Average rating
   totalReviews      Int             @default(0)
   
-  // Usage limits and quotas
-  monthlyListingQuota Int            @default(3)  // Free users get 3 listings
-  monthlyListingsUsed Int            @default(0)
+  // Usage limits and quotas (for Leisure listings)
+  monthlyLeisureQuota Int           @default(3)  // Free users get 3 leisure listings
+  monthlyLeisureUsed Int            @default(0)
   quotaResetDate    DateTime?
   
   // Feature access flags
   hasAnalyticsAccess Boolean        @default(false)
   hasCrmAccess      Boolean         @default(false)
   hasFeatureListings Boolean        @default(false)
-  hasPrivateMarketplace Boolean     @default(false)
+  
+  // Social features
+  canPost           Boolean         @default(false)  // Requires identity verification
   
   // Timestamps
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 
   // Relations
-  properties        Property[]      // Properties owned/listed
-  reviews          AgentReview[]   // Reviews received (for agents)
+  properties        Property[]      // Free property listings
+  services         Service[]       // Paid service listings
+  leisure          Leisure[]       // Free leisure listings (with quota)
+  posts            Post[]          // Social media posts
+  reviews          Review[]        // Reviews received
   accounts         Account[]
   sessions         Session[]
 }
@@ -95,27 +113,22 @@ model Property {
   title            String
   description      String
   type             PropertyType
-  listingType      ListingType
   price            Float
   size             Float?
   bedrooms         Int?
   bathrooms        Int?
   features         String[]
+  location         String
   
   // Status and verification
-  status           PropertyStatus  @default(DRAFT)
+  status           ListingStatus   @default(DRAFT)
   isVerified       Boolean        @default(false)
-  isFeatured       Boolean        @default(false)
-  isPrivate        Boolean        @default(false)  // For private marketplace
+  isFeatured       Boolean        @default(false)  // PRO users only
   
   // Review details
   reviewedBy       String?        // Admin/Agent who reviewed
   reviewedAt       DateTime?
   reviewNotes      String?
-  
-  // Marketplace designation
-  inAgentMarketplace Boolean     @default(false)
-  inPublicMarketplace Boolean    @default(false)
   
   // Relations
   owner            User           @relation(fields: [ownerId], references: [id])
@@ -126,15 +139,84 @@ model Property {
   updatedAt        DateTime       @updatedAt
 }
 
-model AgentReview {
+model Service {
+  id               String          @id @default(cuid())
+  title            String
+  description      String
+  category         ServiceCategory
+  price            Float
+  duration         String?         // Service duration if applicable
+  location         String?         // Service location if applicable
+  
+  // Payment and status
+  weeklyFee        Float          @default(10)     // 10 EUR weekly fee
+  paidUntil        DateTime?                       // When service listing expires
+  status           ListingStatus   @default(DRAFT)
+  
+  // PRO features
+  isFeatured       Boolean        @default(false)  // PRO users only
+  
+  // Relations
+  provider         User           @relation(fields: [providerId], references: [id])
+  providerId       String
+  reviews          Review[]
+  
+  // Timestamps
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+}
+
+model Leisure {
+  id               String          @id @default(cuid())
+  title            String
+  description      String
+  type             LeisureType
+  price            Float?
+  location         String
+  availability     DateTime[]
+  
+  // Status
+  status           ListingStatus   @default(DRAFT)
+  isFeatured       Boolean        @default(false)  // PRO users only
+  
+  // Relations
+  owner            User           @relation(fields: [ownerId], references: [id])
+  ownerId          String
+  reviews          Review[]
+  
+  // Timestamps
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+}
+
+model Post {
+  id               String         @id @default(cuid())
+  content          String
+  images           String[]
+  likes            Int           @default(0)
+  
+  // Relations
+  author           User          @relation(fields: [authorId], references: [id])
+  authorId         String
+  
+  // Timestamps
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+}
+
+model Review {
   id              String         @id @default(cuid())
   rating          Int
   comment         String
   isVerified      Boolean       @default(false)
   
   // Relations
-  agent           User          @relation(fields: [agentId], references: [id])
-  agentId         String
+  reviewer        User          @relation(fields: [reviewerId], references: [id])
+  reviewerId      String
+  service         Service?      @relation(fields: [serviceId], references: [id])
+  serviceId       String?
+  leisure         Leisure?      @relation(fields: [leisureId], references: [id])
+  leisureId       String?
   
   // Timestamps
   createdAt       DateTime      @default(now())
