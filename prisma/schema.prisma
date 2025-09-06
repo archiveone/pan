@@ -1,5 +1,4 @@
 // This is your Prisma schema file
-// Learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client-js"
@@ -10,20 +9,152 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// User & Authentication
+enum UserRole {
+  USER          // Basic user
+  LANDLORD      // Property owner/landlord
+  AGENT         // Real estate agent
+  ADMIN         // System administrator
+}
+
+enum SubscriptionTier {
+  FREE
+  PRO
+}
+
+enum PropertyStatus {
+  DRAFT           // Initial creation
+  PENDING_REVIEW  // Submitted for review
+  APPROVED        // Approved by admin/agent
+  ACTIVE          // Live on the platform
+  INACTIVE        // Temporarily hidden
+  REJECTED        // Rejected by admin/agent
+  SOLD            // Property sold
+  RENTED          // Property rented
+}
+
+enum ListingType {
+  SALE
+  RENT
+  AUCTION
+}
+
+enum PropertyType {
+  RESIDENTIAL
+  COMMERCIAL
+  LUXURY
+  TIMESHARE
+  LAND
+  INDUSTRIAL
+}
+
+model User {
+  id                 String           @id @default(cuid())
+  name               String?
+  email              String?         @unique
+  emailVerified      DateTime?
+  image              String?
+  password           String?
+  role               UserRole        @default(USER)
+  subscriptionTier   SubscriptionTier @default(FREE)
+  subscriptionEnds   DateTime?       // For PRO subscriptions
+  stripeCustomerId   String?         @unique
+  stripeVerificationId String?
+  isVerified         Boolean         @default(false)
+  
+  // Agent/Landlord specific fields
+  companyName        String?
+  licenseNumber      String?         // For agents
+  licenseVerified    Boolean         @default(false)
+  agentRating       Float?          // Average rating for agents
+  totalReviews      Int             @default(0)
+  
+  // Usage limits and quotas
+  monthlyListingQuota Int            @default(3)  // Free users get 3 listings
+  monthlyListingsUsed Int            @default(0)
+  quotaResetDate    DateTime?
+  
+  // Feature access flags
+  hasAnalyticsAccess Boolean        @default(false)
+  hasCrmAccess      Boolean         @default(false)
+  hasFeatureListings Boolean        @default(false)
+  hasPrivateMarketplace Boolean     @default(false)
+  
+  // Timestamps
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  // Relations
+  properties        Property[]      // Properties owned/listed
+  reviews          AgentReview[]   // Reviews received (for agents)
+  accounts         Account[]
+  sessions         Session[]
+}
+
+model Property {
+  id               String          @id @default(cuid())
+  title            String
+  description      String
+  type             PropertyType
+  listingType      ListingType
+  price            Float
+  size             Float?
+  bedrooms         Int?
+  bathrooms        Int?
+  features         String[]
+  
+  // Status and verification
+  status           PropertyStatus  @default(DRAFT)
+  isVerified       Boolean        @default(false)
+  isFeatured       Boolean        @default(false)
+  isPrivate        Boolean        @default(false)  // For private marketplace
+  
+  // Review details
+  reviewedBy       String?        // Admin/Agent who reviewed
+  reviewedAt       DateTime?
+  reviewNotes      String?
+  
+  // Marketplace designation
+  inAgentMarketplace Boolean     @default(false)
+  inPublicMarketplace Boolean    @default(false)
+  
+  // Relations
+  owner            User           @relation(fields: [ownerId], references: [id])
+  ownerId          String
+  
+  // Timestamps
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+}
+
+model AgentReview {
+  id              String         @id @default(cuid())
+  rating          Int
+  comment         String
+  isVerified      Boolean       @default(false)
+  
+  // Relations
+  agent           User          @relation(fields: [agentId], references: [id])
+  agentId         String
+  
+  // Timestamps
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+// NextAuth models
 model Account {
-  id                String  @id @default(cuid())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String? @db.Text
-  session_state     String?
+  id                 String   @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?  @db.Text
+  access_token       String?  @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?  @db.Text
+  session_state      String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -36,446 +167,4 @@ model Session {
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model User {
-  id                    String    @id @default(cuid())
-  name                  String?
-  email                 String?   @unique
-  emailVerified         DateTime?
-  image                 String?
-  password              String?
-  role                  UserRole  @default(USER)
-  stripeCustomerId      String?   @unique
-  stripeVerificationId  String?
-  isVerified            Boolean   @default(false)
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-
-  // Profile
-  phone                 String?
-  bio                   String?   @db.Text
-  website               String?
-  company               String?
-  position              String?
-  language              String    @default("en")
-  currency              String    @default("EUR")
-  timezone              String    @default("UTC")
-
-  // Relations
-  accounts              Account[]
-  sessions             Session[]
-  properties           Property[]
-  propertyViews        PropertyView[]
-  propertyFavorites    PropertyFavorite[]
-  propertyReviews      PropertyReview[]
-  propertyOffers       PropertyOffer[]
-  propertyViewings     PropertyViewing[]
-  propertyValuations   PropertyValuation[]
-  messages             Message[]
-  notifications        Notification[]
-  connections          Connection[]    @relation("UserConnections")
-  connectedTo          Connection[]    @relation("ConnectedUsers")
-  agentProperties      AgentProperty[]
-  serviceListings      ServiceListing[]
-  leisureListings      LeisureListing[]
-  savedSearches        SavedSearch[]
-}
-
-enum UserRole {
-  USER
-  AGENT
-  ADMIN
-}
-
-// Properties
-model Property {
-  id            String   @id @default(cuid())
-  title         String
-  description   String   @db.Text
-  type          PropertyType
-  listingType   ListingType
-  price         Float
-  currency      String   @default("EUR")
-  size          Float?
-  bedrooms      Int?
-  bathrooms     Int?
-  features      String[] @default([])
-  energyRating  String?
-  status        PropertyStatus @default(DRAFT)
-  isVerified    Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  // Relations
-  userId        String
-  user          User     @relation(fields: [userId], references: [id])
-  address       Address?
-  images        PropertyImage[]
-  documents     PropertyDocument[]
-  views         PropertyView[]
-  favorites     PropertyFavorite[]
-  reviews       PropertyReview[]
-  offers        PropertyOffer[]
-  viewings      PropertyViewing[]
-  valuations    PropertyValuation[]
-  agents        AgentProperty[]
-
-  @@index([type, listingType, status])
-  @@index([price])
-  @@fulltext([title, description])
-}
-
-enum PropertyType {
-  RESIDENTIAL
-  COMMERCIAL
-  LUXURY
-  TIMESHARE
-  LAND
-  INDUSTRIAL
-}
-
-enum ListingType {
-  SALE
-  RENT
-  AUCTION
-  PRIVATE_SALE
-}
-
-enum PropertyStatus {
-  DRAFT
-  PENDING
-  ACTIVE
-  INACTIVE
-  SOLD
-  RENTED
-}
-
-model Address {
-  id          String   @id @default(cuid())
-  street      String
-  city        String
-  state       String?
-  country     String
-  postalCode  String
-  latitude    Float?
-  longitude   Float?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  propertyId  String   @unique
-  property    Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-
-  @@index([city, country])
-  @@index([latitude, longitude])
-}
-
-model PropertyImage {
-  id          String   @id @default(cuid())
-  url         String
-  caption     String?
-  order       Int      @default(0)
-  createdAt   DateTime @default(now())
-
-  // Relations
-  propertyId  String
-  property    Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-}
-
-model PropertyDocument {
-  id          String   @id @default(cuid())
-  url         String
-  name        String
-  type        String
-  createdAt   DateTime @default(now())
-
-  // Relations
-  propertyId  String
-  property    Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-}
-
-model PropertyView {
-  id          String   @id @default(cuid())
-  createdAt   DateTime @default(now())
-
-  // Relations
-  propertyId  String
-  property    Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([propertyId, userId, createdAt])
-}
-
-model PropertyFavorite {
-  id          String   @id @default(cuid())
-  createdAt   DateTime @default(now())
-
-  // Relations
-  propertyId  String
-  property    Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([propertyId, userId])
-}
-
-model PropertyReview {
-  id          String   @id @default(cuid())
-  rating      Int
-  title       String
-  content     String   @db.Text
-  isVerified  Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  propertyId  String
-  property    Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  likes       ReviewLike[]
-  replies     ReviewReply[]
-
-  @@unique([propertyId, userId])
-}
-
-model ReviewLike {
-  id          String   @id @default(cuid())
-  createdAt   DateTime @default(now())
-
-  // Relations
-  reviewId    String
-  review      PropertyReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
-  userId      String
-
-  @@unique([reviewId, userId])
-}
-
-model ReviewReply {
-  id          String   @id @default(cuid())
-  content     String   @db.Text
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  reviewId    String
-  review      PropertyReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
-  userId      String
-}
-
-model PropertyOffer {
-  id          String   @id @default(cuid())
-  amount      Float
-  message     String?  @db.Text
-  status      OfferStatus @default(PENDING)
-  validUntil  DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  propertyId  String
-  property    Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-enum OfferStatus {
-  PENDING
-  ACCEPTED
-  REJECTED
-  EXPIRED
-  WITHDRAWN
-}
-
-model PropertyViewing {
-  id          String   @id @default(cuid())
-  datetime    DateTime
-  notes       String?  @db.Text
-  status      ViewingStatus @default(PENDING)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  propertyId  String
-  property    Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-enum ViewingStatus {
-  PENDING
-  CONFIRMED
-  COMPLETED
-  CANCELLED
-}
-
-model PropertyValuation {
-  id          String   @id @default(cuid())
-  notes       String?  @db.Text
-  status      ValuationStatus @default(PENDING)
-  amount      Float?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  propertyId  String
-  property    Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-enum ValuationStatus {
-  PENDING
-  COMPLETED
-  CANCELLED
-}
-
-model AgentProperty {
-  id          String   @id @default(cuid())
-  role        AgentRole @default(AGENT)
-  createdAt   DateTime @default(now())
-
-  // Relations
-  propertyId  String
-  property    Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([propertyId, userId])
-}
-
-enum AgentRole {
-  AGENT
-  MANAGER
-  ADMIN
-}
-
-// Services
-model ServiceListing {
-  id          String   @id @default(cuid())
-  title       String
-  description String   @db.Text
-  category    ServiceCategory
-  price       Float?
-  priceType   PriceType
-  availability String[]
-  location    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@fulltext([title, description])
-}
-
-enum ServiceCategory {
-  TRADES
-  PROFESSIONAL
-  SPECIALIST
-  OTHER
-}
-
-enum PriceType {
-  FIXED
-  HOURLY
-  QUOTE
-  FREE
-}
-
-// Leisure
-model LeisureListing {
-  id          String   @id @default(cuid())
-  title       String
-  description String   @db.Text
-  category    LeisureCategory
-  price       Float?
-  priceType   PriceType
-  availability String[]
-  location    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@fulltext([title, description])
-}
-
-enum LeisureCategory {
-  RENTAL
-  EXPERIENCE
-  EVENT
-  OTHER
-}
-
-// Social & CRM
-model Connection {
-  id          String   @id @default(cuid())
-  status      ConnectionStatus @default(PENDING)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  userId      String
-  user        User     @relation("UserConnections", fields: [userId], references: [id])
-  connectedId String
-  connected   User     @relation("ConnectedUsers", fields: [connectedId], references: [id])
-
-  @@unique([userId, connectedId])
-}
-
-enum ConnectionStatus {
-  PENDING
-  ACCEPTED
-  REJECTED
-  BLOCKED
-}
-
-model Message {
-  id          String   @id @default(cuid())
-  content     String   @db.Text
-  isRead      Boolean  @default(false)
-  createdAt   DateTime @default(now())
-
-  // Relations
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model Notification {
-  id          String   @id @default(cuid())
-  type        String
-  title       String
-  content     String   @db.Text
-  isRead      Boolean  @default(false)
-  createdAt   DateTime @default(now())
-
-  // Relations
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-// Search
-model SavedSearch {
-  id          String   @id @default(cuid())
-  name        String
-  type        SearchType
-  filters     Json
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-enum SearchType {
-  PROPERTY
-  SERVICE
-  LEISURE
 }
