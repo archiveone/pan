@@ -1,58 +1,45 @@
-'use client'
+"use client";
 
-import { PropertyCard } from './PropertyCard'
-
-interface Property {
-  id: string
-  title: string
-  price: number
-  currency?: string
-  location: string
-  bedrooms?: number
-  bathrooms?: number
-  propertyType: string
-  listingType: 'sale' | 'rent'
-  imageUrl: string
-}
+import { Property } from '@/lib/types/property';
+import { PropertyCard } from './PropertyCard';
+import { cn } from '@/lib/utils';
 
 interface PropertyGridProps {
-  properties: Property[]
-  isLoading?: boolean
+  properties: Property[];
+  onFavorite?: (propertyId: string) => void;
+  favoritedProperties?: Set<string>;
+  className?: string;
 }
 
-export function PropertyGrid({ properties, isLoading = false }: PropertyGridProps) {
-  if (isLoading) {
+export function PropertyGrid({
+  properties,
+  onFavorite,
+  favoritedProperties,
+  className,
+}: PropertyGridProps) {
+  if (!properties.length) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {[...Array(6)].map((_, i) => (
-          <div 
-            key={i}
-            className="h-[400px] rounded-lg bg-muted animate-pulse"
-          />
-        ))}
+      <div className="flex h-[200px] items-center justify-center text-muted-foreground">
+        No properties found
       </div>
-    )
-  }
-
-  if (properties.length === 0) {
-    return (
-      <div className="text-center py-12">
-        <h3 className="text-lg font-semibold mb-2">No properties found</h3>
-        <p className="text-muted-foreground">
-          Try adjusting your search criteria or check back later for new listings.
-        </p>
-      </div>
-    )
+    );
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div
+      className={cn(
+        'grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4',
+        className
+      )}
+    >
       {properties.map((property) => (
         <PropertyCard
           key={property.id}
-          {...property}
+          property={property}
+          onFavorite={onFavorite}
+          isFavorited={favoritedProperties?.has(property.id)}
         />
       ))}
     </div>
-  )
+  );
 }
