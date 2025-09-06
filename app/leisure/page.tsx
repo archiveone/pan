@@ -1,322 +1,197 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { motion } from 'framer-motion';
-import {
-  Search,
-  MapPin,
-  Calendar,
-  Filter,
-  Users,
-  Music,
-  Utensils,
-  Plane,
-  Car,
-  Boat,
-  Ticket,
-  Clock,
-  Euro,
-  Star,
-} from 'lucide-react';
+import PageLayout from "@/components/layout/page-layout";
+import { ChevronRightIcon } from "@heroicons/react/24/outline";
+import Image from "next/image";
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
-import { Slider } from '@/components/ui/slider';
-import { DatePickerWithRange } from '@/components/ui/date-range-picker';
-import { addDays } from 'date-fns';
-
-// Leisure categories
-const categories = [
-  { id: 'events', name: 'Events', icon: Music },
-  { id: 'dining', name: 'Dining', icon: Utensils },
-  { id: 'travel', name: 'Travel', icon: Plane },
-  { id: 'cars', name: 'Car Rental', icon: Car },
-  { id: 'boats', name: 'Boat Rental', icon: Boat },
-  { id: 'activities', name: 'Activities', icon: Users },
-];
-
-// Sample leisure items
-const leisureItems = [
+// Sample data
+const experiences = [
   {
-    id: 1,
-    type: 'event',
-    title: 'Summer Music Festival 2025',
-    description: 'Three days of live music featuring top international artists',
-    location: 'Phoenix Park, Dublin',
-    date: '2025-07-15',
-    time: '12:00 PM',
-    price: 'From €45',
-    image: '/images/leisure/festival-1.jpg',
-    category: 'Music',
-    attendees: 5000,
-    rating: 4.8,
-    reviews: 245,
-    featured: true,
-    organizer: {
-      name: 'EventPro Ireland',
-      verified: true,
-    },
-  },
-  {
-    id: 2,
-    type: 'rental',
-    title: 'Luxury Yacht Experience',
-    description: 'Private yacht rental with captain and crew',
-    location: 'Dun Laoghaire Harbour',
-    price: '€500/hour',
-    image: '/images/leisure/yacht-1.jpg',
-    category: 'Boat Rental',
-    capacity: 12,
+    id: "1",
+    title: "Luxury Yacht Charter",
+    description: "Private yacht experience in the Mediterranean",
+    price: "From €1,500/day",
     rating: 4.9,
-    reviews: 78,
-    featured: true,
-    provider: {
-      name: 'Premium Marine',
-      verified: true,
-    },
+    reviews: 48,
+    imageUrl: "/images/leisure/yacht.jpg",
+    category: "Water Activities",
+    duration: "Full Day",
+    location: "Mediterranean Sea",
   },
-  // Add more items...
+  {
+    id: "2",
+    title: "Wine Tasting Tour",
+    description: "Exclusive wine tasting experience in premium vineyards",
+    price: "From €200/person",
+    rating: 4.8,
+    reviews: 156,
+    imageUrl: "/images/leisure/wine.jpg",
+    category: "Food & Drink",
+    duration: "4 hours",
+    location: "Bordeaux Region",
+  },
+  {
+    id: "3",
+    title: "Private Villa Retreat",
+    description: "Luxurious villa with private pool and chef",
+    price: "From €800/night",
+    rating: 5.0,
+    reviews: 92,
+    imageUrl: "/images/leisure/villa.jpg",
+    category: "Accommodations",
+    duration: "Flexible",
+    location: "Coastal Paradise",
+  },
 ];
 
-// Filter options
-const sortOptions = [
-  { value: 'recommended', label: 'Recommended' },
-  { value: 'date', label: 'Date: Nearest' },
-  { value: 'price_low', label: 'Price: Low to High' },
-  { value: 'price_high', label: 'Price: High to Low' },
-  { value: 'rating', label: 'Top Rated' },
+const categories = [
+  "All Experiences",
+  "Water Activities",
+  "Food & Drink",
+  "Accommodations",
+  "Adventure",
+  "Wellness",
 ];
+
+function ExperienceCard({ experience }: { experience: typeof experiences[0] }) {
+  return (
+    <div className="group relative animate-fade-up">
+      <div className="card overflow-hidden">
+        <div className="relative aspect-[4/3] overflow-hidden rounded-t-2xl">
+          <Image
+            src={experience.imageUrl}
+            alt={experience.title}
+            className="object-cover object-center transition-transform duration-300 group-hover:scale-105"
+            fill
+            sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+          
+          {/* Category badge */}
+          <div className="absolute left-4 top-4">
+            <span className="glass px-3 py-1 text-xs font-medium text-gray-900">
+              {experience.category}
+            </span>
+          </div>
+        </div>
+
+        <div className="p-6">
+          <div className="space-y-3">
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="text-lg font-medium leading-6 text-gray-900">
+                  {experience.title}
+                </h3>
+                <p className="mt-1 text-sm text-gray-500">{experience.location}</p>
+              </div>
+              <p className="text-lg font-medium text-gray-900">{experience.price}</p>
+            </div>
+
+            <p className="text-sm text-gray-600">{experience.description}</p>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="flex items-center">
+                  {[...Array(5)].map((_, i) => (
+                    <svg
+                      key={i}
+                      className={`h-4 w-4 ${
+                        i < Math.floor(experience.rating)
+                          ? "text-yellow-400"
+                          : "text-gray-300"
+                      }`}
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 15.585l-6.327 3.323 1.209-7.037L.172 7.282l7.046-1.024L10 0l2.782 6.258 7.046 1.024-4.71 4.589 1.209 7.037z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  ))}
+                </div>
+                <span className="text-sm text-gray-500">
+                  ({experience.reviews} reviews)
+                </span>
+              </div>
+              <span className="text-sm text-gray-500">{experience.duration}</span>
+            </div>
+          </div>
+
+          <div className="mt-6 flex items-center gap-3">
+            <button className="btn-primary flex-1">Book Experience</button>
+            <button className="btn-secondary flex-1">Learn More</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function LeisurePage() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [location, setLocation] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [dateRange, setDateRange] = useState({
-    from: new Date(),
-    to: addDays(new Date(), 7),
-  });
-  const [priceRange, setPriceRange] = useState([0, 1000]);
-  const [sortBy, setSortBy] = useState('recommended');
-  const [viewType, setViewType] = useState<'grid' | 'list'>('grid');
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
-      <section className="bg-primary text-white py-12">
-        <div className="container mx-auto px-4">
-          <h1 className="text-4xl font-bold mb-4">Discover Amazing Experiences</h1>
-          <p className="text-xl opacity-90 mb-8">
-            Find and book unique experiences, events, and rentals
-          </p>
-
-          {/* Search Bar */}
-          <Card className="p-4 bg-white/10 backdrop-blur-lg">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-primary" />
-                  <Input
-                    placeholder="Search events, activities, rentals..."
-                    className="pl-10 bg-white text-black"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="flex-1">
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-primary" />
-                  <Input
-                    placeholder="Location"
-                    className="pl-10 bg-white text-black"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                  />
-                </div>
-              </div>
-              <DatePickerWithRange
-                date={dateRange}
-                onDateChange={setDateRange}
-              />
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button variant="secondary" className="w-full md:w-auto">
-                    <Filter className="w-4 h-4 mr-2" />
-                    Filters
-                  </Button>
-                </SheetTrigger>
-                <SheetContent>
-                  <SheetHeader>
-                    <SheetTitle>Filter Options</SheetTitle>
-                  </SheetHeader>
-                  <div className="py-4 space-y-6">
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">
-                        Price Range (€)
-                      </label>
-                      <Slider
-                        value={priceRange}
-                        onValueChange={setPriceRange}
-                        min={0}
-                        max={1000}
-                        step={50}
-                      />
-                      <div className="flex justify-between mt-2 text-sm text-muted-foreground">
-                        <span>€{priceRange[0]}</span>
-                        <span>€{priceRange[1]}</span>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">
-                        Category
-                      </label>
-                      <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="All Categories" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Categories</SelectItem>
-                          {categories.map((category) => (
-                            <SelectItem key={category.id} value={category.id}>
-                              {category.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </SheetContent>
-              </Sheet>
-              <Button className="w-full md:w-auto">Search</Button>
-            </div>
-          </Card>
-        </div>
-      </section>
-
+    <PageLayout
+      header={{
+        title: "Luxury Experiences",
+        description: "Discover extraordinary experiences and adventures",
+      }}
+    >
       {/* Categories */}
-      <section className="py-8 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {categories.map((category) => (
-              <Card
-                key={category.id}
-                className="p-4 text-center cursor-pointer hover:bg-gray-50 transition-colors"
-                onClick={() => setSelectedCategory(category.id)}
-              >
-                <category.icon className="w-8 h-8 mx-auto mb-2 text-primary" />
-                <div className="font-medium">{category.name}</div>
-              </Card>
-            ))}
-          </div>
+      <div className="glass mb-12 rounded-2xl p-4">
+        <div className="flex items-center gap-4 overflow-x-auto py-2">
+          {categories.map((category) => (
+            <button
+              key={category}
+              className="whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+              {category}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Featured experiences */}
+      <section className="space-y-8">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-semibold text-gray-900">
+            Featured Experiences
+          </h2>
+          <a
+            href="#"
+            className="group flex items-center text-sm font-medium text-blue-600"
+          >
+            View all
+            <ChevronRightIcon className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
+          </a>
+        </div>
+        <div className="apple-grid">
+          {experiences.map((experience) => (
+            <ExperienceCard key={experience.id} experience={experience} />
+          ))}
         </div>
       </section>
 
-      {/* Results Section */}
-      <section className="py-8">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h2 className="text-2xl font-bold">
-                {leisureItems.length} Experiences Available
-              </h2>
-              <p className="text-muted-foreground">
-                Browse through our curated experiences
-              </p>
-            </div>
-            <div className="flex items-center gap-4">
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-[160px]">
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  {sortOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className={viewType === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-6'}>
-            {leisureItems.map((item) => (
-              <Link href={`/leisure/${item.id}`} key={item.id}>
-                <Card className={`overflow-hidden group hover:shadow-lg transition-shadow ${
-                  viewType === 'list' ? 'flex' : ''
-                }`}>
-                  <div className={`relative ${viewType === 'list' ? 'w-1/3' : ''}`}>
-                    <div className="relative h-48 overflow-hidden">
-                      <Image
-                        src={item.image}
-                        alt={item.title}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    </div>
-                    <Badge className="absolute top-2 right-2 bg-primary">
-                      {item.category}
-                    </Badge>
-                  </div>
-                  <div className={`p-4 ${viewType === 'list' ? 'w-2/3' : ''}`}>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                      <MapPin className="w-4 h-4" />
-                      {item.location}
-                    </div>
-                    <h3 className="text-lg font-semibold mb-1">{item.title}</h3>
-                    {item.date && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                        <Calendar className="w-4 h-4" />
-                        {new Date(item.date).toLocaleDateString()} {item.time}
-                      </div>
-                    )}
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="flex items-center">
-                        <Star className="w-4 h-4 text-yellow-400" />
-                        <span className="ml-1 font-medium">{item.rating}</span>
-                      </div>
-                      <span className="text-sm text-muted-foreground">
-                        ({item.reviews} reviews)
-                      </span>
-                      {item.type === 'event' && (
-                        <Badge variant="outline" className="ml-auto">
-                          {item.attendees}+ attending
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-primary font-semibold">{item.price}</span>
-                      <Button variant="ghost" size="sm">
-                        View Details
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
-              </Link>
-            ))}
-          </div>
+      {/* Trending experiences */}
+      <section className="mt-16 space-y-8">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-semibold text-gray-900">
+            Trending Now
+          </h2>
+          <a
+            href="#"
+            className="group flex items-center text-sm font-medium text-blue-600"
+          >
+            View all
+            <ChevronRightIcon className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
+          </a>
+        </div>
+        <div className="apple-grid">
+          {experiences.map((experience) => (
+            <ExperienceCard key={experience.id} experience={experience} />
+          ))}
         </div>
       </section>
-    </div>
+    </PageLayout>
   );
 }
