@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
+import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/auth';
-import prisma from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 
-// GET /api/crm/leads - Get all leads for the current user
+// GET /api/crm/leads - Get all leads for authenticated user
 export async function GET(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    
-    if (!session?.user) {
+    if (!session?.user?.id) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -17,47 +17,51 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url);
     const status = searchParams.get('status');
-    const search = searchParams.get('search');
+    const source = searchParams.get('source');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const skip = (page - 1) * limit;
 
-    const leads = await prisma.lead.findMany({
-      where: {
-        userId: session.user.id,
-        ...(status && { status: status as any }),
-        ...(search && {
-          OR: [
-            { name: { contains: search, mode: 'insensitive' } },
-            { email: { contains: search, mode: 'insensitive' } },
-            { phone: { contains: search, mode: 'insensitive' } },
-          ],
-        }),
-      },
-      include: {
-        property: {
-          select: {
-            id: true,
-            title: true,
-            address: true,
+    // Build filter conditions
+    const where: Prisma.LeadWhereInput = {
+      ownerId: session.user.id,
+      ...(status && { status }),
+      ...(source && { source }),
+    };
+
+    // Get leads with pagination
+    const [leads, total] = await Promise.all([
+      prisma.lead.findMany({
+        where,
+        include: {
+          property: true,
+          service: true,
+          leisure: true,
+          tasks: {
+            orderBy: { createdAt: 'desc' },
+            take: 5,
           },
         },
-        tasks: {
-          select: {
-            id: true,
-            title: true,
-            dueDate: true,
-            completed: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.lead.count({ where }),
+    ]);
+
+    return NextResponse.json({
+      leads,
+      pagination: {
+        total,
+        pages: Math.ceil(total / limit),
+        page,
+        limit,
       },
     });
-
-    return NextResponse.json(leads);
   } catch (error) {
-    console.error('Lead fetch error:', error);
+    console.error('Get leads error:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch leads' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }
@@ -67,8 +71,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    
-    if (!session?.user) {
+    if (!session?.user?.id) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -76,72 +79,59 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { name, email, phone, source, propertyId, notes } = body;
+    const {
+      title,
+      description,
+      source,
+      value,
+      contactName,
+      contactEmail,
+      contactPhone,
+      propertyId,
+      serviceId,
+      leisureId,
+      status,
+      notes,
+    } = body;
 
-    // Validate required fields
-    if (!name || !email) {
-      return NextResponse.json(
-        { error: 'Name and email are required' },
-        { status: 400 }
-      );
-    }
-
-    // Create lead
     const lead = await prisma.lead.create({
       data: {
-        name,
-        email,
-        phone,
+        title,
+        description,
         source,
-        propertyId,
+        value: value ? parseFloat(value) : null,
+        contactName,
+        contactEmail,
+        contactPhone,
+        status: status || 'NEW',
         notes,
-        status: 'NEW',
-        userId: session.user.id,
+        ownerId: session.user.id,
+        ...(propertyId && { property: { connect: { id: propertyId } } }),
+        ...(serviceId && { service: { connect: { id: serviceId } } }),
+        ...(leisureId && { leisure: { connect: { id: leisureId } } }),
+      },
+      include: {
+        property: true,
+        service: true,
+        leisure: true,
       },
     });
-
-    // Create notification
-    await prisma.notification.create({
-      data: {
-        userId: session.user.id,
-        type: 'LEAD',
-        title: 'New Lead Created',
-        message: `New lead ${name} has been created`,
-        isRead: false,
-      },
-    });
-
-    // If property is specified, create a task for follow-up
-    if (propertyId) {
-      await prisma.task.create({
-        data: {
-          userId: session.user.id,
-          leadId: lead.id,
-          title: `Follow up with ${name} about property`,
-          description: `Initial contact regarding property inquiry`,
-          dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
-          priority: 'HIGH',
-          completed: false,
-        },
-      });
-    }
 
     return NextResponse.json(lead);
   } catch (error) {
-    console.error('Lead creation error:', error);
+    console.error('Create lead error:', error);
     return NextResponse.json(
-      { error: 'Failed to create lead' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }
 }
 
-// PATCH /api/crm/leads - Update a lead
+// PATCH /api/crm/leads - Update multiple leads
 export async function PATCH(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    
-    if (!session?.user) {
+    if (!session?.user?.id) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -149,47 +139,38 @@ export async function PATCH(req: Request) {
     }
 
     const body = await req.json();
-    const { id, ...updateData } = body;
+    const { leads } = body;
 
-    // Verify ownership
-    const existingLead = await prisma.lead.findUnique({
-      where: { id },
-      select: { userId: true },
-    });
-
-    if (!existingLead || existingLead.userId !== session.user.id) {
+    if (!Array.isArray(leads)) {
       return NextResponse.json(
-        { error: 'Not authorized to update this lead' },
-        { status: 403 }
+        { error: 'Invalid request format' },
+        { status: 400 }
       );
     }
 
-    // Update lead
-    const lead = await prisma.lead.update({
-      where: { id },
-      data: updateData,
-    });
+    // Update leads in transaction
+    const updates = await prisma.$transaction(
+      leads.map((lead) => 
+        prisma.lead.update({
+          where: {
+            id: lead.id,
+            ownerId: session.user.id, // Ensure user owns the lead
+          },
+          data: {
+            status: lead.status,
+            notes: lead.notes,
+            lastContactedAt: lead.lastContactedAt,
+            nextFollowUpDate: lead.nextFollowUpDate,
+          },
+        })
+      )
+    );
 
-    // If status is updated to QUALIFIED, create a task for next steps
-    if (updateData.status === 'QUALIFIED') {
-      await prisma.task.create({
-        data: {
-          userId: session.user.id,
-          leadId: lead.id,
-          title: 'Schedule property viewing',
-          description: 'Lead has been qualified - arrange property viewing',
-          dueDate: new Date(Date.now() + 48 * 60 * 60 * 1000), // 48 hours from now
-          priority: 'HIGH',
-          completed: false,
-        },
-      });
-    }
-
-    return NextResponse.json(lead);
+    return NextResponse.json({ updated: updates.length });
   } catch (error) {
-    console.error('Lead update error:', error);
+    console.error('Update leads error:', error);
     return NextResponse.json(
-      { error: 'Failed to update lead' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }
