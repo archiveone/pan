@@ -1,54 +1,85 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { handlePropertySubmission } from '@/lib/subscription';
-import { checkPermission } from '@/lib/auth/permissions';
+import { authOptions } from '@/lib/auth';
+import { Prisma } from '@prisma/client';
 
-export async function POST(request: Request) {
+// GET /api/properties - Get all properties with filtering
+export async function GET(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+    const { searchParams } = new URL(req.url);
+    
+    // Pagination
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const skip = (page - 1) * limit;
 
-    // Check if user has permission to create properties
-    if (!checkPermission('CREATE_PROPERTY')) {
-      return NextResponse.json(
-        { error: 'Permission denied' },
-        { status: 403 }
-      );
-    }
+    // Filters
+    const type = searchParams.get('type');
+    const minPrice = searchParams.get('minPrice');
+    const maxPrice = searchParams.get('maxPrice');
+    const bedrooms = searchParams.get('bedrooms');
+    const location = searchParams.get('location');
+    const status = searchParams.get('status');
+    const verified = searchParams.get('verified') === 'true';
 
-    const data = await request.json();
+    // Build where clause
+    const where: Prisma.PropertyWhereInput = {
+      ...(type && { type }),
+      ...(minPrice && { price: { gte: parseFloat(minPrice) } }),
+      ...(maxPrice && { price: { lte: parseFloat(maxPrice) } }),
+      ...(bedrooms && { bedrooms: parseInt(bedrooms) }),
+      ...(location && { location: { contains: location, mode: 'insensitive' } }),
+      ...(status && { status }),
+      isVerified: verified,
+    };
 
-    // Handle property submission with role-based logic
-    const property = await handlePropertySubmission(session.user.id, data);
-
-    return NextResponse.json(property);
-  } catch (error: any) {
-    if (error.message === 'Monthly listing quota exceeded') {
-      return NextResponse.json(
-        {
-          error: 'Monthly listing quota exceeded',
-          message: 'Upgrade to PRO for unlimited listings',
+    // Get properties with pagination
+    const [properties, total] = await Promise.all([
+      prisma.property.findMany({
+        where,
+        include: {
+          owner: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              image: true,
+              isVerified: true,
+              companyName: true,
+            },
+          },
         },
-        { status: 403 }
-      );
-    }
+        orderBy: [
+          { isFeatured: 'desc' },
+          { createdAt: 'desc' },
+        ],
+        skip,
+        take: limit,
+      }),
+      prisma.property.count({ where }),
+    ]);
 
-    console.error('Error in POST /api/properties:', error);
+    return NextResponse.json({
+      properties,
+      pagination: {
+        total,
+        pages: Math.ceil(total / limit),
+        page,
+        limit,
+      },
+    });
+  } catch (error) {
+    console.error('Get properties error:', error);
     return NextResponse.json(
-      { error: 'Failed to create property' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }
 }
 
-export async function GET(request: Request) {
+// POST /api/properties - Create a new property
+export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
@@ -58,78 +89,72 @@ export async function GET(request: Request) {
       );
     }
 
-    const { searchParams } = new URL(request.url);
-    const marketplace = searchParams.get('marketplace');
-    const status = searchParams.get('status');
+    const body = await req.json();
+    const {
+      title,
+      description,
+      type,
+      price,
+      size,
+      bedrooms,
+      bathrooms,
+      features,
+      location,
+      images,
+    } = body;
 
-    // Build query based on user role and marketplace
-    const query: any = {
-      where: {},
+    // Validate required fields
+    if (!title || !description || !type || !price || !location) {
+      return NextResponse.json(
+        { error: 'Missing required fields' },
+        { status: 400 }
+      );
+    }
+
+    const property = await prisma.property.create({
+      data: {
+        title,
+        description,
+        type,
+        price: parseFloat(price),
+        size: size ? parseFloat(size) : null,
+        bedrooms: bedrooms ? parseInt(bedrooms) : null,
+        bathrooms: bathrooms ? parseInt(bathrooms) : null,
+        features: features || [],
+        location,
+        status: 'DRAFT',
+        isVerified: false,
+        isFeatured: false,
+        owner: {
+          connect: { id: session.user.id },
+        },
+      },
       include: {
         owner: {
           select: {
             id: true,
             name: true,
             email: true,
-            role: true,
-            companyName: true,
+            image: true,
             isVerified: true,
+            companyName: true,
           },
         },
       },
-    };
+    });
 
-    // Filter by marketplace type
-    if (marketplace === 'agent') {
-      query.where.inAgentMarketplace = true;
-    } else if (marketplace === 'public') {
-      query.where.inPublicMarketplace = true;
-    }
-
-    // Filter by status if provided
-    if (status) {
-      query.where.status = status;
-    }
-
-    // Role-based access control
-    const userRole = session.user.role;
-    switch (userRole) {
-      case 'ADMIN':
-        // Admins can see all properties
-        break;
-      case 'AGENT':
-        if (!session.user.isVerified) {
-          // Unverified agents can only see their own listings
-          query.where.ownerId = session.user.id;
-        }
-        // Verified agents can see public marketplace and agent marketplace
-        break;
-      case 'LANDLORD':
-        // Landlords can only see their own listings and the agent marketplace
-        query.where.OR = [
-          { ownerId: session.user.id },
-          { inAgentMarketplace: true },
-        ];
-        break;
-      default:
-        // Regular users can only see public marketplace
-        query.where.inPublicMarketplace = true;
-        query.where.status = 'ACTIVE';
-    }
-
-    const properties = await prisma.property.findMany(query);
-
-    return NextResponse.json(properties);
+    return NextResponse.json(property);
   } catch (error) {
-    console.error('Error in GET /api/properties:', error);
+    console.error('Create property error:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch properties' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }
 }
 
-export async function PUT(request: Request) {
+// PATCH /api/properties - Update multiple properties
+export async function PATCH(req: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
@@ -139,77 +164,41 @@ export async function PUT(request: Request) {
       );
     }
 
-    const data = await request.json();
-    const { id, ...updateData } = data;
+    const body = await req.json();
+    const { properties } = body;
 
-    // Check if user has permission to update this property
-    const property = await prisma.property.findUnique({
-      where: { id },
-      select: { ownerId: true, status: true },
-    });
-
-    if (!property) {
+    if (!Array.isArray(properties)) {
       return NextResponse.json(
-        { error: 'Property not found' },
-        { status: 404 }
+        { error: 'Invalid request format' },
+        { status: 400 }
       );
     }
 
-    // Only owner, agents (for agent marketplace), and admins can update
-    const canUpdate =
-      property.ownerId === session.user.id ||
-      session.user.role === 'ADMIN' ||
-      (session.user.role === 'AGENT' &&
-        property.status === 'PENDING_REVIEW' &&
-        session.user.isVerified);
+    // Update properties in transaction
+    const updates = await prisma.$transaction(
+      properties.map((property) => 
+        prisma.property.update({
+          where: {
+            id: property.id,
+            ownerId: session.user.id, // Ensure user owns the property
+          },
+          data: {
+            title: property.title,
+            description: property.description,
+            price: property.price ? parseFloat(property.price) : undefined,
+            status: property.status,
+            features: property.features,
+            isFeatured: property.isFeatured,
+          },
+        })
+      )
+    );
 
-    if (!canUpdate) {
-      return NextResponse.json(
-        { error: 'Permission denied' },
-        { status: 403 }
-      );
-    }
-
-    // Handle status changes based on role
-    if (updateData.status) {
-      switch (session.user.role) {
-        case 'ADMIN':
-          // Admins can set any status
-          break;
-        case 'AGENT':
-          // Verified agents can only approve/reject properties in agent marketplace
-          if (!session.user.isVerified) {
-            delete updateData.status;
-          } else if (property.status !== 'PENDING_REVIEW') {
-            return NextResponse.json(
-              { error: 'Can only update pending properties' },
-              { status: 403 }
-            );
-          }
-          break;
-        default:
-          // Others cannot change status
-          delete updateData.status;
-      }
-    }
-
-    const updatedProperty = await prisma.property.update({
-      where: { id },
-      data: {
-        ...updateData,
-        // Track who reviewed the property
-        ...(updateData.status && {
-          reviewedBy: session.user.id,
-          reviewedAt: new Date(),
-        }),
-      },
-    });
-
-    return NextResponse.json(updatedProperty);
+    return NextResponse.json({ updated: updates.length });
   } catch (error) {
-    console.error('Error in PUT /api/properties:', error);
+    console.error('Update properties error:', error);
     return NextResponse.json(
-      { error: 'Failed to update property' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }
