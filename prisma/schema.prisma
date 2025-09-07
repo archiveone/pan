@@ -60,6 +60,37 @@ enum LeisureType {
   EVENT         // Gigs, shows
 }
 
+enum LeadStatus {
+  NEW           // Just created
+  QUALIFIED     // Verified and ready for action
+  IN_PROGRESS   // Being worked on
+  WON           // Successfully converted
+  LOST          // Not converted
+  ARCHIVED      // Stored for reference
+}
+
+enum LeadSource {
+  PROPERTY_ENQUIRY    // From property listing contact form
+  VALUATION_REQUEST   // Property owner seeking valuation
+  WEBSITE_FORM        // General contact form
+  AGENT_REFERRAL      // From another agent
+  DIRECT             // Direct contact
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
 model User {
   id                 String           @id @default(cuid())
   name               String?
@@ -106,6 +137,9 @@ model User {
   reviews          Review[]        // Reviews received
   accounts         Account[]
   sessions         Session[]
+  leads            Lead[]          // Leads owned by this user
+  assignedTasks    Task[]          // Tasks assigned to this user
+  createdTasks     Task[]    @relation("TaskCreator")  // Tasks created by this user
 }
 
 model Property {
@@ -133,6 +167,7 @@ model Property {
   // Relations
   owner            User           @relation(fields: [ownerId], references: [id])
   ownerId          String
+  leads            Lead[]         // Property enquiry leads
   
   // Timestamps
   createdAt        DateTime       @default(now())
@@ -160,6 +195,7 @@ model Service {
   provider         User           @relation(fields: [providerId], references: [id])
   providerId       String
   reviews          Review[]
+  leads            Lead[]         // Service enquiry leads
   
   // Timestamps
   createdAt        DateTime       @default(now())
@@ -183,10 +219,70 @@ model Leisure {
   owner            User           @relation(fields: [ownerId], references: [id])
   ownerId          String
   reviews          Review[]
+  leads            Lead[]         // Leisure enquiry leads
   
   // Timestamps
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
+}
+
+model Lead {
+  id               String         @id @default(cuid())
+  title            String
+  description      String
+  status           LeadStatus     @default(NEW)
+  source           LeadSource
+  value            Float?         // Potential value of the lead
+  
+  // Contact information
+  contactName      String
+  contactEmail     String
+  contactPhone     String?
+  
+  // Relations
+  owner            User          @relation(fields: [ownerId], references: [id])
+  ownerId          String
+  property         Property?     @relation(fields: [propertyId], references: [id])
+  propertyId       String?
+  service          Service?      @relation(fields: [serviceId], references: [id])
+  serviceId        String?
+  leisure          Leisure?      @relation(fields: [leisureId], references: [id])
+  leisureId        String?
+  tasks            Task[]        // Related tasks
+  
+  // Tracking
+  lastContactedAt  DateTime?
+  nextFollowUpDate DateTime?
+  notes            String?       @db.Text
+  
+  // Timestamps
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+}
+
+model Task {
+  id               String         @id @default(cuid())
+  title            String
+  description      String?
+  priority         TaskPriority   @default(MEDIUM)
+  status           TaskStatus     @default(TODO)
+  dueDate          DateTime?
+  
+  // Relations
+  assignedTo       User          @relation(fields: [assignedToId], references: [id])
+  assignedToId     String
+  creator          User          @relation("TaskCreator", fields: [creatorId], references: [id])
+  creatorId        String
+  lead             Lead?         @relation(fields: [leadId], references: [id])
+  leadId           String?
+  
+  // Task details
+  completedAt      DateTime?
+  notes            String?       @db.Text
+  
+  // Timestamps
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 }
 
 model Post {
