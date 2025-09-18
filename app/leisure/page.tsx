@@ -1,149 +1,130 @@
-import { Metadata } from 'next';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
-import { LeisureCard } from '@/components/leisure/LeisureCard';
-import { Button } from '@/components/ui/button';
-import Link from 'next/link';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-
-export const metadata: Metadata = {
-  title: 'Leisure - GREIA',
-  description: 'Find rentals, experiences, and events on GREIA platform',
-};
-
-interface LeisurePageProps {
-  searchParams: {
-    type?: 'RENTAL' | 'EXPERIENCE' | 'EVENT';
-  };
-}
-
-export default async function LeisurePage({ searchParams }: LeisurePageProps) {
-  const session = await getServerSession(authOptions);
-  const { type } = searchParams;
-
-  // Get active leisure listings
-  const listings = await prisma.leisure.findMany({
-    where: {
-      status: 'ACTIVE',
-      ...(type && { type }),
-    },
-    include: {
-      provider: {
-        select: {
-          id: true,
-          name: true,
-          rating: true,
-          totalReviews: true,
-          isVerified: true,
-        },
-      },
-    },
-    orderBy: [
-      { isFeatured: 'desc' },
-      { createdAt: 'desc' },
-    ],
-  });
-
-  // If user is logged in, get their quota info
-  let quotaInfo;
-  if (session?.user) {
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: {
-        monthlyLeisureQuota: true,
-        monthlyLeisureUsed: true,
-        subscriptionTier: true,
-      },
-    });
-
-    if (user) {
-      quotaInfo = {
-        remaining: user.monthlyLeisureQuota - user.monthlyLeisureUsed,
-        isPro: user.subscriptionTier === 'PRO',
-      };
-    }
-  }
-
+export default function LeisurePage() {
   return (
-    <div className="container py-8">
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Leisure</h1>
-          <p className="mt-2 text-muted-foreground">
-            Discover amazing rentals, experiences, and events
+    <div className="min-h-screen bg-gray-50">
+      {/* Hero Section */}
+      <section className="bg-white py-12 border-b">
+        <div className="container mx-auto px-4">
+          <h1 className="text-4xl font-bold mb-4">Leisure & Experiences</h1>
+          <p className="text-xl text-gray-600">
+            Discover rentals, experiences, and cultural activities
           </p>
         </div>
-        <div className="flex items-center space-x-4">
-          <Select
-            defaultValue={type}
-            onValueChange={(value) => {
-              const url = new URL(window.location.href);
-              if (value) {
-                url.searchParams.set('type', value);
-              } else {
-                url.searchParams.delete('type');
-              }
-              window.location.href = url.toString();
-            }}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="All Types" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">All Types</SelectItem>
-              <SelectItem value="RENTAL">Rentals</SelectItem>
-              <SelectItem value="EXPERIENCE">Experiences</SelectItem>
-              <SelectItem value="EVENT">Events</SelectItem>
-            </SelectContent>
-          </Select>
-          {session?.user && (
-            <div className="flex items-center space-x-4">
-              {quotaInfo && !quotaInfo.isPro && (
-                <p className="text-sm text-muted-foreground">
-                  {quotaInfo.remaining} listings remaining
-                </p>
-              )}
-              <Button asChild>
-                <Link href="/leisure/create">Create Listing</Link>
-              </Button>
-            </div>
-          )}
-        </div>
-      </div>
+      </section>
 
-      {listings.length === 0 ? (
-        <div className="flex min-h-[400px] flex-col items-center justify-center rounded-lg border border-dashed">
-          <h2 className="text-xl font-semibold">No Listings Found</h2>
-          <p className="mt-2 text-muted-foreground">
-            {type
-              ? 'No listings found in this category'
-              : 'No leisure listings are currently available'}
+      {/* Leisure Categories */}
+      <section className="py-12">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Rentals */}
+            <div className="bg-white p-6 rounded-xl shadow-md">
+              <h2 className="text-2xl font-semibold mb-4">Rentals</h2>
+              <p className="text-gray-600 mb-4">
+                Find cars, boats, venues, and more for your next adventure
+              </p>
+              <button className="text-blue-600 font-semibold">
+                Browse Rentals →
+              </button>
+            </div>
+
+            {/* Experiences */}
+            <div className="bg-white p-6 rounded-xl shadow-md">
+              <h2 className="text-2xl font-semibold mb-4">Experiences</h2>
+              <p className="text-gray-600 mb-4">
+                Discover local events, tours, exhibitions, and dining experiences
+              </p>
+              <button className="text-blue-600 font-semibold">
+                Find Experiences →
+              </button>
+            </div>
+
+            {/* List Your Offering */}
+            <div className="bg-white p-6 rounded-xl shadow-md">
+              <h2 className="text-2xl font-semibold mb-4">List Your Offering</h2>
+              <p className="text-gray-600 mb-4">
+                Share your rental property or unique experience with our community
+              </p>
+              <button className="text-blue-600 font-semibold">
+                Start Listing →
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Featured Experiences */}
+      <section className="py-12 bg-white">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold mb-8">Featured Experiences</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {/* Experience Cards will be dynamically rendered here */}
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-white border rounded-xl overflow-hidden">
+                <div className="aspect-video bg-gray-200" />
+                <div className="p-4">
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="text-xl font-semibold">Experience Title</h3>
+                    <span className="text-lg font-bold">£99</span>
+                  </div>
+                  <p className="text-gray-600 mb-4">Location</p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <span className="text-yellow-400">★★★★★</span>
+                      <span className="ml-2 text-gray-600">(25 reviews)</span>
+                    </div>
+                    <button className="bg-blue-600 text-white px-4 py-2 rounded-lg">
+                      Book Now
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Featured Rentals */}
+      <section className="py-12">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold mb-8">Featured Rentals</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {/* Rental Cards will be dynamically rendered here */}
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-white border rounded-xl overflow-hidden shadow-md">
+                <div className="aspect-video bg-gray-200" />
+                <div className="p-4">
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="text-xl font-semibold">Rental Title</h3>
+                    <span className="text-lg font-bold">£150/day</span>
+                  </div>
+                  <p className="text-gray-600 mb-4">Category • Location</p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <span className="text-yellow-400">★★★★★</span>
+                      <span className="ml-2 text-gray-600">(30 reviews)</span>
+                    </div>
+                    <button className="bg-blue-600 text-white px-4 py-2 rounded-lg">
+                      Reserve
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Host CTA */}
+      <section className="py-12 bg-blue-50">
+        <div className="container mx-auto px-4 text-center">
+          <h2 className="text-3xl font-bold mb-4">Become a Host</h2>
+          <p className="text-xl text-gray-600 mb-8">
+            Share your unique experiences or rental properties with our community
           </p>
-          {session?.user && (
-            <Button asChild className="mt-4">
-              <Link href="/leisure/create">Create Listing</Link>
-            </Button>
-          )}
+          <button className="bg-blue-600 text-white px-8 py-4 rounded-lg font-semibold">
+            Start Hosting
+          </button>
         </div>
-      ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {listings.map((listing) => (
-            <LeisureCard
-              key={listing.id}
-              leisure={listing}
-              showActions
-              isOwner={listing.provider.id === session?.user?.id}
-            />
-          ))}
-        </div>
-      )}
+      </section>
     </div>
-  );
+  )
 }
