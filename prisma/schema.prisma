@@ -1,5 +1,4 @@
 // This is your Prisma schema file
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,340 +8,254 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum UserRole {
-  USER          // Basic user
-  LANDLORD      // Property owner/landlord
-  AGENT         // Real estate agent
-  ADMIN         // System administrator
-}
-
-enum SubscriptionTier {
-  FREE
-  PRO
-}
-
-enum ListingType {
-  PROPERTY      // Always free
-  SERVICE       // Paid weekly
-  LEISURE       // Free with quota
-}
-
-enum ListingStatus {
-  DRAFT           // Initial creation
-  PENDING_REVIEW  // Submitted for review
-  APPROVED        // Approved by admin/agent
-  ACTIVE          // Live on the platform
-  INACTIVE        // Temporarily hidden
-  REJECTED        // Rejected by admin/agent
-  EXPIRED         // Service listing payment expired
-  COMPLETED       // For services/leisure that are done
-}
-
-enum PropertyType {
-  RESIDENTIAL
-  COMMERCIAL
-  LUXURY
-  TIMESHARE
-  LAND
-  INDUSTRIAL
-}
-
-enum ServiceCategory {
-  TRADES
-  PROFESSIONAL
-  SPECIALIST
-  OTHER
-}
-
-enum LeisureType {
-  RENTAL        // Cars, boats, venues
-  EXPERIENCE    // Tours, activities
-  EVENT         // Gigs, shows
-}
-
-enum LeadStatus {
-  NEW           // Just created
-  QUALIFIED     // Verified and ready for action
-  IN_PROGRESS   // Being worked on
-  WON           // Successfully converted
-  LOST          // Not converted
-  ARCHIVED      // Stored for reference
-}
-
-enum LeadSource {
-  PROPERTY_ENQUIRY    // From property listing contact form
-  VALUATION_REQUEST   // Property owner seeking valuation
-  WEBSITE_FORM        // General contact form
-  AGENT_REFERRAL      // From another agent
-  DIRECT             // Direct contact
-}
-
-enum TaskPriority {
-  LOW
-  MEDIUM
-  HIGH
-  URGENT
-}
-
-enum TaskStatus {
-  TODO
-  IN_PROGRESS
-  COMPLETED
-  CANCELLED
-}
-
+// User and Authentication Models
 model User {
-  id                 String           @id @default(cuid())
-  name               String?
-  email              String?         @unique
-  emailVerified      DateTime?
-  image              String?
-  password           String?
-  role               UserRole        @default(USER)
-  subscriptionTier   SubscriptionTier @default(FREE)
-  subscriptionEnds   DateTime?       // For PRO subscriptions
-  stripeCustomerId   String?         @unique
-  stripeVerificationId String?
-  isVerified         Boolean         @default(false)
-  
-  // Agent/Professional specific fields
-  companyName        String?
-  licenseNumber      String?         // For agents
-  licenseVerified    Boolean         @default(false)
-  rating            Float?          // Average rating
-  totalReviews      Int             @default(0)
-  
-  // Usage limits and quotas (for Leisure listings)
-  monthlyLeisureQuota Int           @default(3)  // Free users get 3 leisure listings
-  monthlyLeisureUsed Int            @default(0)
-  quotaResetDate    DateTime?
-  
-  // Feature access flags
-  hasAnalyticsAccess Boolean        @default(false)
-  hasCrmAccess      Boolean         @default(false)
-  hasFeatureListings Boolean        @default(false)
-  
-  // Social features
-  canPost           Boolean         @default(false)  // Requires identity verification
-  
-  // Timestamps
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  id             String    @id @default(cuid())
+  name           String?
+  email          String    @unique
+  emailVerified  DateTime?
+  image          String?
+  hashedPassword String?
+  role           String    @default("user")
+  accountType    String    @default("individual")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
-  // Relations
-  properties        Property[]      // Free property listings
-  services         Service[]       // Paid service listings
-  leisure          Leisure[]       // Free leisure listings (with quota)
-  posts            Post[]          // Social media posts
-  reviews          Review[]        // Reviews received
-  accounts         Account[]
-  sessions         Session[]
-  leads            Lead[]          // Leads owned by this user
-  assignedTasks    Task[]          // Tasks assigned to this user
-  createdTasks     Task[]    @relation("TaskCreator")  // Tasks created by this user
+  // Profile Relations
+  profile        Profile?
+  
+  // Property Relations
+  properties     Property[]    @relation("PropertyOwner")
+  propertyViews  PropertyView[]
+  propertyLeads  PropertyLead[]
+  
+  // Service Relations
+  services       Service[]     @relation("ServiceProvider")
+  serviceLeads   ServiceLead[]
+  
+  // Leisure Relations
+  leisureItems   LeisureItem[] @relation("LeisureOwner")
+  leisureBookings LeisureBooking[]
+  
+  // CRM Relations
+  contacts       Contact[]     @relation("ContactOwner")
+  leads          Lead[]        @relation("LeadOwner")
+  tasks          Task[]        @relation("TaskOwner")
+  
+  // Social Relations
+  posts          Post[]
+  comments       Comment[]
+  follows        Follow[]      @relation("Follower")
+  followers      Follow[]      @relation("Following")
+  
+  // Verification
+  verification   Verification?
 }
 
+model Profile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio         String?
+  location    String?
+  website     String?
+  company     String?
+  profession  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Property Models
 model Property {
-  id               String          @id @default(cuid())
-  title            String
-  description      String
-  type             PropertyType
-  price            Float
-  size             Float?
-  bedrooms         Int?
-  bathrooms        Int?
-  features         String[]
-  location         String
-  
-  // Status and verification
-  status           ListingStatus   @default(DRAFT)
-  isVerified       Boolean        @default(false)
-  isFeatured       Boolean        @default(false)  // PRO users only
-  
-  // Review details
-  reviewedBy       String?        // Admin/Agent who reviewed
-  reviewedAt       DateTime?
-  reviewNotes      String?
-  
-  // Relations
-  owner            User           @relation(fields: [ownerId], references: [id])
-  ownerId          String
-  leads            Lead[]         // Property enquiry leads
-  
-  // Timestamps
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  type        String   // residential, commercial, luxury
+  status      String   // for-sale, for-rent, sold, rented
+  price       Float
+  currency    String   @default("GBP")
+  location    String
+  bedrooms    Int?
+  bathrooms   Int?
+  area        Float?
+  features    String[]
+  images      String[]
+  ownerId     String
+  owner       User     @relation("PropertyOwner", fields: [ownerId], references: [id])
+  views       PropertyView[]
+  leads       PropertyLead[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
+model PropertyView {
+  id          String   @id @default(cuid())
+  propertyId  String
+  property    Property @relation(fields: [propertyId], references: [id])
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+model PropertyLead {
+  id          String   @id @default(cuid())
+  propertyId  String
+  property    Property @relation(fields: [propertyId], references: [id])
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  status      String   // new, contacted, qualified, lost
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Service Models
 model Service {
-  id               String          @id @default(cuid())
-  title            String
-  description      String
-  category         ServiceCategory
-  price            Float
-  duration         String?         // Service duration if applicable
-  location         String?         // Service location if applicable
-  
-  // Payment and status
-  weeklyFee        Float          @default(10)     // 10 EUR weekly fee
-  paidUntil        DateTime?                       // When service listing expires
-  status           ListingStatus   @default(DRAFT)
-  
-  // PRO features
-  isFeatured       Boolean        @default(false)  // PRO users only
-  
-  // Relations
-  provider         User           @relation(fields: [providerId], references: [id])
-  providerId       String
-  reviews          Review[]
-  leads            Lead[]         // Service enquiry leads
-  
-  // Timestamps
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  category    String   // trades, professional, specialist
+  price       Float?
+  currency    String   @default("GBP")
+  location    String
+  providerId  String
+  provider    User     @relation("ServiceProvider", fields: [providerId], references: [id])
+  leads       ServiceLead[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
-model Leisure {
-  id               String          @id @default(cuid())
-  title            String
-  description      String
-  type             LeisureType
-  price            Float?
-  location         String
-  availability     DateTime[]
-  
-  // Status
-  status           ListingStatus   @default(DRAFT)
-  isFeatured       Boolean        @default(false)  // PRO users only
-  
-  // Relations
-  owner            User           @relation(fields: [ownerId], references: [id])
-  ownerId          String
-  reviews          Review[]
-  leads            Lead[]         // Leisure enquiry leads
-  
-  // Timestamps
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+model ServiceLead {
+  id          String   @id @default(cuid())
+  serviceId   String
+  service     Service  @relation(fields: [serviceId], references: [id])
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  status      String   // new, contacted, qualified, lost
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Leisure Models
+model LeisureItem {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  type        String   // rental, experience
+  category    String   // car, boat, venue, tour, dining
+  price       Float
+  currency    String   @default("GBP")
+  location    String
+  availability Json?
+  images      String[]
+  ownerId     String
+  owner       User     @relation("LeisureOwner", fields: [ownerId], references: [id])
+  bookings    LeisureBooking[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model LeisureBooking {
+  id          String   @id @default(cuid())
+  itemId      String
+  item        LeisureItem @relation(fields: [itemId], references: [id])
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  startDate   DateTime
+  endDate     DateTime
+  status      String   // pending, confirmed, cancelled
+  totalPrice  Float
+  currency    String   @default("GBP")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// CRM Models
+model Contact {
+  id          String   @id @default(cuid())
+  ownerId     String
+  owner       User     @relation("ContactOwner", fields: [ownerId], references: [id])
+  name        String
+  email       String?
+  phone       String?
+  company     String?
+  type        String   // client, prospect, partner
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Lead {
-  id               String         @id @default(cuid())
-  title            String
-  description      String
-  status           LeadStatus     @default(NEW)
-  source           LeadSource
-  value            Float?         // Potential value of the lead
-  
-  // Contact information
-  contactName      String
-  contactEmail     String
-  contactPhone     String?
-  
-  // Relations
-  owner            User          @relation(fields: [ownerId], references: [id])
-  ownerId          String
-  property         Property?     @relation(fields: [propertyId], references: [id])
-  propertyId       String?
-  service          Service?      @relation(fields: [serviceId], references: [id])
-  serviceId        String?
-  leisure          Leisure?      @relation(fields: [leisureId], references: [id])
-  leisureId        String?
-  tasks            Task[]        // Related tasks
-  
-  // Tracking
-  lastContactedAt  DateTime?
-  nextFollowUpDate DateTime?
-  notes            String?       @db.Text
-  
-  // Timestamps
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  id          String   @id @default(cuid())
+  ownerId     String
+  owner       User     @relation("LeadOwner", fields: [ownerId], references: [id])
+  title       String
+  value       Float?
+  currency    String   @default("GBP")
+  status      String   // new, contacted, qualified, won, lost
+  source      String?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Task {
-  id               String         @id @default(cuid())
-  title            String
-  description      String?
-  priority         TaskPriority   @default(MEDIUM)
-  status           TaskStatus     @default(TODO)
-  dueDate          DateTime?
-  
-  // Relations
-  assignedTo       User          @relation(fields: [assignedToId], references: [id])
-  assignedToId     String
-  creator          User          @relation("TaskCreator", fields: [creatorId], references: [id])
-  creatorId        String
-  lead             Lead?         @relation(fields: [leadId], references: [id])
-  leadId           String?
-  
-  // Task details
-  completedAt      DateTime?
-  notes            String?       @db.Text
-  
-  // Timestamps
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  id          String   @id @default(cuid())
+  ownerId     String
+  owner       User     @relation("TaskOwner", fields: [ownerId], references: [id])
+  title       String
+  description String?
+  dueDate     DateTime?
+  status      String   // pending, in-progress, completed
+  priority    String   // low, medium, high
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
+// Social Models
 model Post {
-  id               String         @id @default(cuid())
-  content          String
-  images           String[]
-  likes            Int           @default(0)
-  
-  // Relations
-  author           User          @relation(fields: [authorId], references: [id])
-  authorId         String
-  
-  // Timestamps
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  id          String    @id @default(cuid())
+  authorId    String
+  author      User      @relation(fields: [authorId], references: [id])
+  content     String
+  images      String[]
+  comments    Comment[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
-model Review {
-  id              String         @id @default(cuid())
-  rating          Int
-  comment         String
-  isVerified      Boolean       @default(false)
-  
-  // Relations
-  reviewer        User          @relation(fields: [reviewerId], references: [id])
-  reviewerId      String
-  service         Service?      @relation(fields: [serviceId], references: [id])
-  serviceId       String?
-  leisure         Leisure?      @relation(fields: [leisureId], references: [id])
-  leisureId       String?
-  
-  // Timestamps
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+model Comment {
+  id          String   @id @default(cuid())
+  postId      String
+  post        Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id])
+  content     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
-// NextAuth models
-model Account {
-  id                 String   @id @default(cuid())
-  userId             String
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String?  @db.Text
-  access_token       String?  @db.Text
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String?  @db.Text
-  session_state      String?
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  follower    User     @relation("Follower", fields: [followerId], references: [id])
+  followingId String
+  following   User     @relation("Following", fields: [followingId], references: [id])
+  createdAt   DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
+  @@unique([followerId, followingId])
 }
 
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+// Verification Model
+model Verification {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        String   // identity, business, professional
+  status      String   // pending, verified, rejected
+  documents   Json?
+  verifiedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
