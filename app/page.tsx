@@ -1,160 +1,78 @@
-import Image from 'next/image';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Building2, Briefcase, Compass, Search } from 'lucide-react';
-
-export default function HomePage() {
+export default function Home() {
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative h-[80vh] min-h-[600px] flex items-center">
-        {/* Background Image */}
-        <div className="absolute inset-0">
-          <Image
-            src="/images/hero-worldwide.jpg"
-            alt="My Home Worldwide"
-            fill
-            className="object-cover"
-            priority
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-transparent" />
+      <section className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-20">
+        <div className="container mx-auto px-4">
+          <h1 className="text-5xl font-bold mb-6">
+            GREIA - Life&apos;s Operating System
+          </h1>
+          <p className="text-xl mb-8">
+            One super-app for lifestyle, property, and networking
+          </p>
+          <div className="flex gap-4">
+            <button className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold">
+              Get Started
+            </button>
+            <button className="border-2 border-white px-6 py-3 rounded-lg font-semibold">
+              Learn More
+            </button>
+          </div>
         </div>
+      </section>
 
-        {/* Hero Content */}
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-          <div className="max-w-3xl">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6">
-              Your Gateway to Global Living
-            </h1>
-            <p className="text-xl text-white/90 mb-8">
-              Discover properties, services, and experiences worldwide. Your life's operating
-              system starts here.
-            </p>
+      {/* Features Grid */}
+      <section className="py-16 bg-gray-50">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold text-center mb-12">Our Core Services</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {/* Properties */}
+            <div className="bg-white p-6 rounded-xl shadow-md">
+              <h3 className="text-xl font-semibold mb-4">Properties</h3>
+              <p className="text-gray-600">
+                Buy, rent, sell across residential, commercial, and luxury properties
+              </p>
+            </div>
 
-            {/* Search Section */}
-            <div className="bg-white/95 backdrop-blur-sm p-6 rounded-lg shadow-xl">
-              <div className="flex flex-col space-y-4">
-                {/* Category Selection */}
-                <div className="grid grid-cols-3 gap-2">
-                  <Button
-                    variant="outline"
-                    className="flex items-center justify-center space-x-2 h-12"
-                  >
-                    <Building2 className="h-5 w-5" />
-                    <span>Properties</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="flex items-center justify-center space-x-2 h-12"
-                  >
-                    <Briefcase className="h-5 w-5" />
-                    <span>Services</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="flex items-center justify-center space-x-2 h-12"
-                  >
-                    <Compass className="h-5 w-5" />
-                    <span>Leisure</span>
-                  </Button>
-                </div>
+            {/* Services */}
+            <div className="bg-white p-6 rounded-xl shadow-md">
+              <h3 className="text-xl font-semibold mb-4">Services</h3>
+              <p className="text-gray-600">
+                Connect with trades, contractors, and professional services
+              </p>
+            </div>
 
-                {/* Search Bar */}
-                <div className="flex space-x-2">
-                  <Select defaultValue="buy">
-                    <SelectTrigger className="w-[120px]">
-                      <SelectValue placeholder="Type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="buy">Buy</SelectItem>
-                      <SelectItem value="rent">Rent</SelectItem>
-                      <SelectItem value="book">Book</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                    <Input
-                      type="text"
-                      placeholder="Search location or keyword..."
-                      className="pl-10"
-                    />
-                  </div>
-                  <Button className="px-8">Search</Button>
-                </div>
-              </div>
+            {/* Leisure */}
+            <div className="bg-white p-6 rounded-xl shadow-md">
+              <h3 className="text-xl font-semibold mb-4">Leisure</h3>
+              <p className="text-gray-600">
+                Discover rentals, experiences, and cultural activities
+              </p>
+            </div>
+
+            {/* Connect */}
+            <div className="bg-white p-6 rounded-xl shadow-md">
+              <h3 className="text-xl font-semibold mb-4">Connect</h3>
+              <p className="text-gray-600">
+                Social networking and CRM for individuals & businesses
+              </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Featured Properties Section */}
-      <section className="py-16 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center mb-8">
-            <h2 className="text-3xl font-bold">Featured Properties</h2>
-            <Link href="/properties" className="text-primary hover:underline">
-              View all properties
-            </Link>
-          </div>
-          {/* Property cards would go here */}
-        </div>
-      </section>
-
-      {/* Popular Services Section */}
-      <section className="py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center mb-8">
-            <h2 className="text-3xl font-bold">Popular Services</h2>
-            <Link href="/services" className="text-primary hover:underline">
-              View all services
-            </Link>
-          </div>
-          {/* Service cards would go here */}
-        </div>
-      </section>
-
-      {/* Leisure Experiences Section */}
-      <section className="py-16 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center mb-8">
-            <h2 className="text-3xl font-bold">Leisure Experiences</h2>
-            <Link href="/leisure" className="text-primary hover:underline">
-              View all experiences
-            </Link>
-          </div>
-          {/* Experience cards would go here */}
-        </div>
-      </section>
-
       {/* CTA Section */}
-      <section className="relative py-24">
-        <div className="absolute inset-0 greia-gradient opacity-10" />
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold mb-4">
-            Join the GREIA Community
-          </h2>
-          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Connect with property owners, service providers, and experience creators
-            worldwide. Start your journey today.
+      <section className="py-16 bg-blue-50">
+        <div className="container mx-auto px-4 text-center">
+          <h2 className="text-3xl font-bold mb-6">Ready to Get Started?</h2>
+          <p className="text-xl text-gray-600 mb-8">
+            Join GREIA today and experience the future of lifestyle management
           </p>
-          <div className="flex justify-center space-x-4">
-            <Button size="lg">
-              Get Started
-            </Button>
-            <Button variant="outline" size="lg">
-              Learn More
-            </Button>
-          </div>
+          <button className="bg-blue-600 text-white px-8 py-4 rounded-lg font-semibold">
+            Sign Up Now
+          </button>
         </div>
       </section>
     </div>
-  );
+  )
 }
