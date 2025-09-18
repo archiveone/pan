@@ -1,126 +1,103 @@
-import { Metadata } from 'next';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
-import { ServiceCard } from '@/components/services/ServiceCard';
-import { Button } from '@/components/ui/button';
-import Link from 'next/link';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-
-export const metadata: Metadata = {
-  title: 'Services - GREIA',
-  description: 'Find and book services on GREIA platform',
-};
-
-interface ServicesPageProps {
-  searchParams: {
-    category?: string;
-  };
-}
-
-export default async function ServicesPage({ searchParams }: ServicesPageProps) {
-  const session = await getServerSession(authOptions);
-  const { category } = searchParams;
-
-  // Get active services
-  const services = await prisma.service.findMany({
-    where: {
-      status: 'ACTIVE',
-      paidUntil: {
-        gt: new Date(),
-      },
-      ...(category && { category }),
-    },
-    include: {
-      provider: {
-        select: {
-          id: true,
-          name: true,
-          rating: true,
-          totalReviews: true,
-          isVerified: true,
-        },
-      },
-    },
-    orderBy: [
-      { isFeatured: 'desc' },
-      { createdAt: 'desc' },
-    ],
-  });
-
+export default function ServicesPage() {
   return (
-    <div className="container py-8">
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Services</h1>
-          <p className="mt-2 text-muted-foreground">
-            Find trusted service providers in your area
+    <div className="min-h-screen bg-gray-50">
+      {/* Hero Section */}
+      <section className="bg-white py-12 border-b">
+        <div className="container mx-auto px-4">
+          <h1 className="text-4xl font-bold mb-4">Professional Services</h1>
+          <p className="text-xl text-gray-600">
+            Connect with trusted trades and professional service providers
           </p>
         </div>
-        <div className="flex items-center space-x-4">
-          <Select
-            defaultValue={category}
-            onValueChange={(value) => {
-              const url = new URL(window.location.href);
-              if (value) {
-                url.searchParams.set('category', value);
-              } else {
-                url.searchParams.delete('category');
-              }
-              window.location.href = url.toString();
-            }}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="All Categories" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">All Categories</SelectItem>
-              <SelectItem value="TRADES">Trades</SelectItem>
-              <SelectItem value="PROFESSIONAL">Professional</SelectItem>
-              <SelectItem value="SPECIALIST">Specialist</SelectItem>
-              <SelectItem value="OTHER">Other</SelectItem>
-            </SelectContent>
-          </Select>
-          {session?.user && (
-            <Button asChild>
-              <Link href="/services/create">List Your Service</Link>
-            </Button>
-          )}
-        </div>
-      </div>
+      </section>
 
-      {services.length === 0 ? (
-        <div className="flex min-h-[400px] flex-col items-center justify-center rounded-lg border border-dashed">
-          <h2 className="text-xl font-semibold">No Services Found</h2>
-          <p className="mt-2 text-muted-foreground">
-            {category
-              ? 'No services found in this category'
-              : 'No services are currently available'}
+      {/* Service Categories */}
+      <section className="py-12">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Trades */}
+            <div className="bg-white p-6 rounded-xl shadow-md">
+              <h2 className="text-2xl font-semibold mb-4">Trades</h2>
+              <p className="text-gray-600 mb-4">
+                Find reliable tradespeople for your property maintenance and improvements
+              </p>
+              <button className="text-blue-600 font-semibold">
+                Find Trades →
+              </button>
+            </div>
+
+            {/* Professional Services */}
+            <div className="bg-white p-6 rounded-xl shadow-md">
+              <h2 className="text-2xl font-semibold mb-4">Professional Services</h2>
+              <p className="text-gray-600 mb-4">
+                Connect with accountants, lawyers, and other professional service providers
+              </p>
+              <button className="text-blue-600 font-semibold">
+                Browse Services →
+              </button>
+            </div>
+
+            {/* List Your Services */}
+            <div className="bg-white p-6 rounded-xl shadow-md">
+              <h2 className="text-2xl font-semibold mb-4">List Your Services</h2>
+              <p className="text-gray-600 mb-4">
+                Are you a professional? List your services and connect with clients
+              </p>
+              <button className="text-blue-600 font-semibold">
+                Start Listing →
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Featured Service Providers */}
+      <section className="py-12 bg-white">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold mb-8">Featured Service Providers</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {/* Service Provider Cards will be dynamically rendered here */}
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-white border rounded-xl overflow-hidden">
+                <div className="p-4">
+                  <div className="flex items-center mb-4">
+                    <div className="w-12 h-12 rounded-full bg-gray-200 mr-4" />
+                    <div>
+                      <h3 className="text-xl font-semibold">Provider Name</h3>
+                      <p className="text-gray-600">Service Category</p>
+                    </div>
+                  </div>
+                  <p className="text-gray-600 mb-4">
+                    Brief description of services offered and expertise...
+                  </p>
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center">
+                      <span className="text-yellow-400">★★★★★</span>
+                      <span className="ml-2 text-gray-600">(50 reviews)</span>
+                    </div>
+                    <button className="bg-blue-600 text-white px-4 py-2 rounded-lg">
+                      Contact
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Verification CTA */}
+      <section className="py-12 bg-blue-50">
+        <div className="container mx-auto px-4 text-center">
+          <h2 className="text-3xl font-bold mb-4">Get Verified</h2>
+          <p className="text-xl text-gray-600 mb-8">
+            Stand out from the crowd with our professional verification system
           </p>
-          {session?.user && (
-            <Button asChild className="mt-4">
-              <Link href="/services/create">List Your Service</Link>
-            </Button>
-          )}
+          <button className="bg-blue-600 text-white px-8 py-4 rounded-lg font-semibold">
+            Start Verification
+          </button>
         </div>
-      ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {services.map((service) => (
-            <ServiceCard
-              key={service.id}
-              service={service}
-              showActions
-              isOwner={service.provider.id === session?.user?.id}
-            />
-          ))}
-        </div>
-      )}
+      </section>
     </div>
-  );
+  )
 }
