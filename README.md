@@ -1,165 +1,172 @@
 # GREIA - Life's Operating System
 
-GREIA is Ireland's premier platform unifying Properties, Services, Leisure, and Connect into one comprehensive super-app.
+GREIA is a comprehensive platform that unifies Properties, Services, Leisure, and Connect into a single, powerful ecosystem. Built with Next.js 13, TypeScript, and a modern tech stack, GREIA serves as the digital fabric of everyday life.
 
-## 🚀 Launch Status Update
+## Current Status
 
-### ✅ Completed
-1. **Schema Updates**
-   - Added Lead and Task models
-   - Full CRM functionality implemented
-   - Property, Service, Leisure models ready
+### Core Infrastructure ✅
+- **Database Schema**: Complete PostgreSQL schema with Prisma ORM
+- **API Routes**: Full REST API implementation
+- **Authentication**: NextAuth with multiple providers
+- **File Storage**: Cloud storage integration
+- **Real-time**: Pusher integration
+- **Payments**: Stripe integration with Identity verification
 
-2. **API Unification**
-   - Unified property/listing endpoints under `/api/properties`
-   - Deprecated `/api/listings` with redirect handler
-   - Added deprecation notices
+### Frontend Implementation ✅
+- **Dashboard System**: Complete management interface
+- **Responsive Design**: Mobile-first approach
+- **Dark/Light Mode**: Theme support
+- **UI Components**: shadcn/ui + Radix
 
-3. **SEO Improvements**
-   - Dynamic sitemap generation
-   - Robots.txt configuration
-   - OpenGraph metadata for all listings
+## Platform Components
 
-### 🏗️ In Progress
-1. **Email/Pusher Notifications**
-   - Lead creation notifications
-   - Task assignments
-   - Real-time updates
+### 1. Properties Module
+- Property listings (sale/rent)
+- Property management
+- Viewing scheduling
+- Lead generation
+- Analytics
 
-2. **Production Setup**
-   - S3 bucket configuration
-   - Stripe webhook testing
-   - Environment flags
+### 2. Services Module
+- Service listings
+- Provider management
+- Booking system
+- Review system
+- Service analytics
 
-## 🔑 Core Features
+### 3. Leisure Module
+- Activity/rental listings
+- Availability management
+- Booking system
+- Experience marketplace
+- Usage tracking
 
-### Properties
-- Free property listings for agents
-- Rich media support
-- Advanced search and filters
-- Verified agent badges
+### 4. Connect Module
+- Professional networking
+- CRM system
+- Messaging
+- Group management
+- Social features
+
+## Technical Architecture
+
+### Database Models
+- User & Authentication
+- Properties & Listings
+- Services & Bookings
+- Leisure Activities
+- CRM & Leads
+- Social Features
+- Verification System
+
+### API Infrastructure
+- RESTful endpoints
+- Real-time updates
+- File handling
+- Payment processing
+- Analytics tracking
+
+### Core Libraries
+- \`auth.ts\`: Authentication system
+- \`media.ts\`: Media handling
+- \`stripe.ts\`: Payment processing
+- \`stripe-identity.ts\`: Identity verification
+- \`subscription.ts\`: Subscription management
+- \`pusher.ts\`: Real-time features
+
+## Launch Requirements
+
+### 1. Environment Setup
+\`\`\`bash
+# Required environment variables
+DATABASE_URL="postgresql://..."
+NEXTAUTH_SECRET="..."
+STRIPE_SECRET_KEY="..."
+STRIPE_PUBLISHABLE_KEY="..."
+PUSHER_APP_ID="..."
+PUSHER_KEY="..."
+PUSHER_SECRET="..."
+\`\`\`
+
+### 2. Database Setup
+\`\`\`bash
+# Deploy migrations
+npx prisma migrate deploy
+
+# Generate Prisma Client
+npx prisma generate
+\`\`\`
+
+### 3. Third-party Services
+- Stripe Account Configuration
+- Email Service Setup
+- Storage Service Configuration
+- Analytics Integration
+
+### 4. Deployment
+- Vercel Project Setup
+- Environment Configuration
+- Domain Setup
+- SSL Configuration
+
+## Tech Stack
+
+### Frontend
+- Next.js 13 (App Router)
+- TypeScript
+- Tailwind CSS
+- shadcn/ui
+- Radix UI
+- Lucide Icons
+
+### Backend
+- Next.js API Routes
+- Prisma ORM
+- PostgreSQL
+- NextAuth.js
 
 ### Services
-- Professional service listings
-- Weekly subscription model
-- Service provider verification
-- Booking system
+- Stripe (Payments + Identity)
+- Pusher (Real-time)
+- Cloud Storage
+- Email Service
 
-### Leisure
-- Experience and venue rentals
-- Free listings with quota
-- Real-time availability
-- Instant booking
+## Development
 
-### Connect
-- Built-in CRM for all users
-- Social networking
-- Business profiles
-- Lead management
+### Prerequisites
+- Node.js 18+
+- PostgreSQL 14+
+- pnpm/npm/yarn
 
-## 📚 API Documentation
-
-### Properties API (Primary Endpoint)
-```typescript
-GET /api/properties
-- Filters: type, price range, bedrooms, location
-- Pagination support
-- Returns verified properties with owner details
-
-POST /api/properties
-- Create new property listings
-- Requires authentication
-- Supports rich media
-
-PATCH /api/properties
-- Bulk update properties
-- Owner verification
-- Status management
-```
-
-### ⚠️ Deprecated Endpoints
-The `/api/listings` endpoint is deprecated and will redirect to `/api/properties`. Please update your API calls.
-
-### CRM APIs
-```typescript
-/api/lead-generation
-- Handle incoming leads
-- Auto-task creation
-- Email notifications
-
-/api/crm/leads
-- Lead management
-- Status tracking
-- Follow-up scheduling
-
-/api/crm/tasks
-- Task assignments
-- Priority management
-- Due date tracking
-```
-
-## 🛠️ Tech Stack
-- Next.js (App Router)
-- TypeScript
-- Prisma + PostgreSQL
-- NextAuth
-- Stripe (Identity + Payments)
-- Pusher
-- shadcn/ui + Radix
-
-## 🚀 Getting Started
-
+### Setup
 1. Clone the repository
-```bash
-git clone https://github.com/d4rent/griea-los.git
-```
+\`\`\`bash
+git clone https://github.com/d4rent/greia-los.git
+cd greia-los
+\`\`\`
 
 2. Install dependencies
-```bash
-npm install
-```
+\`\`\`bash
+pnpm install
+\`\`\`
 
 3. Set up environment variables
-```bash
-cp .env.example .env.local
-```
+\`\`\`bash
+cp .env.example .env
+\`\`\`
 
 4. Run migrations
-```bash
+\`\`\`bash
 npx prisma migrate dev
-```
+\`\`\`
 
 5. Start development server
-```bash
-npm run dev
-```
+\`\`\`bash
+pnpm dev
+\`\`\`
 
-## 🔐 Environment Variables
+## License
+Proprietary - All rights reserved
 
-Required variables in `.env`:
-```bash
-DATABASE_URL=
-NEXTAUTH_SECRET=
-NEXT_PUBLIC_APP_URL=
-STRIPE_SECRET_KEY=
-STRIPE_WEBHOOK_SECRET=
-PUSHER_APP_ID=
-PUSHER_KEY=
-PUSHER_SECRET=
-S3_BUCKET_NAME=
-S3_ACCESS_KEY=
-S3_SECRET_KEY=
-```
-
-## 🎯 Feature Flags
-
-Control features via environment variables:
-```bash
-ENABLE_PROPERTY_SUBMISSIONS=true
-ENABLE_AGENT_VERIFICATION=true
-ENABLE_SERVICE_LISTINGS=true
-ENABLE_LEISURE_LISTINGS=true
-```
-
-## 📝 License
-Copyright © 2025 GREIA. All rights reserved.
+## Support
+For support, email support@greia.com
