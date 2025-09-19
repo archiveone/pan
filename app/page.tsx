@@ -1,168 +1,344 @@
+'use client'
+
+import { PageTransition } from '@/components/ui/page-transition'
+import { Button } from '@/components/ui/button'
+import {
+  Home,
+  Wrench,
+  Car,
+  Users,
+  Shield,
+  Globe,
+  Star,
+  ArrowRight,
+  Building2,
+  MessageSquare,
+  Calendar,
+  Search
+} from 'lucide-react'
 import Link from 'next/link'
-import { ArrowRight, Home, Briefcase, Coffee, Users, Star, Shield, Globe } from 'lucide-react'
 
 export default function HomePage() {
+  const features = [
+    {
+      icon: Home,
+      title: 'Properties',
+      description: 'Find your perfect property to buy, rent, or sell',
+      link: '/properties'
+    },
+    {
+      icon: Wrench,
+      title: 'Services',
+      description: 'Connect with trusted service providers',
+      link: '/services'
+    },
+    {
+      icon: Car,
+      title: 'Leisure',
+      description: 'Discover amazing experiences and rentals',
+      link: '/leisure'
+    },
+    {
+      icon: Users,
+      title: 'Connect',
+      description: 'Build your professional network',
+      link: '/connect'
+    }
+  ]
+
+  const benefits = [
+    {
+      icon: Shield,
+      title: 'Verified Users',
+      description: 'All users are verified through Stripe Identity'
+    },
+    {
+      icon: Globe,
+      title: 'All-in-One Platform',
+      description: 'Everything you need in one place'
+    },
+    {
+      icon: Star,
+      title: 'Quality Assured',
+      description: 'High standards for all listings and services'
+    }
+  ]
+
+  const testimonials = [
+    {
+      name: 'John Smith',
+      role: 'Property Developer',
+      content: 'GREIA has transformed how I manage my property portfolio and connect with clients.',
+      image: 'https://placehold.co/100'
+    },
+    {
+      name: 'Sarah Johnson',
+      role: 'Interior Designer',
+      content: 'The platform makes it easy to showcase my work and find new opportunities.',
+      image: 'https://placehold.co/100'
+    },
+    {
+      name: 'Mike Brown',
+      role: 'Homeowner',
+      content: 'Found my dream home and all the services I needed to make it perfect.',
+      image: 'https://placehold.co/100'
+    }
+  ]
+
+  const stats = [
+    { label: 'Active Users', value: '100,000+' },
+    { label: 'Properties Listed', value: '50,000+' },
+    { label: 'Service Providers', value: '25,000+' },
+    { label: 'Monthly Bookings', value: '10,000+' }
+  ]
+
   return (
-    <div className="flex flex-col min-h-screen">
-      {/* Hero Section */}
-      <section className="greia-hero">
-        <div className="greia-hero-image">
-          <img
-            src="/images/my-home-worldwide.jpg"
-            alt="GREIA Platform"
-            className="w-full h-full object-cover"
-          />
-        </div>
-        <div className="greia-hero-overlay" />
-        <div className="greia-container relative z-10">
-          <div className="greia-hero-content text-center">
-            <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl md:text-6xl">
-              <span className="block">Life's Operating System</span>
-              <span className="block text-blue-400">One Platform for Everything</span>
-            </h1>
-            <p className="mt-3 text-base text-gray-300 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl">
-              Your unified platform for properties, services, leisure activities, and professional networking.
-            </p>
-            <div className="mt-5 sm:mt-8 sm:flex sm:justify-center">
-              <div className="rounded-md shadow">
-                <Link href="/auth/signup" className="greia-button-primary">
-                  Get Started
-                </Link>
-              </div>
-              <div className="mt-3 sm:mt-0 sm:ml-3">
-                <Link href="/browse" className="greia-button-secondary">
-                  Browse Platform
-                </Link>
+    <PageTransition>
+      <div className="min-h-screen">
+        {/* Hero Section */}
+        <section className="relative h-[600px] flex items-center">
+          <div className="absolute inset-0">
+            <img
+              src="/my-home-worldwide.png"
+              alt="GREIA Platform"
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-black/60" />
+          </div>
+          <div className="container mx-auto px-4 relative z-10">
+            <div className="max-w-3xl">
+              <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
+                Life's Operating System
+              </h1>
+              <p className="text-xl text-white/90 mb-8">
+                Your unified platform for Properties, Services, Leisure, and Connect.
+                Everything you need, all in one place.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Button size="lg" asChild>
+                  <Link href="/signup">
+                    Get Started
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Link>
+                </Button>
+                <Button size="lg" variant="outline" className="bg-white/10" asChild>
+                  <Link href="/about">Learn More</Link>
+                </Button>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Features Section */}
-      <section className="py-12 bg-white">
-        <div className="greia-container">
-          <div className="text-center">
-            <h2 className="greia-heading-2">Everything You Need in One Place</h2>
-            <p className="mt-4 text-lg text-gray-600">
-              Discover why thousands of professionals choose GREIA as their platform of choice.
-            </p>
-          </div>
-
-          <div className="mt-12 greia-feature-grid">
-            {/* Properties */}
-            <div className="greia-feature-card">
-              <div className="h-12 w-12 rounded-md bg-blue-500 text-white flex items-center justify-center mb-4">
-                <Home className="h-6 w-6" />
+        {/* Search Section */}
+        <section className="bg-background py-12">
+          <div className="container mx-auto px-4">
+            <div className="max-w-3xl mx-auto">
+              <div className="flex items-center bg-card rounded-lg shadow-lg p-2">
+                <div className="flex-1 min-w-0 px-4 py-2">
+                  <input
+                    type="text"
+                    className="w-full border-0 focus:ring-0 text-foreground placeholder-muted-foreground bg-transparent text-lg"
+                    placeholder="Search properties, services, or activities..."
+                  />
+                </div>
+                <Button className="ml-2">
+                  <Search className="h-5 w-5" />
+                  <span className="ml-2">Search</span>
+                </Button>
               </div>
-              <h3 className="text-lg font-medium text-gray-900">Properties</h3>
-              <p className="mt-2 text-base text-gray-500">
-                Buy, sell, or rent properties with ease. Connect with verified agents and landlords.
-              </p>
-            </div>
-
-            {/* Services */}
-            <div className="greia-feature-card">
-              <div className="h-12 w-12 rounded-md bg-green-500 text-white flex items-center justify-center mb-4">
-                <Briefcase className="h-6 w-6" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900">Services</h3>
-              <p className="mt-2 text-base text-gray-500">
-                Find trusted professionals and service providers for all your needs.
-              </p>
-            </div>
-
-            {/* Leisure */}
-            <div className="greia-feature-card">
-              <div className="h-12 w-12 rounded-md bg-yellow-500 text-white flex items-center justify-center mb-4">
-                <Coffee className="h-6 w-6" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900">Leisure</h3>
-              <p className="mt-2 text-base text-gray-500">
-                Book experiences, rentals, and activities for work and pleasure.
-              </p>
-            </div>
-
-            {/* Connect */}
-            <div className="greia-feature-card">
-              <div className="h-12 w-12 rounded-md bg-purple-500 text-white flex items-center justify-center mb-4">
-                <Users className="h-6 w-6" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900">Connect</h3>
-              <p className="mt-2 text-base text-gray-500">
-                Network with professionals and manage your relationships with built-in CRM.
-              </p>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Benefits Section */}
-      <section className="py-12 bg-gray-50">
-        <div className="greia-container">
-          <div className="text-center">
-            <h2 className="greia-heading-2">Why Choose GREIA?</h2>
-            <p className="mt-4 text-lg text-gray-600">
-              Experience the benefits of our comprehensive platform.
-            </p>
-          </div>
-
-          <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-3">
-            <div className="flex flex-col items-center text-center">
-              <div className="h-12 w-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mb-4">
-                <Shield className="h-6 w-6" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900">Verified Users</h3>
-              <p className="mt-2 text-base text-gray-500">
-                All users are verified through our secure identity verification system.
-              </p>
-            </div>
-
-            <div className="flex flex-col items-center text-center">
-              <div className="h-12 w-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mb-4">
-                <Star className="h-6 w-6" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900">Quality Assured</h3>
-              <p className="mt-2 text-base text-gray-500">
-                High standards maintained through our review and rating system.
-              </p>
-            </div>
-
-            <div className="flex flex-col items-center text-center">
-              <div className="h-12 w-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mb-4">
-                <Globe className="h-6 w-6" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900">Global Network</h3>
-              <p className="mt-2 text-base text-gray-500">
-                Connect with professionals and opportunities worldwide.
-              </p>
+        {/* Features Section */}
+        <section className="py-20 bg-accent">
+          <div className="container mx-auto px-4">
+            <h2 className="text-3xl font-bold text-center mb-12">
+              Everything You Need
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {features.map((feature, index) => {
+                const Icon = feature.icon
+                return (
+                  <Link
+                    key={index}
+                    href={feature.link}
+                    className="group bg-card rounded-lg p-6 hover:bg-primary hover:text-primary-foreground transition-colors"
+                  >
+                    <Icon className="h-8 w-8 mb-4" />
+                    <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
+                    <p className="text-muted-foreground group-hover:text-primary-foreground/80">
+                      {feature.description}
+                    </p>
+                  </Link>
+                )
+              })}
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* CTA Section */}
-      <section className="bg-blue-600">
-        <div className="greia-container py-12 md:py-16">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+        {/* Benefits Section */}
+        <section className="py-20">
+          <div className="container mx-auto px-4">
+            <h2 className="text-3xl font-bold text-center mb-12">
+              Why Choose GREIA
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {benefits.map((benefit, index) => {
+                const Icon = benefit.icon
+                return (
+                  <div key={index} className="text-center">
+                    <div className="h-16 w-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Icon className="h-8 w-8 text-primary" />
+                    </div>
+                    <h3 className="text-xl font-semibold mb-2">{benefit.title}</h3>
+                    <p className="text-muted-foreground">{benefit.description}</p>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* Stats Section */}
+        <section className="py-20 bg-primary text-primary-foreground">
+          <div className="container mx-auto px-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+              {stats.map((stat, index) => (
+                <div key={index} className="text-center">
+                  <div className="text-3xl font-bold mb-2">{stat.value}</div>
+                  <div className="text-primary-foreground/80">{stat.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Testimonials Section */}
+        <section className="py-20">
+          <div className="container mx-auto px-4">
+            <h2 className="text-3xl font-bold text-center mb-12">
+              What Our Users Say
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {testimonials.map((testimonial, index) => (
+                <div key={index} className="bg-card rounded-lg p-6">
+                  <div className="flex items-center mb-4">
+                    <img
+                      src={testimonial.image}
+                      alt={testimonial.name}
+                      className="h-12 w-12 rounded-full"
+                    />
+                    <div className="ml-4">
+                      <div className="font-semibold">{testimonial.name}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {testimonial.role}
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-muted-foreground">{testimonial.content}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* CTA Section */}
+        <section className="py-20 bg-accent">
+          <div className="container mx-auto px-4 text-center">
+            <h2 className="text-3xl font-bold mb-4">
               Ready to Get Started?
             </h2>
-            <p className="mt-4 text-lg text-blue-100">
-              Join thousands of professionals already using GREIA.
+            <p className="text-xl text-muted-foreground mb-8">
+              Join thousands of users who trust GREIA for their lifestyle needs.
             </p>
-            <div className="mt-8 flex justify-center">
-              <Link
-                href="/auth/signup"
-                className="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-blue-600 bg-white hover:bg-blue-50 md:py-4 md:text-lg md:px-10"
-              >
-                Create Your Account
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button size="lg" asChild>
+                <Link href="/signup">
+                  Create Account
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Link>
+              </Button>
+              <Button size="lg" variant="outline" asChild>
+                <Link href="/contact">Contact Sales</Link>
+              </Button>
             </div>
           </div>
-        </div>
-      </section>
-    </div>
+        </section>
+
+        {/* Features Grid */}
+        <section className="py-20">
+          <div className="container mx-auto px-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="bg-card rounded-lg p-6">
+                <Building2 className="h-8 w-8 text-primary mb-4" />
+                <h3 className="text-xl font-semibold mb-2">Property Management</h3>
+                <p className="text-muted-foreground mb-4">
+                  Comprehensive tools for managing your property portfolio.
+                </p>
+                <ul className="space-y-2 text-sm">
+                  <li className="flex items-center">
+                    <ArrowRight className="h-4 w-4 text-primary mr-2" />
+                    Listing management
+                  </li>
+                  <li className="flex items-center">
+                    <ArrowRight className="h-4 w-4 text-primary mr-2" />
+                    Tenant screening
+                  </li>
+                  <li className="flex items-center">
+                    <ArrowRight className="h-4 w-4 text-primary mr-2" />
+                    Document storage
+                  </li>
+                </ul>
+              </div>
+
+              <div className="bg-card rounded-lg p-6">
+                <MessageSquare className="h-8 w-8 text-primary mb-4" />
+                <h3 className="text-xl font-semibold mb-2">Communication Hub</h3>
+                <p className="text-muted-foreground mb-4">
+                  Stay connected with clients and service providers.
+                </p>
+                <ul className="space-y-2 text-sm">
+                  <li className="flex items-center">
+                    <ArrowRight className="h-4 w-4 text-primary mr-2" />
+                    Real-time messaging
+                  </li>
+                  <li className="flex items-center">
+                    <ArrowRight className="h-4 w-4 text-primary mr-2" />
+                    File sharing
+                  </li>
+                  <li className="flex items-center">
+                    <ArrowRight className="h-4 w-4 text-primary mr-2" />
+                    Video calls
+                  </li>
+                </ul>
+              </div>
+
+              <div className="bg-card rounded-lg p-6">
+                <Calendar className="h-8 w-8 text-primary mb-4" />
+                <h3 className="text-xl font-semibold mb-2">Booking System</h3>
+                <p className="text-muted-foreground mb-4">
+                  Efficient scheduling and booking management.
+                </p>
+                <ul className="space-y-2 text-sm">
+                  <li className="flex items-center">
+                    <ArrowRight className="h-4 w-4 text-primary mr-2" />
+                    Calendar integration
+                  </li>
+                  <li className="flex items-center">
+                    <ArrowRight className="h-4 w-4 text-primary mr-2" />
+                    Automated reminders
+                  </li>
+                  <li className="flex items-center">
+                    <ArrowRight className="h-4 w-4 text-primary mr-2" />
+                    Payment processing
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </PageTransition>
   )
 }
