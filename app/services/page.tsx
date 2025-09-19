@@ -1,255 +1,175 @@
 'use client'
 
-import { useState } from 'react'
-import Link from 'next/link'
-import {
-  Search,
-  MapPin,
-  Briefcase,
-  Wrench,
-  UserCheck,
-  Star,
-  Clock,
-  ArrowRight,
-  Filter,
-  MessageSquare,
-  Calendar,
-  Shield
+import { ServiceHero } from '@/components/ui/hero'
+import { Filters } from '@/components/ui/filters'
+import { Card } from '@/components/ui/card'
+import { PageTransition } from '@/components/ui/page-transition'
+import { 
+  Wrench, 
+  Paintbrush, 
+  Hammer, 
+  Plug, 
+  Leaf, 
+  Shield, 
+  Star, 
+  MessageSquare 
 } from 'lucide-react'
+import { useState } from 'react'
 
 export default function ServicesPage() {
-  const [selectedCategory, setSelectedCategory] = useState('all')
-  const [selectedAvailability, setSelectedAvailability] = useState('all')
+  const [filters, setFilters] = useState({})
 
-  const serviceCategories = [
-    { id: 'all', name: 'All Services', icon: Briefcase },
-    { id: 'trades', name: 'Trades', icon: Wrench },
-    { id: 'professional', name: 'Professional', icon: UserCheck },
-    { id: 'specialist', name: 'Specialist', icon: Star },
+  const filterGroups = [
+    {
+      id: 'category',
+      name: 'Category',
+      type: 'button',
+      options: [
+        { id: 'all', name: 'All Services' },
+        { id: 'trades', name: 'Trades' },
+        { id: 'professional', name: 'Professional' },
+        { id: 'specialist', name: 'Specialist' }
+      ]
+    },
+    {
+      id: 'rating',
+      name: 'Rating',
+      type: 'select',
+      options: [
+        { id: 'all', name: 'Any Rating' },
+        { id: '4+', name: '4+ Stars' },
+        { id: '4.5+', name: '4.5+ Stars' },
+        { id: '5', name: '5 Stars Only' }
+      ]
+    },
+    {
+      id: 'availability',
+      name: 'Availability',
+      type: 'select',
+      options: [
+        { id: 'all', name: 'Any Time' },
+        { id: 'today', name: 'Today' },
+        { id: 'week', name: 'This Week' },
+        { id: 'weekend', name: 'Weekend' }
+      ]
+    }
   ]
 
-  const availabilityOptions = [
-    { id: 'all', name: 'Any Time' },
-    { id: 'today', name: 'Today' },
-    { id: 'this-week', name: 'This Week' },
-    { id: 'next-week', name: 'Next Week' },
-  ]
-
-  const featuredServices = [
+  // Example services data
+  const services = [
     {
       id: 1,
       title: 'Expert Plumbing Services',
-      category: 'trades',
-      provider: 'John Smith',
-      rating: 4.9,
-      reviews: 127,
-      location: 'Manchester',
-      hourlyRate: 45,
-      image: '/images/services/plumbing.jpg',
-      verified: true,
-      availability: 'Today',
+      subtitle: 'Available Today',
+      description: 'Professional plumbing solutions for your home',
+      image: 'https://placehold.co/600x400',
+      price: {
+        amount: 60,
+        currency: '£',
+        unit: 'hour'
+      },
+      badges: {
+        verified: true,
+        featured: true,
+        status: 'popular'
+      },
+      stats: [
+        { icon: Star, label: 'Rating', value: '4.9' },
+        { icon: Shield, label: 'Verified', value: 'Pro' }
+      ],
+      actions: [
+        { label: 'Book Now', href: '/services/1', primary: true },
+        { label: 'Message', onClick: () => {}, icon: MessageSquare }
+      ]
+    },
+    // Add more services...
+  ]
+
+  const categories = [
+    {
+      icon: Wrench,
+      title: 'Plumbing',
+      description: 'Expert plumbing services',
+      link: '/services/plumbing'
     },
     {
-      id: 2,
-      title: 'Property Law Consultant',
-      category: 'professional',
-      provider: 'Sarah Williams',
-      rating: 5.0,
-      reviews: 89,
-      location: 'Liverpool',
-      hourlyRate: 150,
-      image: '/images/services/legal.jpg',
-      verified: true,
-      availability: 'Tomorrow',
+      icon: Paintbrush,
+      title: 'Decorating',
+      description: 'Professional painters & decorators',
+      link: '/services/decorating'
     },
     {
-      id: 3,
-      title: 'Interior Design Specialist',
-      category: 'specialist',
-      provider: 'Emma Brown',
-      rating: 4.8,
-      reviews: 94,
-      location: 'Leeds',
-      hourlyRate: 85,
-      image: '/images/services/interior-design.jpg',
-      verified: true,
-      availability: 'This Week',
+      icon: Hammer,
+      title: 'Construction',
+      description: 'Building & renovation experts',
+      link: '/services/construction'
     },
+    {
+      icon: Plug,
+      title: 'Electrical',
+      description: 'Certified electricians',
+      link: '/services/electrical'
+    },
+    {
+      icon: Leaf,
+      title: 'Gardening',
+      description: 'Garden maintenance & design',
+      link: '/services/gardening'
+    }
   ]
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
-      <section className="greia-hero h-[400px]">
-        <div className="greia-hero-image">
-          <img
-            src="/images/services-hero.jpg"
-            alt="Services"
-            className="w-full h-full object-cover"
+    <PageTransition>
+      <div className="min-h-screen">
+        {/* Hero Section */}
+        <ServiceHero
+          title="Find Trusted Service Providers"
+          subtitle="Connect with verified professionals for all your needs"
+        />
+
+        {/* Main Content */}
+        <div className="container mx-auto px-4 py-8">
+          {/* Categories */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-12">
+            {categories.map((category, index) => {
+              const Icon = category.icon
+              return (
+                <a
+                  key={index}
+                  href={category.link}
+                  className="flex flex-col items-center p-6 bg-card rounded-lg hover:bg-accent transition-colors"
+                >
+                  <Icon className="h-8 w-8 mb-4 text-primary" />
+                  <h3 className="font-medium text-center mb-2">{category.title}</h3>
+                  <p className="text-sm text-muted-foreground text-center">
+                    {category.description}
+                  </p>
+                </a>
+              )
+            })}
+          </div>
+
+          {/* Filters */}
+          <Filters
+            groups={filterGroups}
+            selectedFilters={filters}
+            onFilterChange={(groupId, value) => {
+              setFilters(prev => ({ ...prev, [groupId]: value }))
+            }}
+            className="mb-8"
           />
-        </div>
-        <div className="greia-hero-overlay" />
-        <div className="greia-container relative z-10">
-          <div className="greia-hero-content text-center">
-            <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
-              Find Trusted Service Providers
-            </h1>
-            <p className="mt-4 text-xl text-gray-200">
-              Connect with verified professionals for all your needs
-            </p>
 
-            {/* Search Bar */}
-            <div className="mt-8 max-w-3xl mx-auto">
-              <div className="flex items-center bg-white rounded-lg shadow-lg p-2">
-                <div className="flex-1 min-w-0 px-4 py-2">
-                  <input
-                    type="text"
-                    className="w-full border-0 focus:ring-0 text-gray-900 placeholder-gray-500 text-lg"
-                    placeholder="Search for services or providers"
-                  />
-                </div>
-                <button className="greia-button-primary ml-2">
-                  <Search className="h-5 w-5" />
-                  <span className="ml-2">Search</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Main Content */}
-      <div className="greia-container py-12">
-        {/* Filters */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
-          <div className="flex-1 w-full md:w-auto mb-4 md:mb-0">
-            <div className="flex flex-wrap gap-2">
-              {serviceCategories.map((category) => {
-                const Icon = category.icon
-                return (
-                  <button
-                    key={category.id}
-                    onClick={() => setSelectedCategory(category.id)}
-                    className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${
-                      selectedCategory === category.id
-                        ? 'bg-green-600 text-white'
-                        : 'bg-white text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    <Icon className="h-4 w-4 mr-2" />
-                    {category.name}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-          <div className="flex items-center space-x-4">
-            <select
-              value={selectedAvailability}
-              onChange={(e) => setSelectedAvailability(e.target.value)}
-              className="greia-select"
-            >
-              {availabilityOptions.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.name}
-                </option>
-              ))}
-            </select>
-            <button className="greia-button-secondary">
-              <Filter className="h-4 w-4 mr-2" />
-              More Filters
-            </button>
-          </div>
-        </div>
-
-        {/* Featured Services */}
-        <section className="mb-12">
-          <h2 className="greia-heading-2 mb-6">Top Rated Providers</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {featuredServices.map((service) => (
-              <div key={service.id} className="greia-card group">
-                {/* Service Provider Image */}
-                <div className="relative h-48 overflow-hidden">
-                  <img
-                    src={service.image}
-                    alt={service.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                  />
-                  {service.verified && (
-                    <div className="absolute top-4 left-4">
-                      <div className="bg-white px-3 py-1 rounded-full flex items-center shadow-md">
-                        <Shield className="h-4 w-4 text-green-600 mr-1" />
-                        <span className="text-sm font-medium text-green-600">Verified</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Service Details */}
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center text-sm text-gray-500">
-                      <MapPin className="h-4 w-4 mr-1" />
-                      {service.location}
-                    </div>
-                    <div className="flex items-center text-sm">
-                      <Star className="h-4 w-4 text-yellow-400 mr-1" />
-                      <span className="font-medium">{service.rating}</span>
-                      <span className="text-gray-500 ml-1">({service.reviews})</span>
-                    </div>
-                  </div>
-
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    {service.title}
-                  </h3>
-                  <p className="text-gray-600 mb-2">
-                    by {service.provider}
-                  </p>
-                  <p className="text-2xl font-bold text-green-600 mb-4">
-                    £{service.hourlyRate}/hr
-                  </p>
-
-                  {/* Service Features */}
-                  <div className="flex items-center space-x-4 text-gray-600 mb-4">
-                    <div className="flex items-center">
-                      <Clock className="h-4 w-4 mr-1" />
-                      <span>{service.availability}</span>
-                    </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <button className="greia-button-secondary flex items-center justify-center">
-                      <MessageSquare className="h-4 w-4 mr-2" />
-                      Message
-                    </button>
-                    <button className="greia-button-primary flex items-center justify-center">
-                      <Calendar className="h-4 w-4 mr-2" />
-                      Book Now
-                    </button>
-                  </div>
-                </div>
-              </div>
+          {/* Services Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {services.map(service => (
+              <Card
+                key={service.id}
+                {...service}
+              />
             ))}
           </div>
-        </section>
-
-        {/* Call to Action */}
-        <section className="bg-green-600 rounded-2xl p-8 md:p-12">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold text-white mb-4">
-              Are You a Service Provider?
-            </h2>
-            <p className="text-green-100 text-lg mb-8">
-              Join our network of trusted professionals and grow your business
-            </p>
-            <Link href="/services/register" className="greia-button-secondary">
-              Join as Provider
-              <ArrowRight className="h-4 w-4 ml-2" />
-            </Link>
-          </div>
-        </section>
+        </div>
       </div>
-    </div>
+    </PageTransition>
   )
 }
