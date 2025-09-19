@@ -1,19 +1,15 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
-import { AuthProvider } from '@/providers/auth-provider'
 import { ThemeProvider } from '@/providers/theme-provider'
-import Navigation from '@/components/navigation/main-nav'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
+import Link from 'next/link'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'GREIA - Life\'s Operating System',
-  description: 'Your unified platform for properties, services, leisure, and networking',
-  icons: {
-    icon: '/images/greia-favicon.ico',
-  },
+  description: 'Your unified platform for Properties, Services, Leisure, and Connect',
 }
 
 export default function RootLayout({
@@ -23,6 +19,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <link rel="icon" href="/greia-logo.png" />
+      </head>
       <body className={inter.className}>
         <ThemeProvider
           attribute="class"
@@ -30,98 +29,114 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <AuthProvider>
-            <div className="min-h-screen flex flex-col bg-background text-foreground">
-              {/* Main Navigation */}
-              <header className="greia-nav sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                <div className="greia-container">
-                  <div className="greia-nav-content">
-                    <Navigation />
-                    <div className="fixed right-4 top-4">
-                      <ThemeToggle />
-                    </div>
-                  </div>
-                </div>
-              </header>
+          {/* Navigation */}
+          <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-sm border-b">
+            <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+              {/* Logo */}
+              <Link href="/" className="flex items-center">
+                <img
+                  src="/greia-logo.png"
+                  alt="GREIA"
+                  className="h-8 dark:invert"
+                />
+              </Link>
 
-              {/* Main Content */}
-              <main className="flex-grow">
-                {children}
-              </main>
+              {/* Navigation Links */}
+              <div className="hidden md:flex items-center space-x-6">
+                <Link href="/properties" className="text-foreground hover:text-primary">
+                  Properties
+                </Link>
+                <Link href="/services" className="text-foreground hover:text-primary">
+                  Services
+                </Link>
+                <Link href="/leisure" className="text-foreground hover:text-primary">
+                  Leisure
+                </Link>
+                <Link href="/connect" className="text-foreground hover:text-primary">
+                  Connect
+                </Link>
+              </div>
 
-              {/* Footer */}
-              <footer className="border-t bg-muted/50">
-                <div className="greia-container py-12 md:py-16">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-                    {/* Brand Column */}
-                    <div className="space-y-4">
-                      <img 
-                        src="/images/greia-logo.png" 
-                        alt="GREIA" 
-                        className="h-8 dark:invert"
-                      />
-                      <p className="text-sm text-muted-foreground">
-                        Life's Operating System - Your unified platform for properties, services, leisure, and networking.
-                      </p>
-                    </div>
-
-                    {/* Properties Column */}
-                    <div>
-                      <h3 className="font-semibold mb-4">Properties</h3>
-                      <ul className="space-y-2">
-                        <li><a href="/properties" className="greia-nav-link">Browse Properties</a></li>
-                        <li><a href="/properties/sell" className="greia-nav-link">Sell Property</a></li>
-                        <li><a href="/properties/rent" className="greia-nav-link">Rent Property</a></li>
-                        <li><a href="/properties/agents" className="greia-nav-link">Find Agents</a></li>
-                      </ul>
-                    </div>
-
-                    {/* Services Column */}
-                    <div>
-                      <h3 className="font-semibold mb-4">Services</h3>
-                      <ul className="space-y-2">
-                        <li><a href="/services" className="greia-nav-link">Browse Services</a></li>
-                        <li><a href="/services/trades" className="greia-nav-link">Find Trades</a></li>
-                        <li><a href="/services/professional" className="greia-nav-link">Professional Services</a></li>
-                        <li><a href="/services/provide" className="greia-nav-link">Become a Provider</a></li>
-                      </ul>
-                    </div>
-
-                    {/* Connect Column */}
-                    <div>
-                      <h3 className="font-semibold mb-4">Connect</h3>
-                      <ul className="space-y-2">
-                        <li><a href="/connect" className="greia-nav-link">Network</a></li>
-                        <li><a href="/connect/crm" className="greia-nav-link">CRM</a></li>
-                        <li><a href="/connect/groups" className="greia-nav-link">Groups</a></li>
-                        <li><a href="/help" className="greia-nav-link">Help Center</a></li>
-                      </ul>
-                    </div>
-                  </div>
-
-                  {/* Bottom Bar */}
-                  <div className="mt-8 pt-8 border-t">
-                    <div className="flex flex-col md:flex-row justify-between items-center">
-                      <p className="text-sm text-muted-foreground">
-                        © {new Date().getFullYear()} GREIA. All rights reserved.
-                      </p>
-                      <div className="flex space-x-6 mt-4 md:mt-0">
-                        <a href="/legal/privacy" className="text-sm text-muted-foreground hover:text-foreground">
-                          Privacy Policy
-                        </a>
-                        <a href="/legal/terms" className="text-sm text-muted-foreground hover:text-foreground">
-                          Terms of Service
-                        </a>
-                        <a href="/legal/cookies" className="text-sm text-muted-foreground hover:text-foreground">
-                          Cookie Policy
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </footer>
+              {/* Auth & Theme */}
+              <div className="flex items-center space-x-4">
+                <Link
+                  href="/login"
+                  className="text-sm font-medium text-foreground hover:text-primary"
+                >
+                  Log in
+                </Link>
+                <Link
+                  href="/signup"
+                  className="text-sm font-medium bg-primary text-primary-foreground px-4 py-2 rounded-full hover:bg-primary/90"
+                >
+                  Sign up
+                </Link>
+                <ThemeToggle />
+              </div>
             </div>
-          </AuthProvider>
+          </nav>
+
+          {/* Main Content */}
+          <main className="pt-16 min-h-screen bg-background text-foreground">
+            {children}
+          </main>
+
+          {/* Footer */}
+          <footer className="bg-background border-t py-12">
+            <div className="container mx-auto px-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+                {/* Brand */}
+                <div>
+                  <img
+                    src="/greia-logo.png"
+                    alt="GREIA"
+                    className="h-8 mb-4 dark:invert"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Life's Operating System - Your unified platform for Properties, Services, Leisure, and Connect.
+                  </p>
+                </div>
+
+                {/* Properties */}
+                <div>
+                  <h3 className="font-semibold mb-4">Properties</h3>
+                  <ul className="space-y-2 text-sm text-muted-foreground">
+                    <li><Link href="/properties/buy">Buy</Link></li>
+                    <li><Link href="/properties/rent">Rent</Link></li>
+                    <li><Link href="/properties/sell">Sell</Link></li>
+                    <li><Link href="/properties/valuation">Valuation</Link></li>
+                  </ul>
+                </div>
+
+                {/* Services & Leisure */}
+                <div>
+                  <h3 className="font-semibold mb-4">Services & Leisure</h3>
+                  <ul className="space-y-2 text-sm text-muted-foreground">
+                    <li><Link href="/services/trades">Trades</Link></li>
+                    <li><Link href="/services/professional">Professional</Link></li>
+                    <li><Link href="/leisure/rentals">Rentals</Link></li>
+                    <li><Link href="/leisure/experiences">Experiences</Link></li>
+                  </ul>
+                </div>
+
+                {/* Connect & Legal */}
+                <div>
+                  <h3 className="font-semibold mb-4">Connect & Legal</h3>
+                  <ul className="space-y-2 text-sm text-muted-foreground">
+                    <li><Link href="/connect/social">Social</Link></li>
+                    <li><Link href="/connect/crm">CRM</Link></li>
+                    <li><Link href="/legal/privacy">Privacy Policy</Link></li>
+                    <li><Link href="/legal/terms">Terms of Service</Link></li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Bottom Bar */}
+              <div className="mt-12 pt-8 border-t text-center text-sm text-muted-foreground">
+                <p>&copy; {new Date().getFullYear()} GREIA. All rights reserved.</p>
+              </div>
+            </div>
+          </footer>
         </ThemeProvider>
       </body>
     </html>
