@@ -1,459 +1,389 @@
-'use client'
-
-import { useState } from 'react'
-import { PageTransition } from '@/components/ui/page-transition'
-import { Button } from '@/components/ui/button'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Form } from '@/components/ui/form'
+import { Metadata } from "next"
+import { DashboardLayout } from "@/components/layout/DashboardLayout"
+import { Button } from "@/components/ui/Button"
+import { Badge } from "@/components/ui/Badge"
+import { Calendar } from "@/components/ui/Calendar"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs"
 import {
-  Wrench,
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/Card"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/Select"
+import {
   Star,
-  Clock,
   MapPin,
-  Calendar,
-  Heart,
-  Share,
-  MessageSquare,
-  FileText,
-  Image as ImageIcon,
-  Info,
-  Check,
+  Clock,
   Shield,
-  Award,
+  MessageSquare,
+  Phone,
+  Mail,
+  Calendar as CalendarIcon,
+  FileText,
   ThumbsUp,
-  ArrowRight
-} from 'lucide-react'
-import { z } from 'zod'
+  Award,
+  CheckCircle,
+  Clock8,
+  Share,
+  Heart
+} from "lucide-react"
 
-const bookingSchema = z.object({
-  service: z.string().min(1, 'Please select a service'),
-  date: z.string().min(1, 'Please select a date'),
-  time: z.string().min(1, 'Please select a time'),
-  notes: z.string().optional()
-})
+export const metadata: Metadata = {
+  title: "Service Details - GREIA",
+  description: "View and book professional services",
+}
 
-export default function ServiceProviderPage({ params }: { params: { id: string } }) {
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-
-  // Example service provider data
-  const provider = {
-    id: params.id,
-    name: 'John Smith',
-    title: 'Professional Plumber',
-    rating: 4.9,
+// Mock service data
+const service = {
+  id: 1,
+  title: "Professional Plumbing Services",
+  category: "Trades",
+  provider: {
+    name: "John Smith",
+    company: "Smith & Sons Plumbing",
+    image: "/providers/john-smith.jpg",
+    rating: 4.8,
     reviews: 156,
     verified: true,
-    location: 'London, UK',
-    description: 'Expert plumbing services with over 15 years of experience. Specializing in residential and commercial plumbing solutions.',
-    hourlyRate: '£60',
-    availability: 'Available Today',
-    images: [
-      'https://placehold.co/1200x800',
-      'https://placehold.co/1200x800',
-      'https://placehold.co/1200x800'
-    ],
-    services: [
+    memberSince: "2020",
+    completedJobs: 450,
+    responseTime: "Under 1 hour",
+    languages: ["English", "Spanish"],
+    qualifications: [
+      "City & Guilds Level 3 Plumbing",
+      "Gas Safe Registered",
+      "Public Liability Insurance"
+    ]
+  },
+  pricing: {
+    hourlyRate: "£50/hr",
+    calloutFee: "£30",
+    minimumCharge: "1 hour",
+    packages: [
       {
-        name: 'Emergency Plumbing',
-        price: '£80/hour',
-        description: '24/7 emergency plumbing services'
+        name: "Basic Inspection",
+        price: "£80",
+        duration: "1 hour",
+        description: "Initial inspection and minor repairs"
       },
       {
-        name: 'Installation',
-        price: '£60/hour',
-        description: 'Installation of fixtures and appliances'
-      },
-      {
-        name: 'Maintenance',
-        price: '£50/hour',
-        description: 'Regular maintenance and inspections'
-      }
-    ],
-    certifications: [
-      'City & Guilds Level 3',
-      'Gas Safe Registered',
-      'Public Liability Insurance'
-    ],
-    reviews: [
-      {
-        name: 'Sarah Johnson',
-        rating: 5,
-        comment: 'Excellent service, very professional and efficient.',
-        date: '2 days ago'
-      },
-      {
-        name: 'Mike Brown',
-        rating: 5,
-        comment: 'Great work, fixed the issue quickly.',
-        date: '1 week ago'
+        name: "Full Service",
+        price: "£200",
+        duration: "4 hours",
+        description: "Comprehensive plumbing service and maintenance"
       }
     ]
-  }
-
-  const bookingFields = [
+  },
+  availability: {
+    nextSlot: "Today at 4:00 PM",
+    workingHours: "Mon-Sat: 8:00 AM - 6:00 PM",
+    emergency: true
+  },
+  location: {
+    area: "Manchester",
+    coverage: "15 miles radius",
+    address: "123 Service Street, Manchester, M1 1AB"
+  },
+  description: "Professional plumbing services with over 15 years of experience. Specializing in emergency repairs, installations, and maintenance. Available for both residential and commercial properties.",
+  services: [
+    "Emergency Repairs",
+    "Pipe Installation",
+    "Bathroom Fitting",
+    "Boiler Services",
+    "Drain Cleaning",
+    "Water Heater Installation",
+    "Leak Detection",
+    "Preventive Maintenance"
+  ],
+  reviews: [
     {
-      name: 'service',
-      label: 'Service Type',
-      type: 'select',
-      options: provider.services.map(service => ({
-        value: service.name,
-        label: `${service.name} - ${service.price}`
-      })),
-      validation: {
-        required: 'Please select a service'
-      }
+      id: 1,
+      user: "Sarah Johnson",
+      rating: 5,
+      date: "2 days ago",
+      comment: "Excellent service! Fixed our emergency leak quickly and professionally.",
+      verified: true
     },
     {
-      name: 'date',
-      label: 'Preferred Date',
-      type: 'date',
-      validation: {
-        required: 'Please select a date'
-      }
-    },
-    {
-      name: 'time',
-      label: 'Preferred Time',
-      type: 'select',
-      options: [
-        { value: '09:00', label: '9:00 AM' },
-        { value: '10:00', label: '10:00 AM' },
-        { value: '11:00', label: '11:00 AM' },
-        { value: '12:00', label: '12:00 PM' },
-        { value: '13:00', label: '1:00 PM' },
-        { value: '14:00', label: '2:00 PM' },
-        { value: '15:00', label: '3:00 PM' },
-        { value: '16:00', label: '4:00 PM' }
-      ],
-      validation: {
-        required: 'Please select a time'
-      }
-    },
-    {
-      name: 'notes',
-      label: 'Additional Notes',
-      type: 'textarea',
-      placeholder: 'Any specific requirements or details'
+      id: 2,
+      user: "Mike Peters",
+      rating: 4,
+      date: "1 week ago",
+      comment: "Very knowledgeable and efficient. Would recommend.",
+      verified: true
     }
+  ],
+  images: [
+    "/services/plumbing-1.jpg",
+    "/services/plumbing-2.jpg",
+    "/services/plumbing-3.jpg"
   ]
+}
 
-  const handleBooking = async (data: z.infer<typeof bookingSchema>) => {
-    setLoading(true)
-    setError('')
-
-    try {
-      // Handle booking submission
-      console.log('Booking:', data)
-    } catch (err) {
-      setError('Failed to submit booking')
-    } finally {
-      setLoading(false)
-    }
-  }
-
+export default function ServicePage() {
   return (
-    <PageTransition>
-      <div className="min-h-screen pb-12">
+    <DashboardLayout>
+      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
         {/* Header */}
-        <div className="bg-primary text-primary-foreground py-12">
-          <div className="container mx-auto px-4">
-            <div className="flex items-start gap-6">
-              <div className="h-24 w-24 rounded-full bg-primary-foreground/10 flex items-center justify-center">
-                <Wrench className="h-12 w-12" />
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-2 md:space-y-0">
+          <div>
+            <div className="flex items-center space-x-2">
+              <Badge>{service.category}</Badge>
+              {service.provider.verified && (
+                <Badge variant="secondary">
+                  <Shield className="mr-1 h-3 w-3" />
+                  Verified Provider
+                </Badge>
+              )}
+            </div>
+            <h1 className="text-3xl font-bold tracking-tight mt-2">{service.title}</h1>
+            <div className="flex items-center space-x-4 mt-1 text-muted-foreground">
+              <div className="flex items-center">
+                <MapPin className="mr-1 h-4 w-4" />
+                {service.location.area}
               </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-4 mb-2">
-                  <h1 className="text-3xl font-bold">{provider.name}</h1>
-                  {provider.verified && (
-                    <div className="flex items-center text-sm bg-success/20 text-success px-2 py-1 rounded">
-                      <Shield className="h-4 w-4 mr-1" />
-                      Verified
-                    </div>
-                  )}
-                </div>
-                <p className="text-xl mb-4">{provider.title}</p>
-                <div className="flex items-center gap-6 text-primary-foreground/80">
-                  <div className="flex items-center">
-                    <Star className="h-5 w-5 text-yellow-400 mr-1" />
-                    <span>{provider.rating}</span>
-                    <span className="ml-1">({provider.reviews} reviews)</span>
-                  </div>
-                  <div className="flex items-center">
-                    <MapPin className="h-5 w-5 mr-1" />
-                    {provider.location}
-                  </div>
-                  <div className="flex items-center">
-                    <Clock className="h-5 w-5 mr-1" />
-                    {provider.availability}
-                  </div>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-2xl font-bold mb-2">
-                  {provider.hourlyRate}
-                  <span className="text-lg font-normal">/hour</span>
-                </div>
-                <Button className="mr-2">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Book Now
-                </Button>
-                <Button variant="outline">
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  Message
-                </Button>
+              <div className="flex items-center">
+                <Star className="mr-1 h-4 w-4 text-yellow-400" />
+                {service.provider.rating} ({service.provider.reviews} reviews)
               </div>
             </div>
           </div>
+          <div className="flex items-center space-x-2">
+            <Button variant="outline">
+              <Share className="mr-2 h-4 w-4" />
+              Share
+            </Button>
+            <Button variant="outline">
+              <Heart className="mr-2 h-4 w-4" />
+              Save
+            </Button>
+          </div>
         </div>
 
-        {/* Main Content */}
-        <div className="container mx-auto px-4 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Details */}
-            <div className="lg:col-span-2">
-              <Tabs defaultValue="overview">
-                <TabsList>
-                  <TabsTrigger value="overview" className="flex items-center gap-2">
-                    <Info className="h-4 w-4" />
-                    Overview
-                  </TabsTrigger>
-                  <TabsTrigger value="services" className="flex items-center gap-2">
-                    <Wrench className="h-4 w-4" />
-                    Services
-                  </TabsTrigger>
-                  <TabsTrigger value="reviews" className="flex items-center gap-2">
-                    <Star className="h-4 w-4" />
-                    Reviews
-                  </TabsTrigger>
-                  <TabsTrigger value="gallery" className="flex items-center gap-2">
-                    <ImageIcon className="h-4 w-4" />
-                    Gallery
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="overview" className="space-y-6">
-                  {/* Description */}
-                  <div>
-                    <h2 className="text-xl font-semibold mb-4">About</h2>
-                    <p className="text-muted-foreground">
-                      {provider.description}
-                    </p>
+        <div className="grid gap-4 md:grid-cols-3">
+          {/* Main Content */}
+          <div className="md:col-span-2 space-y-4">
+            {/* Service Images */}
+            <Card>
+              <CardContent className="p-0">
+                <div className="grid grid-cols-2 gap-2 p-2">
+                  <div className="col-span-2">
+                    <img
+                      src={service.images[0]}
+                      alt={service.title}
+                      className="w-full h-64 object-cover rounded-lg"
+                    />
                   </div>
+                  {service.images.slice(1).map((image, index) => (
+                    <img
+                      key={index}
+                      src={image}
+                      alt={`${service.title} ${index + 2}`}
+                      className="w-full h-32 object-cover rounded-lg"
+                    />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
 
-                  {/* Certifications */}
-                  <div>
-                    <h2 className="text-xl font-semibold mb-4">Certifications</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {provider.certifications.map((cert, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center bg-card rounded-lg p-4"
-                        >
-                          <Award className="h-6 w-6 text-primary mr-3" />
-                          <span>{cert}</span>
-                        </div>
+            {/* Service Details */}
+            <Card>
+              <CardHeader>
+                <CardTitle>About This Service</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-muted-foreground">{service.description}</p>
+                <div className="grid gap-4 md:grid-cols-2">
+                  {service.services.map((item, index) => (
+                    <div key={index} className="flex items-center">
+                      <CheckCircle className="mr-2 h-4 w-4 text-primary" />
+                      {item}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Reviews */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Reviews</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {service.reviews.map((review) => (
+                  <div key={review.id} className="border-b last:border-0 pb-4 last:pb-0">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <span className="font-medium">{review.user}</span>
+                        {review.verified && (
+                          <Badge variant="secondary" className="text-xs">
+                            Verified Booking
+                          </Badge>
+                        )}
+                      </div>
+                      <span className="text-sm text-muted-foreground">{review.date}</span>
+                    </div>
+                    <div className="flex items-center mt-1">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`h-4 w-4 ${
+                            i < review.rating ? "text-yellow-400" : "text-gray-200"
+                          }`}
+                        />
                       ))}
                     </div>
+                    <p className="mt-2 text-muted-foreground">{review.comment}</p>
                   </div>
-                </TabsContent>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
 
-                <TabsContent value="services" className="space-y-6">
-                  {provider.services.map((service, index) => (
-                    <div
-                      key={index}
-                      className="bg-card rounded-lg p-6"
-                    >
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-xl font-semibold">{service.name}</h3>
-                        <div className="text-xl font-bold">{service.price}</div>
-                      </div>
-                      <p className="text-muted-foreground mb-4">
-                        {service.description}
-                      </p>
-                      <Button>Book This Service</Button>
-                    </div>
-                  ))}
-                </TabsContent>
-
-                <TabsContent value="reviews" className="space-y-6">
-                  {/* Rating Summary */}
-                  <div className="bg-card rounded-lg p-6">
-                    <div className="flex items-center gap-8">
-                      <div className="text-center">
-                        <div className="text-4xl font-bold mb-2">{provider.rating}</div>
-                        <div className="flex items-center justify-center">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`h-5 w-5 ${
-                                i < Math.floor(provider.rating)
-                                  ? 'text-yellow-400'
-                                  : 'text-gray-300'
-                              }`}
-                            />
-                          ))}
-                        </div>
-                        <div className="text-sm text-muted-foreground mt-1">
-                          {provider.reviews} reviews
-                        </div>
-                      </div>
-                      <div className="flex-1">
-                        {[5, 4, 3, 2, 1].map(rating => (
-                          <div key={rating} className="flex items-center gap-4">
-                            <div className="text-sm text-muted-foreground w-8">
-                              {rating} ★
-                            </div>
-                            <div className="flex-1 h-2 bg-accent rounded-full">
-                              <div
-                                className="h-full bg-yellow-400 rounded-full"
-                                style={{
-                                  width: rating === 5 ? '80%' : rating === 4 ? '15%' : '5%'
-                                }}
-                              />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Review List */}
-                  {provider.reviews.map((review, index) => (
-                    <div
-                      key={index}
-                      className="bg-card rounded-lg p-6"
-                    >
-                      <div className="flex items-center justify-between mb-4">
-                        <div>
-                          <div className="font-semibold">{review.name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {review.date}
-                          </div>
-                        </div>
-                        <div className="flex items-center">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`h-4 w-4 ${
-                                i < review.rating
-                                  ? 'text-yellow-400'
-                                  : 'text-gray-300'
-                              }`}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                      <p className="text-muted-foreground">{review.comment}</p>
-                      <div className="flex items-center gap-4 mt-4">
-                        <Button variant="ghost" size="sm">
-                          <ThumbsUp className="h-4 w-4 mr-2" />
-                          Helpful
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          Report
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </TabsContent>
-
-                <TabsContent value="gallery">
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {provider.images.map((image, index) => (
-                      <div
-                        key={index}
-                        className="aspect-square rounded-lg overflow-hidden"
-                      >
-                        <img
-                          src={image}
-                          alt={`Work ${index + 1}`}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </div>
-
-            {/* Sidebar */}
-            <div className="space-y-6">
-              {/* Action Buttons */}
-              <div className="flex gap-4">
-                <Button className="flex-1">
-                  <Heart className="h-4 w-4 mr-2" />
-                  Save
-                </Button>
-                <Button variant="outline" className="flex-1">
-                  <Share className="h-4 w-4 mr-2" />
-                  Share
-                </Button>
-              </div>
-
-              {/* Booking Form */}
-              <div className="bg-card rounded-lg p-6">
-                <h3 className="text-lg font-semibold mb-4">Book a Service</h3>
-                <Form
-                  fields={bookingFields}
-                  onSubmit={handleBooking}
-                  schema={bookingSchema}
-                  submitText={loading ? 'Booking...' : 'Book Now'}
-                  loading={loading}
-                  error={error}
-                />
-              </div>
-
-              {/* Business Hours */}
-              <div className="bg-card rounded-lg p-6">
-                <h3 className="text-lg font-semibold mb-4">Business Hours</h3>
+          {/* Sidebar */}
+          <div className="space-y-4">
+            {/* Pricing Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Pricing</CardTitle>
+                <CardDescription>Choose a service package or hourly rate</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  {[
-                    { day: 'Monday - Friday', hours: '8:00 AM - 6:00 PM' },
-                    { day: 'Saturday', hours: '9:00 AM - 4:00 PM' },
-                    { day: 'Sunday', hours: 'Closed' }
-                  ].map((schedule, index) => (
-                    <div
-                      key={index}
-                      className="flex justify-between text-sm"
-                    >
-                      <span className="text-muted-foreground">{schedule.day}</span>
-                      <span className="font-medium">{schedule.hours}</span>
-                    </div>
+                  <div className="flex items-center justify-between">
+                    <span>Hourly Rate</span>
+                    <span className="font-bold">{service.pricing.hourlyRate}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm text-muted-foreground">
+                    <span>Callout Fee</span>
+                    <span>{service.pricing.calloutFee}</span>
+                  </div>
+                </div>
+                <Separator />
+                <div className="space-y-2">
+                  {service.pricing.packages.map((pkg, index) => (
+                    <Card key={index} className="cursor-pointer hover:bg-accent">
+                      <CardHeader className="p-4">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-lg">{pkg.name}</CardTitle>
+                          <span className="font-bold">{pkg.price}</span>
+                        </div>
+                        <CardDescription>{pkg.description}</CardDescription>
+                      </CardHeader>
+                    </Card>
                   ))}
                 </div>
-              </div>
+              </CardContent>
+            </Card>
 
-              {/* Similar Providers */}
-              <div>
-                <h3 className="text-lg font-semibold mb-4">Similar Providers</h3>
-                <div className="space-y-4">
-                  {[1, 2, 3].map((_, index) => (
-                    <div
-                      key={index}
-                      className="bg-card rounded-lg p-4"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                          <Wrench className="h-6 w-6 text-primary" />
-                        </div>
-                        <div className="flex-1">
-                          <div className="font-medium">Professional Plumber</div>
-                          <div className="text-sm text-muted-foreground">London</div>
-                        </div>
-                        <Button variant="ghost" size="sm">
-                          View
-                          <ArrowRight className="h-4 w-4 ml-2" />
-                        </Button>
-                      </div>
+            {/* Booking Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Book This Service</CardTitle>
+                <CardDescription>
+                  Next available: {service.availability.nextSlot}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Select Date</Label>
+                  <Calendar mode="single" className="rounded-md border" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Select Time</Label>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose time slot" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="9">9:00 AM</SelectItem>
+                      <SelectItem value="10">10:00 AM</SelectItem>
+                      <SelectItem value="11">11:00 AM</SelectItem>
+                      <SelectItem value="12">12:00 PM</SelectItem>
+                      <SelectItem value="13">1:00 PM</SelectItem>
+                      <SelectItem value="14">2:00 PM</SelectItem>
+                      <SelectItem value="15">3:00 PM</SelectItem>
+                      <SelectItem value="16">4:00 PM</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button className="w-full">
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  Book Now
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Provider Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle>About the Provider</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center space-x-4">
+                  <img
+                    src={service.provider.image}
+                    alt={service.provider.name}
+                    className="h-16 w-16 rounded-full"
+                  />
+                  <div>
+                    <h3 className="font-medium">{service.provider.name}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {service.provider.company}
+                    </p>
+                    <div className="flex items-center mt-1">
+                      <Clock8 className="mr-1 h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">
+                        Member since {service.provider.memberSince}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <ThumbsUp className="h-4 w-4 text-primary mb-1" />
+                    <div className="font-medium">{service.provider.completedJobs}</div>
+                    <div className="text-muted-foreground">Jobs Completed</div>
+                  </div>
+                  <div>
+                    <Clock className="h-4 w-4 text-primary mb-1" />
+                    <div className="font-medium">{service.provider.responseTime}</div>
+                    <div className="text-muted-foreground">Response Time</div>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <h4 className="font-medium">Qualifications</h4>
+                  {service.provider.qualifications.map((qual, index) => (
+                    <div key={index} className="flex items-center">
+                      <Award className="mr-2 h-4 w-4 text-primary" />
+                      {qual}
                     </div>
                   ))}
                 </div>
-              </div>
-            </div>
+                <div className="space-y-2">
+                  <Button className="w-full">
+                    <MessageSquare className="mr-2 h-4 w-4" />
+                    Message
+                  </Button>
+                  <Button variant="outline" className="w-full">
+                    <Phone className="mr-2 h-4 w-4" />
+                    Call
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
-    </PageTransition>
+    </DashboardLayout>
   )
 }
