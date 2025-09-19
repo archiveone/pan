@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="120" height="40" viewBox="0 0 120 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- GREIA Logo -->
+  <path d="M10 8h100v24H10z" fill="#0066CC"/>
+  <text x="15" y="26" fill="white" font-family="Arial" font-weight="bold" font-size="18">GREIA</text>
+  <!-- Decorative Elements -->
+  <path d="M5 12h2v16H5z" fill="#0066CC"/>
+  <path d="M113 12h2v16h-2z" fill="#0066CC"/>
+</svg>
