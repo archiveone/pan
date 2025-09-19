@@ -1,462 +1,477 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import Image from "next/image";
-import { 
-  HeartIcon,
-  ShareIcon,
-  MapPinIcon,
-  ClockIcon,
-  CurrencyEuroIcon,
-  CalendarIcon,
-  UserGroupIcon,
-  ChevronRightIcon,
-  StarIcon,
-  GlobeEuropeAfricaIcon,
-  UsersIcon,
-} from "@heroicons/react/24/outline";
-import { HeartIcon as HeartIconSolid, StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
+import { useState } from 'react'
+import { PageTransition } from '@/components/ui/page-transition'
+import { Button } from '@/components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Form } from '@/components/ui/form'
+import {
+  Car,
+  Star,
+  Clock,
+  MapPin,
+  Calendar,
+  Heart,
+  Share,
+  MessageSquare,
+  FileText,
+  Image as ImageIcon,
+  Info,
+  Check,
+  Users,
+  ArrowRight,
+  DollarSign,
+  Tag
+} from 'lucide-react'
+import { z } from 'zod'
 
-// Sample data - would come from API
-const experience = {
-  id: "1",
-  title: "Luxury Yacht Charter Experience",
-  price: "€1,500/day",
-  location: "Mediterranean Sea",
-  description: "Embark on an unforgettable journey aboard our luxury yacht. Experience the ultimate in maritime luxury with a fully crewed vessel, gourmet catering, and access to exclusive Mediterranean destinations. Perfect for special occasions or luxury vacations.",
-  highlights: [
-    "Professional Crew",
-    "Gourmet Catering",
-    "Water Sports Equipment",
-    "Premium Bar Service",
-    "Sunset Cruise Option",
-    "Private Chef",
-    "Personalized Itinerary",
-    "VIP Concierge",
-  ],
-  images: [
-    "/images/leisure/yacht-1.jpg",
-    "/images/leisure/yacht-2.jpg",
-    "/images/leisure/yacht-3.jpg",
-    "/images/leisure/yacht-4.jpg",
-  ],
-  provider: {
-    name: "Emma Williams",
-    image: "/images/connect/profile-3.jpg",
+const bookingSchema = z.object({
+  date: z.string().min(1, 'Please select a date'),
+  time: z.string().min(1, 'Please select a time'),
+  guests: z.string().min(1, 'Please select number of guests'),
+  notes: z.string().optional()
+})
+
+export default function LeisureActivityPage({ params }: { params: { id: string } }) {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [activeImage, setActiveImage] = useState(0)
+
+  // Example activity data
+  const activity = {
+    id: params.id,
+    title: 'Ferrari 488 GTB Rental',
+    type: 'Car Rental',
     rating: 4.9,
-    reviews: 92,
-    response: "Usually responds within 1 hour",
-    experience: "10+ years",
-    languages: ["English", "French", "Italian"],
-  },
-  details: {
-    duration: "Full Day (8 hours)",
-    groupSize: "Up to 12 guests",
-    includes: [
-      "Professional captain and crew",
-      "Fuel and docking fees",
-      "Gourmet lunch and snacks",
-      "Premium beverages",
-      "Water sports equipment",
-      "Towels and amenities",
+    reviews: 124,
+    location: 'London, UK',
+    description: 'Experience the thrill of driving a Ferrari 488 GTB. This stunning supercar offers incredible performance and luxury.',
+    price: {
+      amount: 499,
+      unit: 'day',
+      currency: '£'
+    },
+    images: [
+      'https://placehold.co/1200x800',
+      'https://placehold.co/1200x800',
+      'https://placehold.co/1200x800',
+      'https://placehold.co/1200x800'
     ],
-    excludes: [
-      "Additional hours beyond 8 hours",
-      "Special catering requests",
-      "Transportation to/from marina",
-      "Gratuities",
+    features: [
+      'Twin-Turbo V8 Engine',
+      '0-60 mph in 3.0 seconds',
+      'Automatic Transmission',
+      'Premium Sound System',
+      'GPS Navigation',
+      'Full Insurance Included'
     ],
-  },
-  destinations: [
-    {
-      name: "Saint-Tropez Bay",
-      description: "Explore the glamorous French Riviera coastline",
-      image: "/images/leisure/destination-1.jpg",
+    requirements: [
+      'Valid Driver\'s License',
+      'Minimum Age: 25',
+      'Clean Driving Record',
+      'Security Deposit Required'
+    ],
+    provider: {
+      name: 'Luxury Car Rentals',
+      image: 'https://placehold.co/100',
+      rating: 4.8,
+      reviews: 356
     },
-    {
-      name: "Porquerolles Islands",
-      description: "Discover pristine beaches and crystal-clear waters",
-      image: "/images/leisure/destination-2.jpg",
-    },
-    {
-      name: "Calanques National Park",
-      description: "Visit dramatic limestone cliff formations",
-      image: "/images/leisure/destination-3.jpg",
-    },
-  ],
-  reviews: [
-    {
-      id: "1",
-      author: "James Anderson",
-      rating: 5,
-      date: "1 week ago",
-      content: "An absolutely incredible experience. The crew was professional, the yacht was immaculate, and the entire day was perfectly organized.",
-      image: "/images/reviews/review-1.jpg",
-    },
-    {
-      id: "2",
-      author: "Isabella Martinez",
-      rating: 5,
-      date: "2 weeks ago",
-      content: "Worth every penny! The service was impeccable and the destinations were breathtaking. Will definitely book again.",
-      image: "/images/reviews/review-2.jpg",
-    },
-  ],
-  availableDates: [
-    "2025-09-07",
-    "2025-09-08",
-    "2025-09-10",
-    "2025-09-11",
-    "2025-09-12",
-  ],
-};
+    reviews: [
+      {
+        name: 'James Wilson',
+        rating: 5,
+        comment: 'Amazing experience! The car was in perfect condition.',
+        date: '3 days ago'
+      },
+      {
+        name: 'Emma Thompson',
+        rating: 5,
+        comment: 'Professional service and incredible car.',
+        date: '1 week ago'
+      }
+    ],
+    availability: {
+      status: 'Available',
+      nextAvailable: 'Today'
+    }
+  }
 
-export default function LeisureDetailPage() {
-  const [isFavorite, setIsFavorite] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(0);
+  const bookingFields = [
+    {
+      name: 'date',
+      label: 'Rental Date',
+      type: 'date',
+      validation: {
+        required: 'Please select a date'
+      }
+    },
+    {
+      name: 'time',
+      label: 'Pickup Time',
+      type: 'select',
+      options: [
+        { value: '09:00', label: '9:00 AM' },
+        { value: '10:00', label: '10:00 AM' },
+        { value: '11:00', label: '11:00 AM' },
+        { value: '12:00', label: '12:00 PM' },
+        { value: '13:00', label: '1:00 PM' },
+        { value: '14:00', label: '2:00 PM' }
+      ],
+      validation: {
+        required: 'Please select a time'
+      }
+    },
+    {
+      name: 'guests',
+      label: 'Duration',
+      type: 'select',
+      options: [
+        { value: '1', label: '1 Day' },
+        { value: '2', label: '2 Days' },
+        { value: '3', label: '3 Days' },
+        { value: '7', label: '1 Week' }
+      ],
+      validation: {
+        required: 'Please select duration'
+      }
+    },
+    {
+      name: 'notes',
+      label: 'Special Requests',
+      type: 'textarea',
+      placeholder: 'Any specific requirements or questions'
+    }
+  ]
+
+  const handleBooking = async (data: z.infer<typeof bookingSchema>) => {
+    setLoading(true)
+    setError('')
+
+    try {
+      // Handle booking submission
+      console.log('Booking:', data)
+    } catch (err) {
+      setError('Failed to submit booking')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Image Gallery */}
-      <div className="relative h-[70vh] w-full">
-        <Image
-          src={experience.images[selectedImage]}
-          alt={experience.title}
-          className="object-cover"
-          fill
-          priority
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-        
-        {/* Navigation */}
-        <div className="absolute top-0 left-0 right-0 glass border-b border-white/20">
-          <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between">
-              <button onClick={() => window.history.back()} className="text-white">
-                Back
-              </button>
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={() => setIsFavorite(!isFavorite)}
-                  className="glass rounded-full p-2"
-                >
-                  {isFavorite ? (
-                    <HeartIconSolid className="h-6 w-6 text-red-500" />
-                  ) : (
-                    <HeartIcon className="h-6 w-6 text-white" />
-                  )}
-                </button>
-                <button className="glass rounded-full p-2">
-                  <ShareIcon className="h-6 w-6 text-white" />
-                </button>
+    <PageTransition>
+      <div className="min-h-screen pb-12">
+        {/* Image Gallery */}
+        <div className="relative h-[600px] bg-accent">
+          <img
+            src={activity.images[activeImage]}
+            alt={activity.title}
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
+            <div className="container mx-auto px-4">
+              <div className="flex items-center justify-between text-white">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Car className="h-5 w-5" />
+                    <span className="text-sm font-medium">{activity.type}</span>
+                  </div>
+                  <h1 className="text-3xl font-bold mb-2">{activity.title}</h1>
+                  <div className="flex items-center gap-4 text-white/80">
+                    <div className="flex items-center">
+                      <Star className="h-5 w-5 text-yellow-400 mr-1" />
+                      <span>{activity.rating}</span>
+                      <span className="ml-1">({activity.reviews} reviews)</span>
+                    </div>
+                    <div className="flex items-center">
+                      <MapPin className="h-5 w-5 mr-1" />
+                      {activity.location}
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-3xl font-bold mb-2">
+                    {activity.price.currency}{activity.price.amount}
+                    <span className="text-lg font-normal">/{activity.price.unit}</span>
+                  </div>
+                  <div className="text-sm">
+                    {activity.availability.status} - {activity.availability.nextAvailable}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Thumbnail Navigation */}
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2">
-          <div className="glass rounded-full p-2">
-            <div className="flex items-center space-x-2">
-              {experience.images.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setSelectedImage(index)}
-                  className={`h-2 w-2 rounded-full transition-all ${
-                    selectedImage === index ? "bg-white" : "bg-white/50"
-                  }`}
+          {/* Thumbnail Navigation */}
+          <div className="absolute bottom-4 right-4 flex gap-2">
+            {activity.images.map((_, index) => (
+              <button
+                key={index}
+                className={`h-16 w-16 rounded-lg overflow-hidden border-2 ${
+                  index === activeImage ? 'border-primary' : 'border-transparent'
+                }`}
+                onClick={() => setActiveImage(index)}
+              >
+                <img
+                  src={activity.images[index]}
+                  alt={`Thumbnail ${index + 1}`}
+                  className="w-full h-full object-cover"
                 />
-              ))}
-            </div>
+              </button>
+            ))}
           </div>
         </div>
-      </div>
 
-      {/* Content */}
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 gap-12 lg:grid-cols-3">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Header */}
-            <div>
-              <h1 className="text-3xl font-semibold text-gray-900">
-                {experience.title}
-              </h1>
-              <div className="mt-2 flex items-center space-x-2 text-gray-500">
-                <MapPinIcon className="h-5 w-5" />
-                <span>{experience.location}</span>
-              </div>
-              <div className="mt-4 flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <ClockIcon className="h-5 w-5 text-gray-400" />
-                  <span>{experience.details.duration}</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <UsersIcon className="h-5 w-5 text-gray-400" />
-                  <span>{experience.details.groupSize}</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <StarIcon className="h-5 w-5 text-gray-400" />
-                  <span>{experience.provider.rating} ({experience.provider.reviews} reviews)</span>
-                </div>
-              </div>
-            </div>
+        {/* Main Content */}
+        <div className="container mx-auto px-4 py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Details */}
+            <div className="lg:col-span-2">
+              <Tabs defaultValue="overview">
+                <TabsList>
+                  <TabsTrigger value="overview" className="flex items-center gap-2">
+                    <Info className="h-4 w-4" />
+                    Overview
+                  </TabsTrigger>
+                  <TabsTrigger value="features" className="flex items-center gap-2">
+                    <Check className="h-4 w-4" />
+                    Features
+                  </TabsTrigger>
+                  <TabsTrigger value="reviews" className="flex items-center gap-2">
+                    <Star className="h-4 w-4" />
+                    Reviews
+                  </TabsTrigger>
+                  <TabsTrigger value="photos" className="flex items-center gap-2">
+                    <ImageIcon className="h-4 w-4" />
+                    Photos
+                  </TabsTrigger>
+                </TabsList>
 
-            {/* Description */}
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold text-gray-900">About the Experience</h2>
-              <p className="text-gray-600 leading-relaxed">
-                {experience.description}
-              </p>
-            </div>
-
-            {/* Highlights */}
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold text-gray-900">Experience Highlights</h2>
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-                {experience.highlights.map((highlight) => (
-                  <div
-                    key={highlight}
-                    className="flex items-center space-x-2 text-gray-600"
-                  >
-                    <ChevronRightIcon className="h-4 w-4 text-blue-500" />
-                    <span>{highlight}</span>
+                <TabsContent value="overview" className="space-y-6">
+                  {/* Description */}
+                  <div>
+                    <h2 className="text-xl font-semibold mb-4">About this {activity.type}</h2>
+                    <p className="text-muted-foreground">
+                      {activity.description}
+                    </p>
                   </div>
-                ))}
-              </div>
-            </div>
 
-            {/* What's Included */}
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold text-gray-900">What's Included</h2>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="space-y-3">
-                  <h3 className="font-medium text-gray-900">Included:</h3>
-                  {experience.details.includes.map((item) => (
-                    <div
-                      key={item}
-                      className="flex items-center space-x-2 text-gray-600"
-                    >
-                      <ChevronRightIcon className="h-4 w-4 text-green-500" />
-                      <span>{item}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="space-y-3">
-                  <h3 className="font-medium text-gray-900">Not Included:</h3>
-                  {experience.details.excludes.map((item) => (
-                    <div
-                      key={item}
-                      className="flex items-center space-x-2 text-gray-600"
-                    >
-                      <ChevronRightIcon className="h-4 w-4 text-red-500" />
-                      <span>{item}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Destinations */}
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold text-gray-900">Destinations</h2>
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {experience.destinations.map((destination) => (
-                  <div key={destination.name} className="group relative">
-                    <div className="relative aspect-[4/3] overflow-hidden rounded-xl">
-                      <Image
-                        src={destination.image}
-                        alt={destination.name}
-                        className="object-cover transition-transform duration-300 group-hover:scale-105"
-                        fill
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                      <div className="absolute bottom-4 left-4 right-4">
-                        <h3 className="text-lg font-medium text-white">
-                          {destination.name}
-                        </h3>
-                        <p className="mt-1 text-sm text-white/80">
-                          {destination.description}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Reviews */}
-            <div className="space-y-6">
-              <h2 className="text-xl font-semibold text-gray-900">Guest Reviews</h2>
-              <div className="space-y-6">
-                {experience.reviews.map((review) => (
-                  <div key={review.id} className="card p-6">
-                    <div className="flex items-start space-x-4">
-                      <div className="relative h-12 w-12">
-                        <Image
-                          src={review.image}
-                          alt={review.author}
-                          className="rounded-full object-cover"
-                          fill
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <h3 className="font-medium text-gray-900">
-                            {review.author}
-                          </h3>
-                          <span className="text-sm text-gray-500">
-                            {review.date}
-                          </span>
+                  {/* Requirements */}
+                  <div>
+                    <h2 className="text-xl font-semibold mb-4">Requirements</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {activity.requirements.map((req, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center bg-card rounded-lg p-4"
+                        >
+                          <Check className="h-5 w-5 text-primary mr-3" />
+                          <span>{req}</span>
                         </div>
-                        <div className="mt-1 flex items-center">
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Provider Info */}
+                  <div className="bg-card rounded-lg p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <img
+                          src={activity.provider.image}
+                          alt={activity.provider.name}
+                          className="h-12 w-12 rounded-full"
+                        />
+                        <div className="ml-4">
+                          <div className="font-semibold">{activity.provider.name}</div>
+                          <div className="flex items-center text-sm text-muted-foreground">
+                            <Star className="h-4 w-4 text-yellow-400 mr-1" />
+                            {activity.provider.rating} ({activity.provider.reviews} reviews)
+                          </div>
+                        </div>
+                      </div>
+                      <Button>
+                        <MessageSquare className="h-4 w-4 mr-2" />
+                        Contact
+                      </Button>
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="features" className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {activity.features.map((feature, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center bg-card rounded-lg p-4"
+                      >
+                        <Check className="h-5 w-5 text-primary mr-3" />
+                        <span>{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="reviews" className="space-y-6">
+                  {/* Rating Summary */}
+                  <div className="bg-card rounded-lg p-6">
+                    <div className="flex items-center gap-8">
+                      <div className="text-center">
+                        <div className="text-4xl font-bold mb-2">{activity.rating}</div>
+                        <div className="flex items-center justify-center">
                           {[...Array(5)].map((_, i) => (
-                            <StarIconSolid
+                            <Star
                               key={i}
-                              className={`h-4 w-4 ${
-                                i < review.rating
-                                  ? "text-yellow-400"
-                                  : "text-gray-300"
+                              className={`h-5 w-5 ${
+                                i < Math.floor(activity.rating)
+                                  ? 'text-yellow-400'
+                                  : 'text-gray-300'
                               }`}
                             />
                           ))}
                         </div>
-                        <p className="mt-2 text-gray-600">{review.content}</p>
+                        <div className="text-sm text-muted-foreground mt-1">
+                          {activity.reviews} reviews
+                        </div>
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Booking Card */}
-            <div className="card p-6">
-              <div className="flex items-center justify-between">
-                <h3 className="text-2xl font-semibold text-gray-900">
-                  {experience.price}
-                </h3>
-                <div className="flex items-center">
-                  <StarIconSolid className="h-5 w-5 text-yellow-400" />
-                  <span className="ml-1 text-sm text-gray-600">
-                    {experience.provider.rating}
-                  </span>
-                </div>
-              </div>
-              
-              <div className="mt-6 space-y-4">
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Select Date
-                  </label>
-                  <select className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                    {experience.availableDates.map((date) => (
-                      <option key={date} value={date}>
-                        {new Date(date).toLocaleDateString('en-GB', {
-                          weekday: 'long',
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                        })}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Number of Guests
-                  </label>
-                  <select className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                    {[...Array(12)].map((_, i) => (
-                      <option key={i + 1} value={i + 1}>
-                        {i + 1} {i === 0 ? 'guest' : 'guests'}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="mt-6 space-y-3">
-                <button className="btn-primary w-full">Book Now</button>
-                <button className="btn-secondary w-full">Contact Host</button>
-              </div>
-
-              <p className="mt-4 text-center text-sm text-gray-500">
-                Free cancellation up to 24 hours before the experience
-              </p>
-            </div>
-
-            {/* Provider Card */}
-            <div className="card p-6">
-              <div className="flex items-center space-x-4">
-                <div className="relative h-16 w-16">
-                  <Image
-                    src={experience.provider.image}
-                    alt={experience.provider.name}
-                    className="rounded-full object-cover"
-                    fill
-                  />
-                </div>
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900">
-                    {experience.provider.name}
-                  </h3>
-                  <div className="mt-1 flex items-center">
-                    <div className="flex items-center">
-                      {[...Array(5)].map((_, i) => (
-                        <StarIconSolid
-                          key={i}
-                          className={`h-4 w-4 ${
-                            i < Math.floor(experience.provider.rating)
-                              ? "text-yellow-400"
-                              : "text-gray-300"
-                          }`}
-                        />
-                      ))}
-                    </div>
-                    <span className="ml-2 text-sm text-gray-500">
-                      ({experience.provider.reviews} reviews)
-                    </span>
-                  </div>
-                  <p className="mt-1 text-sm text-gray-500">
-                    {experience.provider.response}
-                  </p>
-                </div>
-              </div>
-              <div className="mt-4">
-                <h4 className="text-sm font-medium text-gray-900">Languages</h4>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {experience.provider.languages.map((language) => (
-                    <span
-                      key={language}
-                      className="glass rounded-full px-2.5 py-0.5 text-xs font-medium text-gray-900"
+                  {/* Review List */}
+                  {activity.reviews.map((review, index) => (
+                    <div
+                      key={index}
+                      className="bg-card rounded-lg p-6"
                     >
-                      {language}
-                    </span>
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <div className="font-semibold">{review.name}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {review.date}
+                          </div>
+                        </div>
+                        <div className="flex items-center">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`h-4 w-4 ${
+                                i < review.rating
+                                  ? 'text-yellow-400'
+                                  : 'text-gray-300'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <p className="text-muted-foreground">{review.comment}</p>
+                    </div>
+                  ))}
+                </TabsContent>
+
+                <TabsContent value="photos">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {activity.images.map((image, index) => (
+                      <div
+                        key={index}
+                        className="aspect-square rounded-lg overflow-hidden"
+                      >
+                        <img
+                          src={image}
+                          alt={`${activity.title} ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </div>
+
+            {/* Sidebar */}
+            <div className="space-y-6">
+              {/* Action Buttons */}
+              <div className="flex gap-4">
+                <Button className="flex-1">
+                  <Heart className="h-4 w-4 mr-2" />
+                  Save
+                </Button>
+                <Button variant="outline" className="flex-1">
+                  <Share className="h-4 w-4 mr-2" />
+                  Share
+                </Button>
+              </div>
+
+              {/* Booking Form */}
+              <div className="bg-card rounded-lg p-6">
+                <h3 className="text-lg font-semibold mb-4">Book Now</h3>
+                <Form
+                  fields={bookingFields}
+                  onSubmit={handleBooking}
+                  schema={bookingSchema}
+                  submitText={loading ? 'Processing...' : 'Book Now'}
+                  loading={loading}
+                  error={error}
+                />
+              </div>
+
+              {/* Price Breakdown */}
+              <div className="bg-card rounded-lg p-6">
+                <h3 className="text-lg font-semibold mb-4">Price Details</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Daily Rate</span>
+                    <span className="font-medium">£499</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Insurance</span>
+                    <span className="font-medium">Included</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Service Fee</span>
+                    <span className="font-medium">£49</span>
+                  </div>
+                  <div className="border-t pt-2 mt-2">
+                    <div className="flex justify-between font-semibold">
+                      <span>Total</span>
+                      <span>£548</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Similar Activities */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Similar Activities</h3>
+                <div className="space-y-4">
+                  {[1, 2, 3].map((_, index) => (
+                    <div
+                      key={index}
+                      className="bg-card rounded-lg overflow-hidden"
+                    >
+                      <img
+                        src="https://placehold.co/600x400"
+                        alt="Similar Activity"
+                        className="w-full h-48 object-cover"
+                      />
+                      <div className="p-4">
+                        <div className="font-medium mb-1">Luxury Car Rental</div>
+                        <div className="text-sm text-muted-foreground mb-2">
+                          London, UK
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div className="font-semibold">£399/day</div>
+                          <Button variant="ghost" size="sm">
+                            View
+                            <ArrowRight className="h-4 w-4 ml-2" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
                   ))}
                 </div>
-              </div>
-            </div>
-
-            {/* Location */}
-            <div className="card p-6">
-              <h3 className="text-lg font-medium text-gray-900">Location</h3>
-              <div className="mt-4">
-                <div className="aspect-[16/9] w-full overflow-hidden rounded-lg bg-gray-100">
-                  {/* Map would go here */}
-                  <div className="h-full w-full bg-gray-200" />
-                </div>
-                <p className="mt-2 text-sm text-gray-600">
-                  Exact location provided after booking
-                </p>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  );
+    </PageTransition>
+  )
 }
