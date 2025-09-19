@@ -1,124 +1,316 @@
 'use client'
 
-import { useAuth } from '@/providers/auth-provider'
+import { PageTransition } from '@/components/ui/page-transition'
+import { Button } from '@/components/ui/button'
+import {
+  Building2,
+  Wrench,
+  Car,
+  Users,
+  ArrowRight,
+  Star,
+  MessageSquare,
+  Calendar,
+  TrendingUp,
+  Eye,
+  Heart,
+  Bell
+} from 'lucide-react'
+import Link from 'next/link'
 
 export default function DashboardPage() {
-  const { user } = useAuth()
-
+  // Example data
   const stats = [
-    { name: 'Total Properties', value: '12' },
-    { name: 'Active Listings', value: '8' },
-    { name: 'Property Views', value: '245' },
-    { name: 'New Leads', value: '15' },
+    {
+      name: 'Total Views',
+      value: '2,345',
+      change: '+12.3%',
+      trend: 'up',
+      icon: Eye
+    },
+    {
+      name: 'Active Listings',
+      value: '12',
+      change: '+2',
+      trend: 'up',
+      icon: Building2
+    },
+    {
+      name: 'Messages',
+      value: '48',
+      change: '6 unread',
+      trend: 'neutral',
+      icon: MessageSquare
+    },
+    {
+      name: 'Saved Items',
+      value: '156',
+      change: '+3 new',
+      trend: 'up',
+      icon: Heart
+    }
   ]
 
-  const recentActivity = [
+  const activities = [
     {
-      id: 1,
-      type: 'property_view',
-      title: 'New property view',
-      description: 'Someone viewed your property at 123 Main St',
+      type: 'property',
+      title: 'Modern City Apartment',
+      action: 'Viewing Request',
       time: '2 hours ago',
+      icon: Building2
     },
     {
-      id: 2,
-      type: 'lead',
-      title: 'New lead received',
-      description: 'John Doe is interested in your services',
-      time: '5 hours ago',
+      type: 'service',
+      title: 'Plumbing Service',
+      action: 'New Review',
+      time: '4 hours ago',
+      icon: Wrench
     },
     {
-      id: 3,
-      type: 'message',
-      title: 'New message',
-      description: 'Sarah Smith sent you a message about property viewing',
-      time: '1 day ago',
+      type: 'leisure',
+      title: 'Ferrari 488 GTB',
+      action: 'Booking Confirmed',
+      time: 'Yesterday',
+      icon: Car
+    }
+  ]
+
+  const upcomingEvents = [
+    {
+      title: 'Property Viewing',
+      location: '123 City Road, London',
+      date: 'Today, 2:00 PM',
+      type: 'property'
     },
+    {
+      title: 'Plumber Appointment',
+      location: '456 Park Avenue, London',
+      date: 'Tomorrow, 10:00 AM',
+      type: 'service'
+    },
+    {
+      title: 'Car Rental Pickup',
+      location: 'Luxury Car Rentals, London',
+      date: 'Sep 21, 9:00 AM',
+      type: 'leisure'
+    }
+  ]
+
+  const recommendations = [
+    {
+      type: 'property',
+      title: 'Luxury Penthouse',
+      subtitle: 'Based on your search history',
+      image: 'https://placehold.co/600x400',
+      icon: Building2
+    },
+    {
+      type: 'service',
+      title: 'Interior Designer',
+      subtitle: 'Highly rated in your area',
+      image: 'https://placehold.co/600x400',
+      icon: Wrench
+    },
+    {
+      type: 'leisure',
+      title: 'Yacht Charter',
+      subtitle: 'Popular this weekend',
+      image: 'https://placehold.co/600x400',
+      icon: Car
+    }
   ]
 
   return (
-    <div className="space-y-6">
-      {/* Welcome Section */}
-      <div className="bg-white rounded-lg p-6 shadow-sm">
-        <h1 className="text-2xl font-semibold">Welcome back, {user?.name}</h1>
-        <p className="text-gray-600 mt-1">Here's what's happening with your account</p>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat) => (
-          <div
-            key={stat.name}
-            className="bg-white rounded-lg p-6 shadow-sm"
-          >
-            <dt className="text-sm font-medium text-gray-500 truncate">
-              {stat.name}
-            </dt>
-            <dd className="mt-1 text-3xl font-semibold text-gray-900">
-              {stat.value}
-            </dd>
+    <PageTransition>
+      <div className="p-6 space-y-8">
+        {/* Welcome Section */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Welcome back, John</h1>
+            <p className="text-muted-foreground">
+              Here's what's happening with your GREIA account
+            </p>
           </div>
-        ))}
-      </div>
-
-      {/* Quick Actions */}
-      <div className="bg-white rounded-lg p-6 shadow-sm">
-        <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button className="flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
-            Add Property
-          </button>
-          <button className="flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
-            Create Service
-          </button>
-          <button className="flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
-            Add Listing
-          </button>
+          <Button>
+            <Bell className="h-4 w-4 mr-2" />
+            Notifications
+          </Button>
         </div>
-      </div>
 
-      {/* Recent Activity */}
-      <div className="bg-white rounded-lg p-6 shadow-sm">
-        <h2 className="text-lg font-semibold mb-4">Recent Activity</h2>
-        <div className="space-y-4">
-          {recentActivity.map((activity) => (
-            <div
-              key={activity.id}
-              className="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg"
-            >
-              <div className="flex-1">
-                <h3 className="text-sm font-medium text-gray-900">
-                  {activity.title}
-                </h3>
-                <p className="text-sm text-gray-500">{activity.description}</p>
-                <span className="text-xs text-gray-400">{activity.time}</span>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {stats.map((stat, index) => {
+            const Icon = stat.icon
+            return (
+              <div
+                key={index}
+                className="bg-card rounded-lg p-6"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Icon className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className={`text-sm font-medium ${
+                    stat.trend === 'up' ? 'text-success' : 'text-muted-foreground'
+                  }`}>
+                    {stat.change}
+                  </div>
+                </div>
+                <div className="text-2xl font-bold mb-1">{stat.value}</div>
+                <div className="text-sm text-muted-foreground">{stat.name}</div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
-      </div>
 
-      {/* Upcoming Tasks */}
-      <div className="bg-white rounded-lg p-6 shadow-sm">
-        <h2 className="text-lg font-semibold mb-4">Upcoming Tasks</h2>
-        <div className="space-y-2">
-          <div className="flex items-center p-3 bg-gray-50 rounded-lg">
-            <input type="checkbox" className="mr-3" />
-            <span>Follow up with potential client</span>
-            <span className="ml-auto text-sm text-gray-500">Today</span>
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Recent Activity */}
+          <div className="bg-card rounded-lg p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-semibold">Recent Activity</h2>
+              <Button variant="ghost" size="sm">
+                View All
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+            </div>
+            <div className="space-y-4">
+              {activities.map((activity, index) => {
+                const Icon = activity.icon
+                return (
+                  <div
+                    key={index}
+                    className="flex items-start gap-4"
+                  >
+                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Icon className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-medium">{activity.title}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {activity.action}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {activity.time}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           </div>
-          <div className="flex items-center p-3 bg-gray-50 rounded-lg">
-            <input type="checkbox" className="mr-3" />
-            <span>Update property listing photos</span>
-            <span className="ml-auto text-sm text-gray-500">Tomorrow</span>
-          </div>
-          <div className="flex items-center p-3 bg-gray-50 rounded-lg">
-            <input type="checkbox" className="mr-3" />
-            <span>Schedule property viewing</span>
-            <span className="ml-auto text-sm text-gray-500">Next Week</span>
+
+          {/* Upcoming Events */}
+          <div className="bg-card rounded-lg p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-semibold">Upcoming Events</h2>
+              <Button variant="ghost" size="sm">
+                View Calendar
+                <Calendar className="h-4 w-4 ml-2" />
+              </Button>
+            </div>
+            <div className="space-y-4">
+              {upcomingEvents.map((event, index) => (
+                <div
+                  key={index}
+                  className="flex items-center gap-4 bg-accent/50 rounded-lg p-4"
+                >
+                  <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Calendar className="h-6 w-6 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-medium">{event.title}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {event.location}
+                    </div>
+                    <div className="text-sm font-medium text-primary">
+                      {event.date}
+                    </div>
+                  </div>
+                  <Button variant="outline" size="sm">
+                    Details
+                  </Button>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
+
+        {/* Recommendations */}
+        <div>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-semibold">Recommended for You</h2>
+            <Button variant="ghost" size="sm">
+              View All
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </Button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {recommendations.map((item, index) => {
+              const Icon = item.icon
+              return (
+                <div
+                  key={index}
+                  className="bg-card rounded-lg overflow-hidden group"
+                >
+                  <div className="relative h-48">
+                    <img
+                      src={item.image}
+                      alt={item.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                    />
+                    <div className="absolute top-4 left-4 h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center">
+                      <Icon className="h-4 w-4 text-primary" />
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <div className="font-medium mb-1">{item.title}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {item.subtitle}
+                    </div>
+                    <Button className="w-full mt-4">
+                      View Details
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <Button className="h-auto py-6 flex flex-col items-center text-center">
+            <Building2 className="h-6 w-6 mb-2" />
+            <span className="font-medium">List a Property</span>
+            <span className="text-sm text-muted-foreground mt-1">
+              Create a new property listing
+            </span>
+          </Button>
+          <Button className="h-auto py-6 flex flex-col items-center text-center">
+            <Wrench className="h-6 w-6 mb-2" />
+            <span className="font-medium">Offer Services</span>
+            <span className="text-sm text-muted-foreground mt-1">
+              Add your professional services
+            </span>
+          </Button>
+          <Button className="h-auto py-6 flex flex-col items-center text-center">
+            <Car className="h-6 w-6 mb-2" />
+            <span className="font-medium">List Activity</span>
+            <span className="text-sm text-muted-foreground mt-1">
+              Share your leisure offerings
+            </span>
+          </Button>
+          <Button className="h-auto py-6 flex flex-col items-center text-center">
+            <Users className="h-6 w-6 mb-2" />
+            <span className="font-medium">Grow Network</span>
+            <span className="text-sm text-muted-foreground mt-1">
+              Connect with professionals
+            </span>
+          </Button>
+        </div>
       </div>
-    </div>
+    </PageTransition>
   )
 }
