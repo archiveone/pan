@@ -1,207 +1,327 @@
-'use client'
-
-import { LeisureHero } from '@/components/ui/hero'
-import { Filters } from '@/components/ui/filters'
-import { Card } from '@/components/ui/card'
-import { PageTransition } from '@/components/ui/page-transition'
+import { Metadata } from "next"
+import { DashboardLayout } from "@/components/layout/DashboardLayout"
+import { Button } from "@/components/ui/Button"
+import { Input } from "@/components/ui/Input"
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/Select"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/Card"
+import { Badge } from "@/components/ui/Badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs"
+import { DatePicker } from "@/components/ui/DatePicker"
+import {
+  Search,
   Car,
-  Ship,
-  Plane,
+  Boat,
+  Home,
   Ticket,
-  Music,
-  Utensils,
-  Calendar,
   MapPin,
+  Calendar,
+  Users,
   Star,
+  Filter,
+  Grid,
+  List,
+  Heart,
   Clock,
-  MessageSquare
-} from 'lucide-react'
-import { useState } from 'react'
+  Info
+} from "lucide-react"
+
+export const metadata: Metadata = {
+  title: "Leisure - GREIA",
+  description: "Discover and book rentals and experiences",
+}
+
+// Mock leisure data
+const leisureItems = [
+  {
+    id: 1,
+    title: "Luxury Yacht Charter",
+    category: "Boat Rentals",
+    type: "rental",
+    price: "£500/day",
+    location: "Liverpool Marina",
+    rating: 4.9,
+    reviews: 28,
+    capacity: "12 people",
+    duration: "Full day",
+    image: "/leisure/yacht.jpg",
+    description: "Experience luxury on the water with our modern yacht charter.",
+    features: ["Captain included", "Catering available", "Sound system", "Sun deck"],
+    availability: "Available this weekend"
+  },
+  {
+    id: 2,
+    title: "Wine Tasting Experience",
+    category: "Experiences",
+    type: "experience",
+    price: "£45/person",
+    location: "Manchester City Centre",
+    rating: 4.8,
+    reviews: 156,
+    capacity: "8 people",
+    duration: "2 hours",
+    image: "/leisure/wine.jpg",
+    description: "Guided wine tasting with expert sommeliers featuring premium selections.",
+    features: ["Expert guide", "Premium wines", "Cheese pairing", "Certificate"],
+    availability: "Multiple dates"
+  },
+  // Add more items...
+]
+
+const categories = [
+  { id: "cars", name: "Car Rentals", icon: Car },
+  { id: "boats", name: "Boat Rentals", icon: Boat },
+  { id: "venues", name: "Venue Hire", icon: Home },
+  { id: "experiences", name: "Experiences", icon: Ticket }
+]
 
 export default function LeisurePage() {
-  const [filters, setFilters] = useState({})
-
-  const filterGroups = [
-    {
-      id: 'category',
-      name: 'Category',
-      type: 'button',
-      options: [
-        { id: 'all', name: 'All Activities' },
-        { id: 'rentals', name: 'Rentals' },
-        { id: 'events', name: 'Events' },
-        { id: 'dining', name: 'Dining' }
-      ]
-    },
-    {
-      id: 'price',
-      name: 'Price Range',
-      type: 'select',
-      options: [
-        { id: 'all', name: 'Any Price' },
-        { id: 'budget', name: 'Budget' },
-        { id: 'mid', name: 'Mid-Range' },
-        { id: 'luxury', name: 'Luxury' }
-      ]
-    },
-    {
-      id: 'date',
-      name: 'Date',
-      type: 'select',
-      options: [
-        { id: 'all', name: 'Any Time' },
-        { id: 'today', name: 'Today' },
-        { id: 'weekend', name: 'This Weekend' },
-        { id: 'week', name: 'This Week' }
-      ]
-    }
-  ]
-
-  const categories = [
-    {
-      icon: Car,
-      title: 'Car Rentals',
-      description: 'Luxury & sports cars',
-      link: '/leisure/cars'
-    },
-    {
-      icon: Ship,
-      title: 'Boat Rentals',
-      description: 'Yachts & boats',
-      link: '/leisure/boats'
-    },
-    {
-      icon: Ticket,
-      title: 'Events',
-      description: 'Shows & performances',
-      link: '/leisure/events'
-    },
-    {
-      icon: Music,
-      title: 'Live Music',
-      description: 'Concerts & gigs',
-      link: '/leisure/music'
-    },
-    {
-      icon: Utensils,
-      title: 'Fine Dining',
-      description: 'Restaurant experiences',
-      link: '/leisure/dining'
-    }
-  ]
-
-  // Example leisure activities data
-  const activities = [
-    {
-      id: 1,
-      title: 'Luxury Sports Car Rental',
-      subtitle: 'Ferrari 488 GTB',
-      description: 'Experience the thrill of driving a supercar',
-      image: 'https://placehold.co/600x400',
-      price: {
-        amount: 499,
-        currency: '£',
-        unit: 'day'
-      },
-      badges: {
-        verified: true,
-        featured: true,
-        status: 'new'
-      },
-      stats: [
-        { icon: Star, label: 'Rating', value: '4.9' },
-        { icon: Clock, label: 'Duration', value: '24h' }
-      ],
-      actions: [
-        { label: 'Book Now', href: '/leisure/rentals/1', primary: true },
-        { label: 'Enquire', onClick: () => {}, icon: MessageSquare }
-      ]
-    },
-    // Add more activities...
-  ]
-
   return (
-    <PageTransition>
-      <div className="min-h-screen">
-        {/* Hero Section */}
-        <LeisureHero
-          title="Discover Amazing Experiences"
-          subtitle="Find unique rentals and unforgettable activities"
-        />
+    <DashboardLayout>
+      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-3xl font-bold tracking-tight">Leisure</h2>
+          <div className="flex items-center space-x-2">
+            <Button>
+              <Filter className="mr-2 h-4 w-4" />
+              Filters
+            </Button>
+            <Button variant="outline">
+              <Calendar className="mr-2 h-4 w-4" />
+              View Calendar
+            </Button>
+          </div>
+        </div>
 
-        {/* Main Content */}
-        <div className="container mx-auto px-4 py-8">
-          {/* Featured Categories */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-12">
-            {categories.map((category, index) => {
-              const Icon = category.icon
-              return (
-                <a
-                  key={index}
-                  href={category.link}
-                  className="flex flex-col items-center p-6 bg-card rounded-lg hover:bg-accent transition-colors"
-                >
-                  <Icon className="h-8 w-8 mb-4 text-primary" />
-                  <h3 className="font-medium text-center mb-2">{category.title}</h3>
-                  <p className="text-sm text-muted-foreground text-center">
-                    {category.description}
-                  </p>
-                </a>
-              )
-            })}
+        {/* Search and Filters */}
+        <Card>
+          <CardContent className="p-6">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <div className="space-y-2">
+                <Label>Search</Label>
+                <div className="relative">
+                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input placeholder="Search rentals & experiences..." className="pl-8" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Category</Label>
+                <Select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        <div className="flex items-center">
+                          <category.icon className="mr-2 h-4 w-4" />
+                          {category.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Date</Label>
+                <DatePicker />
+              </div>
+              <div className="space-y-2">
+                <Label>Group Size</Label>
+                <Select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select size" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1-2">1-2 people</SelectItem>
+                    <SelectItem value="3-5">3-5 people</SelectItem>
+                    <SelectItem value="6-10">6-10 people</SelectItem>
+                    <SelectItem value="10+">10+ people</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Categories */}
+        <div className="grid gap-4 md:grid-cols-4">
+          {categories.map((category) => (
+            <Card key={category.id} className="cursor-pointer hover:bg-accent">
+              <CardHeader className="p-4">
+                <div className="flex items-center space-x-2">
+                  <category.icon className="h-5 w-5" />
+                  <CardTitle className="text-lg">{category.name}</CardTitle>
+                </div>
+              </CardHeader>
+            </Card>
+          ))}
+        </div>
+
+        {/* View Toggle */}
+        <Tabs defaultValue="grid" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <TabsList>
+              <TabsTrigger value="grid">
+                <Grid className="mr-2 h-4 w-4" />
+                Grid
+              </TabsTrigger>
+              <TabsTrigger value="list">
+                <List className="mr-2 h-4 w-4" />
+                List
+              </TabsTrigger>
+            </TabsList>
+            <Select defaultValue="recommended">
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="recommended">Recommended</SelectItem>
+                <SelectItem value="price-low">Price: Low to High</SelectItem>
+                <SelectItem value="price-high">Price: High to Low</SelectItem>
+                <SelectItem value="rating">Highest Rated</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
-          {/* Featured Events */}
-          <div className="mb-12">
-            <h2 className="text-2xl font-semibold mb-6">Featured Events</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {[1, 2, 3].map((_, i) => (
-                <div
-                  key={i}
-                  className="relative h-48 rounded-lg overflow-hidden group"
-                >
-                  <img
-                    src="https://placehold.co/600x400"
-                    alt="Event"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
-                  <div className="absolute bottom-0 left-0 p-4">
-                    <h3 className="text-white font-semibold mb-1">Event Title</h3>
-                    <div className="flex items-center text-white/80 text-sm">
-                      <Calendar className="h-4 w-4 mr-1" />
-                      <span>This Weekend</span>
-                      <MapPin className="h-4 w-4 ml-2 mr-1" />
-                      <span>London</span>
+          {/* Grid View */}
+          <TabsContent value="grid" className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {leisureItems.map((item) => (
+                <Card key={item.id} className="overflow-hidden">
+                  <div className="aspect-video relative">
+                    <img
+                      src={item.image}
+                      alt={item.title}
+                      className="object-cover w-full h-full"
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute top-2 right-2 bg-white/80 hover:bg-white"
+                    >
+                      <Heart className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <Badge>{item.category}</Badge>
+                      <div className="flex items-center">
+                        <Star className="mr-1 h-4 w-4 text-yellow-400" />
+                        {item.rating} ({item.reviews})
+                      </div>
+                    </div>
+                    <CardTitle className="line-clamp-1">{item.title}</CardTitle>
+                    <CardDescription className="line-clamp-2">
+                      {item.description}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center">
+                          <MapPin className="mr-1 h-4 w-4" />
+                          {item.location}
+                        </div>
+                        <div className="flex items-center">
+                          <Users className="mr-1 h-4 w-4" />
+                          {item.capacity}
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center">
+                          <Clock className="mr-1 h-4 w-4" />
+                          {item.duration}
+                        </div>
+                        <div className="flex items-center">
+                          <Info className="mr-1 h-4 w-4" />
+                          {item.availability}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                  <CardFooter className="flex items-center justify-between">
+                    <div className="text-lg font-bold">{item.price}</div>
+                    <Button>Book Now</Button>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
+          {/* List View */}
+          <TabsContent value="list" className="space-y-4">
+            {leisureItems.map((item) => (
+              <Card key={item.id}>
+                <div className="flex flex-col md:flex-row">
+                  <div className="w-full md:w-72 relative">
+                    <img
+                      src={item.image}
+                      alt={item.title}
+                      className="object-cover w-full h-full"
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute top-2 right-2 bg-white/80 hover:bg-white"
+                    >
+                      <Heart className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="flex-1 p-6">
+                    <div className="flex items-center justify-between mb-2">
+                      <Badge>{item.category}</Badge>
+                      <div className="flex items-center">
+                        <Star className="mr-1 h-4 w-4 text-yellow-400" />
+                        {item.rating} ({item.reviews} reviews)
+                      </div>
+                    </div>
+                    <h3 className="text-xl font-bold mb-2">{item.title}</h3>
+                    <p className="text-muted-foreground mb-4">{item.description}</p>
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div className="flex items-center">
+                        <MapPin className="mr-1 h-4 w-4" />
+                        {item.location}
+                      </div>
+                      <div className="flex items-center">
+                        <Users className="mr-1 h-4 w-4" />
+                        {item.capacity}
+                      </div>
+                      <div className="flex items-center">
+                        <Clock className="mr-1 h-4 w-4" />
+                        {item.duration}
+                      </div>
+                      <div className="flex items-center">
+                        <Info className="mr-1 h-4 w-4" />
+                        {item.availability}
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="text-xl font-bold">{item.price}</div>
+                      <div className="space-x-2">
+                        <Button variant="outline">View Details</Button>
+                        <Button>Book Now</Button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Filters */}
-          <Filters
-            groups={filterGroups}
-            selectedFilters={filters}
-            onFilterChange={(groupId, value) => {
-              setFilters(prev => ({ ...prev, [groupId]: value }))
-            }}
-            className="mb-8"
-          />
-
-          {/* Activities Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {activities.map(activity => (
-              <Card
-                key={activity.id}
-                {...activity}
-              />
+              </Card>
             ))}
-          </div>
-        </div>
+          </TabsContent>
+        </Tabs>
       </div>
-    </PageTransition>
+    </DashboardLayout>
   )
 }
