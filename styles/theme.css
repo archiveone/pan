@@ -4,218 +4,262 @@
  
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
- 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
- 
-    --primary: 221.2 83.2% 53.3%;
+    /* Main colors */
+    --primary: 222.2 47.4% 11.2%;
     --primary-foreground: 210 40% 98%;
- 
+    
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
- 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
- 
+    
     --accent: 210 40% 96.1%;
     --accent-foreground: 222.2 47.4% 11.2%;
- 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
+    
+    /* Background colors */
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    
+    /* Card styles */
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    
+    /* Popover styles */
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    
+    /* Border colors */
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
- 
-    --radius: 0.75rem;
-
-    /* GREIA Theme Colors */
-    --greia-blue-start: 221.2 83.2% 53.3%;
-    --greia-blue-end: 199 89% 48%;
-    --greia-sunset-start: 12 89% 59%;
-    --greia-sunset-end: 38 95% 56%;
+    --ring: 222.2 84% 4.9%;
+    
+    /* Status colors */
+    --success: 142 71% 45%;
+    --info: 201 96% 32%;
+    --warning: 38 92% 50%;
+    --danger: 0 84% 60%;
+    
+    /* Muted colors */
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    
+    /* Destructive colors */
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    
+    /* Radius */
+    --radius: 0.5rem;
   }
- 
+
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
- 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
- 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
- 
-    --primary: 217.2 91.2% 59.8%;
+    /* Main colors - Dark mode */
+    --primary: 210 40% 98%;
     --primary-foreground: 222.2 47.4% 11.2%;
- 
+    
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
- 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
- 
+    
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
- 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
- 
+    
+    /* Background colors - Dark mode */
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    
+    /* Card styles - Dark mode */
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    
+    /* Popover styles - Dark mode */
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    
+    /* Border colors - Dark mode */
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
+    --ring: 212.7 26.8% 83.9%;
+    
+    /* Status colors - Dark mode */
+    --success: 142 71% 45%;
+    --info: 201 96% 32%;
+    --warning: 38 92% 50%;
+    --danger: 0 84% 60%;
+    
+    /* Muted colors - Dark mode */
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    
+    /* Destructive colors - Dark mode */
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
   }
 }
- 
+
+/* Global styles */
 @layer base {
   * {
     @apply border-border;
   }
+  
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  /* Typography */
+  h1 {
+    @apply scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl;
+  }
+  
+  h2 {
+    @apply scroll-m-20 text-3xl font-semibold tracking-tight;
+  }
+  
+  h3 {
+    @apply scroll-m-20 text-2xl font-semibold tracking-tight;
+  }
+  
+  h4 {
+    @apply scroll-m-20 text-xl font-semibold tracking-tight;
+  }
+  
+  p {
+    @apply leading-7 [&:not(:first-child)]:mt-6;
+  }
+  
+  /* Links */
+  a {
+    @apply text-primary underline-offset-4 hover:underline;
+  }
+  
+  /* Lists */
+  ul {
+    @apply my-6 ml-6 list-disc [&>li]:mt-2;
+  }
+  
+  ol {
+    @apply my-6 ml-6 list-decimal [&>li]:mt-2;
+  }
+  
+  /* Code blocks */
+  pre {
+    @apply mb-4 mt-6 overflow-x-auto rounded-lg border bg-black py-4;
+  }
+  
+  code {
+    @apply relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm font-semibold;
+  }
+  
+  /* Form elements */
+  input, textarea {
+    @apply rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
+  }
+  
+  select {
+    @apply rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
+  }
+  
+  button {
+    @apply inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
   }
 }
 
-/* GREIA Theme Classes */
-.greia-gradient-blue {
-  @apply bg-gradient-to-br from-[hsl(var(--greia-blue-start))] to-[hsl(var(--greia-blue-end))];
-}
-
-.greia-gradient-sunset {
-  @apply bg-gradient-to-br from-[hsl(var(--greia-sunset-start))] to-[hsl(var(--greia-sunset-end))];
-}
-
-/* Apple-style Search Tabs */
-.tabs-list {
-  @apply p-1 bg-muted rounded-xl;
-}
-
-.tab {
-  @apply relative px-4 py-2 rounded-lg transition-all duration-200 focus:outline-none;
-}
-
-.tab[data-state='active'] {
-  @apply bg-white shadow-sm;
-}
-
-.tab[data-state='inactive'] {
-  @apply text-muted-foreground hover:bg-white/50;
-}
-
-/* Search Card Styling */
-.search-card {
-  @apply backdrop-blur-xl bg-white/90 shadow-lg;
-  box-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.1);
-}
-
-.search-input {
-  @apply bg-white rounded-lg border-0 focus:ring-2 focus:ring-primary/20;
-}
-
-/* Curved Hero Section */
-.curved-hero {
-  @apply relative overflow-hidden;
-  min-height: 600px;
-}
-
-.curved-hero::before {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 160px;
-  background: white;
-  clip-path: ellipse(50% 60% at 50% 100%);
-}
-
-.curved-hero::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: url('/images/pattern.svg') repeat;
-  opacity: 0.1;
-  pointer-events: none;
-}
-
-/* Enhanced Glassmorphism */
-.glass-card {
-  @apply backdrop-blur-xl bg-white/90 border border-white/20;
-  box-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.1);
-}
-
-/* Animated Gradient Background */
-@keyframes gradientFlow {
-  0% {
-    background-position: 0% 50%;
+/* Component styles */
+@layer components {
+  /* Cards */
+  .card {
+    @apply rounded-lg border bg-card p-6 shadow-sm transition-shadow hover:shadow-md dark:shadow-none;
   }
-  50% {
-    background-position: 100% 50%;
+  
+  /* Navigation */
+  .nav-link {
+    @apply text-sm font-medium text-muted-foreground transition-colors hover:text-primary;
   }
-  100% {
-    background-position: 0% 50%;
+  
+  .nav-link-active {
+    @apply text-primary font-semibold;
+  }
+  
+  /* Buttons */
+  .btn-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90;
+  }
+  
+  .btn-secondary {
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80;
+  }
+  
+  .btn-outline {
+    @apply border border-input bg-background hover:bg-accent hover:text-accent-foreground;
+  }
+  
+  .btn-ghost {
+    @apply hover:bg-accent hover:text-accent-foreground;
+  }
+  
+  /* Forms */
+  .form-group {
+    @apply space-y-2;
+  }
+  
+  .form-label {
+    @apply text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70;
+  }
+  
+  .form-description {
+    @apply text-sm text-muted-foreground;
+  }
+  
+  .form-message {
+    @apply text-sm font-medium text-destructive;
+  }
+  
+  /* Badges */
+  .badge {
+    @apply inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2;
+  }
+  
+  .badge-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/80;
+  }
+  
+  .badge-secondary {
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80;
+  }
+  
+  /* Animations */
+  .animate-in {
+    animation: animate-in 0.2s ease-out;
+  }
+  
+  .animate-out {
+    animation: animate-out 0.2s ease-in;
+  }
+  
+  @keyframes animate-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes animate-out {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(10px);
+    }
   }
 }
 
-.animated-gradient {
-  background-size: 200% 200%;
-  animation: gradientFlow 15s ease infinite;
-}
-
-/* Enhanced Button Styles */
-.button-primary {
-  @apply relative overflow-hidden transition-all duration-300;
-}
-
-.button-primary::before {
-  content: '';
-  @apply absolute inset-0 opacity-0 transition-opacity duration-300;
-  background: linear-gradient(
-    to right,
-    hsl(var(--greia-blue-start)),
-    hsl(var(--greia-blue-end))
-  );
-}
-
-.button-primary:hover::before {
-  @apply opacity-100;
-}
-
-/* Category Card Hover Effects */
-.category-card {
-  @apply transition-all duration-300;
-}
-
-.category-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.15);
-}
-
-/* Icon Container Styles */
-.icon-container {
-  @apply rounded-2xl p-4 transition-all duration-300;
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.1),
-    rgba(255, 255, 255, 0.05)
-  );
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.icon-container:hover {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.2),
-    rgba(255, 255, 255, 0.1)
-  );
-  transform: scale(1.05);
+/* Utilities */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
 }
