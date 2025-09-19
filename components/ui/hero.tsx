@@ -1,3 +1,5 @@
+'use client'
+
 import { cn } from '@/lib/utils'
 import { Search } from 'lucide-react'
 
@@ -125,7 +127,7 @@ export function HeroSkeleton({
 export function PropertyHero(props: Omit<HeroProps, 'image'>) {
   return (
     <Hero
-      image="/images/properties-hero.jpg"
+      image="/my-home-worldwide.png"
       search={{
         enabled: true,
         placeholder: "Search by location, property type, or keywords"
@@ -138,7 +140,7 @@ export function PropertyHero(props: Omit<HeroProps, 'image'>) {
 export function ServiceHero(props: Omit<HeroProps, 'image'>) {
   return (
     <Hero
-      image="/images/services-hero.jpg"
+      image="/services.png"
       search={{
         enabled: true,
         placeholder: "Search for services or providers"
@@ -151,7 +153,7 @@ export function ServiceHero(props: Omit<HeroProps, 'image'>) {
 export function LeisureHero(props: Omit<HeroProps, 'image'>) {
   return (
     <Hero
-      image="/images/leisure-hero.jpg"
+      image="/connect.png"
       search={{
         enabled: true,
         placeholder: "Search for activities, rentals, or venues"
@@ -164,7 +166,7 @@ export function LeisureHero(props: Omit<HeroProps, 'image'>) {
 export function ConnectHero(props: Omit<HeroProps, 'image'>) {
   return (
     <Hero
-      image="/images/connect-hero.jpg"
+      image="/connect.png"
       search={{
         enabled: true,
         placeholder: "Search for professionals, companies, or groups"
