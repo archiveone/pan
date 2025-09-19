@@ -1,477 +1,473 @@
-'use client'
-
-import { useState } from 'react'
-import { PageTransition } from '@/components/ui/page-transition'
-import { Button } from '@/components/ui/button'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Form } from '@/components/ui/form'
+import { Metadata } from "next"
+import { DashboardLayout } from "@/components/layout/DashboardLayout"
+import { Button } from "@/components/ui/Button"
+import { Badge } from "@/components/ui/Badge"
+import { Calendar } from "@/components/ui/Calendar"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs"
 import {
-  Car,
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/Card"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/Select"
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/Carousel"
+import {
   Star,
-  Clock,
   MapPin,
-  Calendar,
+  Clock,
+  Users,
+  Calendar as CalendarIcon,
   Heart,
   Share,
-  MessageSquare,
-  FileText,
-  Image as ImageIcon,
+  CheckCircle,
   Info,
-  Check,
-  Users,
-  ArrowRight,
-  DollarSign,
-  Tag
-} from 'lucide-react'
-import { z } from 'zod'
+  Shield,
+  MessageSquare,
+  Phone,
+  AlertCircle
+} from "lucide-react"
 
-const bookingSchema = z.object({
-  date: z.string().min(1, 'Please select a date'),
-  time: z.string().min(1, 'Please select a time'),
-  guests: z.string().min(1, 'Please select number of guests'),
-  notes: z.string().optional()
-})
+export const metadata: Metadata = {
+  title: "Leisure Item Details - GREIA",
+  description: "View and book leisure activities and rentals",
+}
 
-export default function LeisureActivityPage({ params }: { params: { id: string } }) {
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [activeImage, setActiveImage] = useState(0)
-
-  // Example activity data
-  const activity = {
-    id: params.id,
-    title: 'Ferrari 488 GTB Rental',
-    type: 'Car Rental',
-    rating: 4.9,
-    reviews: 124,
-    location: 'London, UK',
-    description: 'Experience the thrill of driving a Ferrari 488 GTB. This stunning supercar offers incredible performance and luxury.',
-    price: {
-      amount: 499,
-      unit: 'day',
-      currency: '£'
-    },
-    images: [
-      'https://placehold.co/1200x800',
-      'https://placehold.co/1200x800',
-      'https://placehold.co/1200x800',
-      'https://placehold.co/1200x800'
-    ],
-    features: [
-      'Twin-Turbo V8 Engine',
-      '0-60 mph in 3.0 seconds',
-      'Automatic Transmission',
-      'Premium Sound System',
-      'GPS Navigation',
-      'Full Insurance Included'
-    ],
-    requirements: [
-      'Valid Driver\'s License',
-      'Minimum Age: 25',
-      'Clean Driving Record',
-      'Security Deposit Required'
-    ],
-    provider: {
-      name: 'Luxury Car Rentals',
-      image: 'https://placehold.co/100',
-      rating: 4.8,
-      reviews: 356
-    },
-    reviews: [
-      {
-        name: 'James Wilson',
-        rating: 5,
-        comment: 'Amazing experience! The car was in perfect condition.',
-        date: '3 days ago'
-      },
-      {
-        name: 'Emma Thompson',
-        rating: 5,
-        comment: 'Professional service and incredible car.',
-        date: '1 week ago'
-      }
-    ],
-    availability: {
-      status: 'Available',
-      nextAvailable: 'Today'
-    }
-  }
-
-  const bookingFields = [
+// Mock leisure item data
+const item = {
+  id: 1,
+  title: "Luxury Yacht Charter",
+  category: "Boat Rentals",
+  type: "rental",
+  price: "£500/day",
+  deposit: "£200",
+  location: {
+    name: "Liverpool Marina",
+    address: "Coburg Wharf, Liverpool L3 4BP",
+    coordinates: { lat: 53.4084, lng: -2.9916 }
+  },
+  rating: 4.9,
+  reviews: 28,
+  capacity: {
+    min: 2,
+    max: 12,
+    recommended: 8
+  },
+  duration: {
+    type: "Full day",
+    hours: 8,
+    checkIn: "09:00",
+    checkOut: "17:00"
+  },
+  description: "Experience luxury on the water with our modern yacht charter. Perfect for special occasions, corporate events, or a day of luxury sailing. Includes professional captain and crew.",
+  features: [
+    "Professional captain",
+    "Experienced crew",
+    "Fully equipped kitchen",
+    "Sound system",
+    "Sun deck",
+    "Indoor lounge",
+    "Bathroom facilities",
+    "Safety equipment"
+  ],
+  amenities: [
+    "Catering available",
+    "Bar service",
+    "Towels provided",
+    "WiFi",
+    "Bluetooth audio",
+    "Air conditioning",
+    "Fishing equipment",
+    "Water toys"
+  ],
+  images: [
+    "/leisure/yacht-1.jpg",
+    "/leisure/yacht-2.jpg",
+    "/leisure/yacht-3.jpg",
+    "/leisure/yacht-4.jpg"
+  ],
+  provider: {
+    name: "Maritime Luxury Charters",
+    rating: 4.8,
+    reviews: 156,
+    verified: true,
+    response: "Usually responds within 1 hour",
+    experience: "10+ years",
+    licenses: ["Maritime License", "Commercial Operator", "Safety Certified"]
+  },
+  policies: {
+    cancellation: "Free cancellation up to 48 hours before",
+    insurance: "Insurance included",
+    deposit: "Refundable security deposit required",
+    minimumAge: "21 years",
+    requirements: ["Valid ID", "Credit card for deposit"]
+  },
+  availability: {
+    nextAvailable: "Tomorrow",
+    popularDates: ["Weekends", "Bank Holidays"],
+    restrictions: "Subject to weather conditions"
+  },
+  reviews: [
     {
-      name: 'date',
-      label: 'Rental Date',
-      type: 'date',
-      validation: {
-        required: 'Please select a date'
-      }
-    },
-    {
-      name: 'time',
-      label: 'Pickup Time',
-      type: 'select',
-      options: [
-        { value: '09:00', label: '9:00 AM' },
-        { value: '10:00', label: '10:00 AM' },
-        { value: '11:00', label: '11:00 AM' },
-        { value: '12:00', label: '12:00 PM' },
-        { value: '13:00', label: '1:00 PM' },
-        { value: '14:00', label: '2:00 PM' }
-      ],
-      validation: {
-        required: 'Please select a time'
-      }
+      id: 1,
+      user: "James Wilson",
+      rating: 5,
+      date: "Last week",
+      comment: "Incredible experience! The crew was professional and the yacht was immaculate.",
+      verified: true
     },
     {
-      name: 'guests',
-      label: 'Duration',
-      type: 'select',
-      options: [
-        { value: '1', label: '1 Day' },
-        { value: '2', label: '2 Days' },
-        { value: '3', label: '3 Days' },
-        { value: '7', label: '1 Week' }
-      ],
-      validation: {
-        required: 'Please select duration'
-      }
-    },
-    {
-      name: 'notes',
-      label: 'Special Requests',
-      type: 'textarea',
-      placeholder: 'Any specific requirements or questions'
+      id: 2,
+      user: "Sarah Thompson",
+      rating: 5,
+      date: "2 weeks ago",
+      comment: "Perfect day out for our corporate event. Everything was well organized.",
+      verified: true
     }
   ]
+}
 
-  const handleBooking = async (data: z.infer<typeof bookingSchema>) => {
-    setLoading(true)
-    setError('')
-
-    try {
-      // Handle booking submission
-      console.log('Booking:', data)
-    } catch (err) {
-      setError('Failed to submit booking')
-    } finally {
-      setLoading(false)
-    }
-  }
-
+export default function LeisureItemPage() {
   return (
-    <PageTransition>
-      <div className="min-h-screen pb-12">
-        {/* Image Gallery */}
-        <div className="relative h-[600px] bg-accent">
-          <img
-            src={activity.images[activeImage]}
-            alt={activity.title}
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
-            <div className="container mx-auto px-4">
-              <div className="flex items-center justify-between text-white">
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Car className="h-5 w-5" />
-                    <span className="text-sm font-medium">{activity.type}</span>
-                  </div>
-                  <h1 className="text-3xl font-bold mb-2">{activity.title}</h1>
-                  <div className="flex items-center gap-4 text-white/80">
-                    <div className="flex items-center">
-                      <Star className="h-5 w-5 text-yellow-400 mr-1" />
-                      <span>{activity.rating}</span>
-                      <span className="ml-1">({activity.reviews} reviews)</span>
-                    </div>
-                    <div className="flex items-center">
-                      <MapPin className="h-5 w-5 mr-1" />
-                      {activity.location}
-                    </div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-3xl font-bold mb-2">
-                    {activity.price.currency}{activity.price.amount}
-                    <span className="text-lg font-normal">/{activity.price.unit}</span>
-                  </div>
-                  <div className="text-sm">
-                    {activity.availability.status} - {activity.availability.nextAvailable}
-                  </div>
-                </div>
+    <DashboardLayout>
+      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-2 md:space-y-0">
+          <div>
+            <div className="flex items-center space-x-2">
+              <Badge>{item.category}</Badge>
+              {item.provider.verified && (
+                <Badge variant="secondary">
+                  <Shield className="mr-1 h-3 w-3" />
+                  Verified Provider
+                </Badge>
+              )}
+            </div>
+            <h1 className="text-3xl font-bold tracking-tight mt-2">{item.title}</h1>
+            <div className="flex items-center space-x-4 mt-1 text-muted-foreground">
+              <div className="flex items-center">
+                <MapPin className="mr-1 h-4 w-4" />
+                {item.location.name}
+              </div>
+              <div className="flex items-center">
+                <Star className="mr-1 h-4 w-4 text-yellow-400" />
+                {item.rating} ({item.reviews} reviews)
               </div>
             </div>
           </div>
-          {/* Thumbnail Navigation */}
-          <div className="absolute bottom-4 right-4 flex gap-2">
-            {activity.images.map((_, index) => (
-              <button
-                key={index}
-                className={`h-16 w-16 rounded-lg overflow-hidden border-2 ${
-                  index === activeImage ? 'border-primary' : 'border-transparent'
-                }`}
-                onClick={() => setActiveImage(index)}
-              >
-                <img
-                  src={activity.images[index]}
-                  alt={`Thumbnail ${index + 1}`}
-                  className="w-full h-full object-cover"
-                />
-              </button>
-            ))}
+          <div className="flex items-center space-x-2">
+            <Button variant="outline">
+              <Share className="mr-2 h-4 w-4" />
+              Share
+            </Button>
+            <Button variant="outline">
+              <Heart className="mr-2 h-4 w-4" />
+              Save
+            </Button>
           </div>
         </div>
 
-        {/* Main Content */}
-        <div className="container mx-auto px-4 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Details */}
-            <div className="lg:col-span-2">
-              <Tabs defaultValue="overview">
-                <TabsList>
-                  <TabsTrigger value="overview" className="flex items-center gap-2">
-                    <Info className="h-4 w-4" />
-                    Overview
-                  </TabsTrigger>
-                  <TabsTrigger value="features" className="flex items-center gap-2">
-                    <Check className="h-4 w-4" />
-                    Features
-                  </TabsTrigger>
-                  <TabsTrigger value="reviews" className="flex items-center gap-2">
-                    <Star className="h-4 w-4" />
-                    Reviews
-                  </TabsTrigger>
-                  <TabsTrigger value="photos" className="flex items-center gap-2">
-                    <ImageIcon className="h-4 w-4" />
-                    Photos
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="overview" className="space-y-6">
-                  {/* Description */}
-                  <div>
-                    <h2 className="text-xl font-semibold mb-4">About this {activity.type}</h2>
-                    <p className="text-muted-foreground">
-                      {activity.description}
-                    </p>
-                  </div>
-
-                  {/* Requirements */}
-                  <div>
-                    <h2 className="text-xl font-semibold mb-4">Requirements</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {activity.requirements.map((req, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center bg-card rounded-lg p-4"
-                        >
-                          <Check className="h-5 w-5 text-primary mr-3" />
-                          <span>{req}</span>
+        <div className="grid gap-4 md:grid-cols-3">
+          {/* Main Content */}
+          <div className="md:col-span-2 space-y-4">
+            {/* Image Carousel */}
+            <Card>
+              <CardContent className="p-0">
+                <Carousel className="w-full">
+                  <CarouselContent>
+                    {item.images.map((image, index) => (
+                      <CarouselItem key={index}>
+                        <div className="aspect-video relative">
+                          <img
+                            src={image}
+                            alt={`${item.title} ${index + 1}`}
+                            className="object-cover w-full h-full rounded-lg"
+                          />
                         </div>
-                      ))}
-                    </div>
-                  </div>
+                      </CarouselItem>
+                    ))}
+                  </CarouselContent>
+                  <CarouselPrevious />
+                  <CarouselNext />
+                </Carousel>
+              </CardContent>
+            </Card>
 
-                  {/* Provider Info */}
-                  <div className="bg-card rounded-lg p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <img
-                          src={activity.provider.image}
-                          alt={activity.provider.name}
-                          className="h-12 w-12 rounded-full"
-                        />
-                        <div className="ml-4">
-                          <div className="font-semibold">{activity.provider.name}</div>
-                          <div className="flex items-center text-sm text-muted-foreground">
-                            <Star className="h-4 w-4 text-yellow-400 mr-1" />
-                            {activity.provider.rating} ({activity.provider.reviews} reviews)
+            {/* Details Tabs */}
+            <Card>
+              <CardContent className="p-6">
+                <Tabs defaultValue="overview" className="space-y-4">
+                  <TabsList>
+                    <TabsTrigger value="overview">Overview</TabsTrigger>
+                    <TabsTrigger value="features">Features</TabsTrigger>
+                    <TabsTrigger value="location">Location</TabsTrigger>
+                    <TabsTrigger value="reviews">Reviews</TabsTrigger>
+                    <TabsTrigger value="policies">Policies</TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="overview" className="space-y-4">
+                    <div className="space-y-4">
+                      <p className="text-muted-foreground">{item.description}</p>
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div className="space-y-2">
+                          <h4 className="font-medium">Key Information</h4>
+                          <div className="grid gap-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-muted-foreground">Duration</span>
+                              <span>{item.duration.type}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-muted-foreground">Capacity</span>
+                              <span>{item.capacity.min}-{item.capacity.max} people</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-muted-foreground">Check-in</span>
+                              <span>{item.duration.checkIn}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-muted-foreground">Check-out</span>
+                              <span>{item.duration.checkOut}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <h4 className="font-medium">Included</h4>
+                          <div className="grid gap-2">
+                            {item.features.slice(0, 4).map((feature, index) => (
+                              <div key={index} className="flex items-center">
+                                <CheckCircle className="mr-2 h-4 w-4 text-primary" />
+                                {feature}
+                              </div>
+                            ))}
                           </div>
                         </div>
                       </div>
-                      <Button>
-                        <MessageSquare className="h-4 w-4 mr-2" />
-                        Contact
-                      </Button>
                     </div>
-                  </div>
-                </TabsContent>
+                  </TabsContent>
 
-                <TabsContent value="features" className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {activity.features.map((feature, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center bg-card rounded-lg p-4"
-                      >
-                        <Check className="h-5 w-5 text-primary mr-3" />
-                        <span>{feature}</span>
-                      </div>
-                    ))}
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="reviews" className="space-y-6">
-                  {/* Rating Summary */}
-                  <div className="bg-card rounded-lg p-6">
-                    <div className="flex items-center gap-8">
-                      <div className="text-center">
-                        <div className="text-4xl font-bold mb-2">{activity.rating}</div>
-                        <div className="flex items-center justify-center">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`h-5 w-5 ${
-                                i < Math.floor(activity.rating)
-                                  ? 'text-yellow-400'
-                                  : 'text-gray-300'
-                              }`}
-                            />
+                  <TabsContent value="features" className="space-y-4">
+                    <div className="grid gap-6 md:grid-cols-2">
+                      <div>
+                        <h4 className="font-medium mb-4">Features</h4>
+                        <div className="grid gap-2">
+                          {item.features.map((feature, index) => (
+                            <div key={index} className="flex items-center">
+                              <CheckCircle className="mr-2 h-4 w-4 text-primary" />
+                              {feature}
+                            </div>
                           ))}
                         </div>
-                        <div className="text-sm text-muted-foreground mt-1">
-                          {activity.reviews} reviews
+                      </div>
+                      <div>
+                        <h4 className="font-medium mb-4">Amenities</h4>
+                        <div className="grid gap-2">
+                          {item.amenities.map((amenity, index) => (
+                            <div key={index} className="flex items-center">
+                              <CheckCircle className="mr-2 h-4 w-4 text-primary" />
+                              {amenity}
+                            </div>
+                          ))}
                         </div>
                       </div>
                     </div>
-                  </div>
+                  </TabsContent>
 
-                  {/* Review List */}
-                  {activity.reviews.map((review, index) => (
-                    <div
-                      key={index}
-                      className="bg-card rounded-lg p-6"
-                    >
-                      <div className="flex items-center justify-between mb-4">
-                        <div>
-                          <div className="font-semibold">{review.name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {review.date}
+                  <TabsContent value="location" className="space-y-4">
+                    <div className="space-y-4">
+                      <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
+                        Map will be integrated here
+                      </div>
+                      <div>
+                        <h4 className="font-medium mb-2">Address</h4>
+                        <p className="text-muted-foreground">{item.location.address}</p>
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="reviews" className="space-y-4">
+                    {item.reviews.map((review) => (
+                      <div key={review.id} className="border-b last:border-0 pb-4 last:pb-0">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <span className="font-medium">{review.user}</span>
+                            {review.verified && (
+                              <Badge variant="secondary" className="text-xs">
+                                Verified Booking
+                              </Badge>
+                            )}
                           </div>
+                          <span className="text-sm text-muted-foreground">{review.date}</span>
                         </div>
-                        <div className="flex items-center">
+                        <div className="flex items-center mt-1">
                           {[...Array(5)].map((_, i) => (
                             <Star
                               key={i}
                               className={`h-4 w-4 ${
-                                i < review.rating
-                                  ? 'text-yellow-400'
-                                  : 'text-gray-300'
+                                i < review.rating ? "text-yellow-400" : "text-gray-200"
                               }`}
                             />
                           ))}
                         </div>
-                      </div>
-                      <p className="text-muted-foreground">{review.comment}</p>
-                    </div>
-                  ))}
-                </TabsContent>
-
-                <TabsContent value="photos">
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {activity.images.map((image, index) => (
-                      <div
-                        key={index}
-                        className="aspect-square rounded-lg overflow-hidden"
-                      >
-                        <img
-                          src={image}
-                          alt={`${activity.title} ${index + 1}`}
-                          className="w-full h-full object-cover"
-                        />
+                        <p className="mt-2 text-muted-foreground">{review.comment}</p>
                       </div>
                     ))}
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </div>
+                  </TabsContent>
 
-            {/* Sidebar */}
-            <div className="space-y-6">
-              {/* Action Buttons */}
-              <div className="flex gap-4">
-                <Button className="flex-1">
-                  <Heart className="h-4 w-4 mr-2" />
-                  Save
-                </Button>
-                <Button variant="outline" className="flex-1">
-                  <Share className="h-4 w-4 mr-2" />
-                  Share
-                </Button>
-              </div>
-
-              {/* Booking Form */}
-              <div className="bg-card rounded-lg p-6">
-                <h3 className="text-lg font-semibold mb-4">Book Now</h3>
-                <Form
-                  fields={bookingFields}
-                  onSubmit={handleBooking}
-                  schema={bookingSchema}
-                  submitText={loading ? 'Processing...' : 'Book Now'}
-                  loading={loading}
-                  error={error}
-                />
-              </div>
-
-              {/* Price Breakdown */}
-              <div className="bg-card rounded-lg p-6">
-                <h3 className="text-lg font-semibold mb-4">Price Details</h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Daily Rate</span>
-                    <span className="font-medium">£499</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Insurance</span>
-                    <span className="font-medium">Included</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Service Fee</span>
-                    <span className="font-medium">£49</span>
-                  </div>
-                  <div className="border-t pt-2 mt-2">
-                    <div className="flex justify-between font-semibold">
-                      <span>Total</span>
-                      <span>£548</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Similar Activities */}
-              <div>
-                <h3 className="text-lg font-semibold mb-4">Similar Activities</h3>
-                <div className="space-y-4">
-                  {[1, 2, 3].map((_, index) => (
-                    <div
-                      key={index}
-                      className="bg-card rounded-lg overflow-hidden"
-                    >
-                      <img
-                        src="https://placehold.co/600x400"
-                        alt="Similar Activity"
-                        className="w-full h-48 object-cover"
-                      />
-                      <div className="p-4">
-                        <div className="font-medium mb-1">Luxury Car Rental</div>
-                        <div className="text-sm text-muted-foreground mb-2">
-                          London, UK
+                  <TabsContent value="policies" className="space-y-4">
+                    <div className="grid gap-6">
+                      <div>
+                        <h4 className="font-medium mb-2">Cancellation Policy</h4>
+                        <p className="text-muted-foreground">{item.policies.cancellation}</p>
+                      </div>
+                      <div>
+                        <h4 className="font-medium mb-2">Requirements</h4>
+                        <div className="space-y-2">
+                          <p className="text-muted-foreground">Minimum age: {item.policies.minimumAge}</p>
+                          {item.policies.requirements.map((req, index) => (
+                            <div key={index} className="flex items-center">
+                              <Info className="mr-2 h-4 w-4 text-primary" />
+                              {req}
+                            </div>
+                          ))}
                         </div>
-                        <div className="flex items-center justify-between">
-                          <div className="font-semibold">£399/day</div>
-                          <Button variant="ghost" size="sm">
-                            View
-                            <ArrowRight className="h-4 w-4 ml-2" />
-                          </Button>
+                      </div>
+                      <div>
+                        <h4 className="font-medium mb-2">Insurance & Deposit</h4>
+                        <div className="space-y-2">
+                          <p className="text-muted-foreground">{item.policies.insurance}</p>
+                          <p className="text-muted-foreground">{item.policies.deposit}</p>
                         </div>
                       </div>
                     </div>
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-4">
+            {/* Booking Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Book this {item.type}</CardTitle>
+                <CardDescription>
+                  Next available: {item.availability.nextAvailable}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-2xl font-bold">{item.price}</span>
+                    <Badge variant="outline">{item.duration.type}</Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {item.deposit} deposit required
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label>Select Date</Label>
+                  <Calendar mode="single" className="rounded-md border" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Group Size</Label>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select group size" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from(
+                        { length: item.capacity.max - item.capacity.min + 1 },
+                        (_, i) => i + item.capacity.min
+                      ).map((size) => (
+                        <SelectItem key={size} value={size.toString()}>
+                          {size} {size === 1 ? "person" : "people"}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button className="w-full">
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  Book Now
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Provider Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle>About the Provider</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <h3 className="font-medium">{item.provider.name}</h3>
+                  <div className="flex items-center mt-1">
+                    <Star className="mr-1 h-4 w-4 text-yellow-400" />
+                    <span>{item.provider.rating}</span>
+                    <span className="mx-1">•</span>
+                    <span className="text-muted-foreground">
+                      {item.provider.reviews} reviews
+                    </span>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    {item.provider.experience} experience
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  {item.provider.licenses.map((license, index) => (
+                    <div key={index} className="flex items-center">
+                      <Shield className="mr-2 h-4 w-4 text-primary" />
+                      {license}
+                    </div>
                   ))}
                 </div>
-              </div>
-            </div>
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <Clock className="mr-2 h-4 w-4" />
+                  {item.provider.response}
+                </div>
+                <div className="space-y-2">
+                  <Button className="w-full">
+                    <MessageSquare className="mr-2 h-4 w-4" />
+                    Message Provider
+                  </Button>
+                  <Button variant="outline" className="w-full">
+                    <Phone className="mr-2 h-4 w-4" />
+                    Call Provider
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Safety Notice */}
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-start space-x-2">
+                  <AlertCircle className="h-5 w-5 text-muted-foreground mt-0.5" />
+                  <div className="text-sm text-muted-foreground">
+                    <p className="font-medium mb-1">Safety First</p>
+                    <p>All bookings are protected by GREIA's safety policies and insurance coverage.</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
-    </PageTransition>
+    </DashboardLayout>
   )
 }
