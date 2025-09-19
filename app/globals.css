@@ -4,75 +4,65 @@
  
 @layer base {
   :root {
-    /* GREIA Brand Colors */
-    --greia-primary: 210 100% 35%; /* #0066CC - GREIA Blue */
-    --greia-secondary: 200 18% 46%; /* #6B7C85 - Slate Gray */
-    --greia-accent: 43 96% 56%; /* #F5B800 - Gold */
-    --greia-success: 142 72% 29%; /* #1A7B3B - Green */
-    --greia-warning: 26 100% 50%; /* #FF8000 - Orange */
-    --greia-error: 0 84% 60%; /* #EA4335 - Red */
-
-    /* Base Colors */
     --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
-    
-    /* UI Elements */
+    --foreground: 222.2 84% 4.9%;
+
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    
-    --primary: var(--greia-primary);
-    --primary-foreground: 210 40% 98%;
-    
-    --secondary: var(--greia-secondary);
-    --secondary-foreground: 210 40% 98%;
-    
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
-    
-    --accent: var(--greia-accent);
-    --accent-foreground: 222 47% 11%;
-    
-    --destructive: var(--greia-error);
-    --destructive-foreground: 210 40% 98%;
+    --card-foreground: 222.2 84% 4.9%;
  
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+ 
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+ 
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+ 
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+ 
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+ 
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: var(--greia-primary);
-    
+    --ring: 222.2 84% 4.9%;
+ 
     --radius: 0.5rem;
   }
  
   .dark {
-    --background: 222 47% 11%;
+    --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
  
-    --card: 222 47% 11%;
+    --card: 222.2 84% 4.9%;
     --card-foreground: 210 40% 98%;
  
-    --popover: 222 47% 11%;
+    --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
  
-    --primary: var(--greia-primary);
-    --primary-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
  
-    --secondary: var(--greia-secondary);
+    --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
  
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
  
-    --accent: var(--greia-accent);
+    --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
  
-    --destructive: var(--greia-error);
+    --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
  
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: var(--greia-primary);
+    --ring: 212.7 26.8% 83.9%;
   }
 }
  
@@ -81,124 +71,6 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground antialiased;
-  }
-}
-
-/* GREIA Custom Classes */
-@layer components {
-  .greia-container {
-    @apply container mx-auto px-4 sm:px-6 lg:px-8;
-  }
-
-  .greia-heading-1 {
-    @apply text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl md:text-6xl;
-  }
-
-  .greia-heading-2 {
-    @apply text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl;
-  }
-
-  .greia-heading-3 {
-    @apply text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl;
-  }
-
-  .greia-text {
-    @apply text-base text-gray-600;
-  }
-
-  .greia-button-primary {
-    @apply inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-[hsl(var(--greia-primary))] hover:bg-[hsl(var(--greia-primary)/0.9)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[hsl(var(--greia-primary))];
-  }
-
-  .greia-button-secondary {
-    @apply inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-[hsl(var(--greia-primary))] bg-[hsl(var(--greia-primary)/0.1)] hover:bg-[hsl(var(--greia-primary)/0.2)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[hsl(var(--greia-primary))];
-  }
-
-  .greia-card {
-    @apply bg-white rounded-lg shadow-md overflow-hidden border border-gray-200;
-  }
-
-  .greia-input {
-    @apply block w-full rounded-md border-gray-300 shadow-sm focus:border-[hsl(var(--greia-primary))] focus:ring-[hsl(var(--greia-primary))] sm:text-sm;
-  }
-
-  .greia-select {
-    @apply block w-full rounded-md border-gray-300 shadow-sm focus:border-[hsl(var(--greia-primary))] focus:ring-[hsl(var(--greia-primary))] sm:text-sm;
-  }
-
-  .greia-checkbox {
-    @apply h-4 w-4 rounded border-gray-300 text-[hsl(var(--greia-primary))] focus:ring-[hsl(var(--greia-primary))];
-  }
-
-  .greia-radio {
-    @apply h-4 w-4 border-gray-300 text-[hsl(var(--greia-primary))] focus:ring-[hsl(var(--greia-primary))];
-  }
-
-  .greia-link {
-    @apply text-[hsl(var(--greia-primary))] hover:text-[hsl(var(--greia-primary)/0.8)] font-medium;
-  }
-
-  .greia-badge {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
-  }
-
-  .greia-badge-primary {
-    @apply bg-[hsl(var(--greia-primary)/0.1)] text-[hsl(var(--greia-primary))];
-  }
-
-  .greia-badge-success {
-    @apply bg-[hsl(var(--greia-success)/0.1)] text-[hsl(var(--greia-success))];
-  }
-
-  .greia-badge-warning {
-    @apply bg-[hsl(var(--greia-warning)/0.1)] text-[hsl(var(--greia-warning))];
-  }
-
-  .greia-badge-error {
-    @apply bg-[hsl(var(--greia-error)/0.1)] text-[hsl(var(--greia-error))];
-  }
-
-  /* Hero Section Styles */
-  .greia-hero {
-    @apply relative overflow-hidden bg-white;
-  }
-
-  .greia-hero-content {
-    @apply relative z-10 pt-16 pb-20 sm:pt-24 sm:pb-28 lg:pt-32 lg:pb-36;
-  }
-
-  .greia-hero-image {
-    @apply absolute inset-0 h-full w-full object-cover;
-  }
-
-  .greia-hero-overlay {
-    @apply absolute inset-0 bg-black bg-opacity-50;
-  }
-
-  /* Feature Section Styles */
-  .greia-feature-grid {
-    @apply grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3;
-  }
-
-  .greia-feature-card {
-    @apply relative bg-white p-6 rounded-lg shadow-md border border-gray-200;
-  }
-
-  /* Navigation Styles */
-  .greia-nav {
-    @apply bg-white shadow;
-  }
-
-  .greia-nav-content {
-    @apply flex justify-between items-center py-4;
-  }
-
-  .greia-nav-link {
-    @apply text-gray-600 hover:text-[hsl(var(--greia-primary))] px-3 py-2 text-sm font-medium;
-  }
-
-  .greia-nav-link-active {
-    @apply text-[hsl(var(--greia-primary))] font-semibold;
+    @apply bg-background text-foreground;
   }
 }
