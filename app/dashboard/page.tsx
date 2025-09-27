@@ -1,289 +1,323 @@
-import { Metadata } from "next"
-import { DashboardLayout } from "@/components/layout/DashboardLayout"
-import { DashboardNav } from "@/components/navigation/DashboardNav"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
-import { Button } from "@/components/ui/Button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs"
-import {
-  Building,
-  Briefcase,
-  Compass,
-  Users,
+'use client';
+
+import { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { 
+  MapPin, 
+  Users, 
+  Calendar, 
+  Star, 
+  MessageSquare, 
   TrendingUp,
-  Calendar,
-  MessageSquare,
+  Plus,
+  Search,
+  Filter,
   Bell,
-  Eye,
-  Star,
-  ArrowUpRight,
-  Clock
-} from "lucide-react"
-import Link from "next/link"
+  Settings
+} from 'lucide-react';
 
-export const metadata: Metadata = {
-  title: "Dashboard - GREIA",
-  description: "Manage your GREIA activities and insights",
-}
+export default function Dashboard() {
+  const [activeTab, setActiveTab] = useState('overview');
 
-export default function DashboardPage() {
+  // Mock data for demonstration
+  const stats = {
+    totalListings: 24,
+    activeConnections: 156,
+    upcomingEvents: 8,
+    totalRevenue: 12450
+  };
+
+  const recentActivity = [
+    { type: 'booking', message: 'New booking for Cozy Downtown Loft', time: '2 hours ago' },
+    { type: 'connection', message: 'Sarah Johnson connected with you', time: '4 hours ago' },
+    { type: 'review', message: 'New 5-star review received', time: '1 day ago' },
+    { type: 'event', message: 'Photography Workshop starts tomorrow', time: '1 day ago' }
+  ];
+
+  const myListings = [
+    {
+      id: 1,
+      title: 'Cozy Downtown Loft',
+      category: 'Places',
+      type: 'Accommodation',
+      status: 'Active',
+      views: 234,
+      bookings: 12,
+      rating: 4.8
+    },
+    {
+      id: 2,
+      title: 'Professional Photography',
+      category: 'People',
+      type: 'Service',
+      status: 'Active',
+      views: 89,
+      bookings: 6,
+      rating: 5.0
+    },
+    {
+      id: 3,
+      title: 'City Food Tour',
+      category: 'Experiences',
+      type: 'Tour',
+      status: 'Draft',
+      views: 0,
+      bookings: 0,
+      rating: 0
+    }
+  ];
+
   return (
-    <DashboardLayout>
-      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-        <div className="flex items-center justify-between space-y-2">
-          <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-          <div className="flex items-center space-x-2">
-            <Button>
-              <Calendar className="mr-2 h-4 w-4" />
-              View Calendar
-            </Button>
-            <Button variant="outline">
-              <Bell className="mr-2 h-4 w-4" />
-              Notifications
-            </Button>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center">
+              <h1 className="text-2xl font-bold text-gray-900">PAN Dashboard</h1>
+            </div>
+            <div className="flex items-center space-x-4">
+              <Button variant="outline" size="sm">
+                <Bell className="h-4 w-4 mr-2" />
+                Notifications
+              </Button>
+              <Button variant="outline" size="sm">
+                <Settings className="h-4 w-4 mr-2" />
+                Settings
+              </Button>
+              <div className="h-8 w-8 bg-blue-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-sm font-medium">AO</span>
+              </div>
+            </div>
           </div>
         </div>
+      </header>
 
-        {/* Quick Stats */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Stats Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Total Properties
-              </CardTitle>
-              <Building className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Total Listings</CardTitle>
+              <MapPin className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">12</div>
-              <p className="text-xs text-muted-foreground">
-                +2 from last month
-              </p>
+              <div className="text-2xl font-bold">{stats.totalListings}</div>
+              <p className="text-xs text-muted-foreground">+2 from last month</p>
             </CardContent>
           </Card>
+
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Active Services
-              </CardTitle>
-              <Briefcase className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">8</div>
-              <p className="text-xs text-muted-foreground">
-                +3 new bookings
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Leisure Bookings
-              </CardTitle>
-              <Compass className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">24</div>
-              <p className="text-xs text-muted-foreground">
-                +5 this week
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Network Size
-              </CardTitle>
+              <CardTitle className="text-sm font-medium">Connections</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">573</div>
-              <p className="text-xs text-muted-foreground">
-                +28 new connections
-              </p>
+              <div className="text-2xl font-bold">{stats.activeConnections}</div>
+              <p className="text-xs text-muted-foreground">+12 from last week</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Upcoming Events</CardTitle>
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.upcomingEvents}</div>
+              <p className="text-xs text-muted-foreground">Next: Tomorrow</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Revenue</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">${stats.totalRevenue}</div>
+              <p className="text-xs text-muted-foreground">+15% from last month</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Main Content */}
-        <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList>
+        {/* Main Content Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="listings">My Listings</TabsTrigger>
+            <TabsTrigger value="connections">Connections</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            <TabsTrigger value="notifications">Notifications</TabsTrigger>
-            <TabsTrigger value="messages">Messages</TabsTrigger>
           </TabsList>
-          <TabsContent value="overview" className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+
+          <TabsContent value="overview" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Recent Activity */}
-              <Card className="col-span-4">
+              <Card>
                 <CardHeader>
                   <CardTitle>Recent Activity</CardTitle>
+                  <CardDescription>Your latest updates and notifications</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-8">
-                    <div className="flex items-center">
-                      <Eye className="mr-2 h-4 w-4 text-muted-foreground" />
-                      <div className="ml-4 space-y-1">
-                        <p className="text-sm font-medium">New property viewing request</p>
-                        <p className="text-sm text-muted-foreground">
-                          123 Main Street - Tomorrow at 2:00 PM
-                        </p>
+                  <div className="space-y-4">
+                    {recentActivity.map((activity, index) => (
+                      <div key={index} className="flex items-start space-x-3">
+                        <div className="flex-shrink-0">
+                          {activity.type === 'booking' && <Calendar className="h-5 w-5 text-blue-500" />}
+                          {activity.type === 'connection' && <Users className="h-5 w-5 text-green-500" />}
+                          {activity.type === 'review' && <Star className="h-5 w-5 text-yellow-500" />}
+                          {activity.type === 'event' && <MapPin className="h-5 w-5 text-purple-500" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-gray-900">{activity.message}</p>
+                          <p className="text-xs text-gray-500">{activity.time}</p>
+                        </div>
                       </div>
-                      <div className="ml-auto font-medium">Just now</div>
-                    </div>
-                    <div className="flex items-center">
-                      <Star className="mr-2 h-4 w-4 text-muted-foreground" />
-                      <div className="ml-4 space-y-1">
-                        <p className="text-sm font-medium">New service review</p>
-                        <p className="text-sm text-muted-foreground">
-                          5-star review for plumbing service
-                        </p>
-                      </div>
-                      <div className="ml-auto font-medium">2h ago</div>
-                    </div>
-                    <div className="flex items-center">
-                      <MessageSquare className="mr-2 h-4 w-4 text-muted-foreground" />
-                      <div className="ml-4 space-y-1">
-                        <p className="text-sm font-medium">New message</p>
-                        <p className="text-sm text-muted-foreground">
-                          From Sarah about property listing
-                        </p>
-                      </div>
-                      <div className="ml-auto font-medium">5h ago</div>
-                    </div>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Upcoming Events */}
-              <Card className="col-span-3">
+              {/* Quick Actions */}
+              <Card>
                 <CardHeader>
-                  <CardTitle>Upcoming Events</CardTitle>
+                  <CardTitle>Quick Actions</CardTitle>
+                  <CardDescription>Common tasks and shortcuts</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-8">
-                    <div className="flex items-center">
-                      <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
-                      <div className="ml-4 space-y-1">
-                        <p className="text-sm font-medium">Property Viewing</p>
-                        <p className="text-sm text-muted-foreground">
-                          Tomorrow at 2:00 PM
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center">
-                      <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
-                      <div className="ml-4 space-y-1">
-                        <p className="text-sm font-medium">Service Appointment</p>
-                        <p className="text-sm text-muted-foreground">
-                          Friday at 10:00 AM
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center">
-                      <Users className="mr-2 h-4 w-4 text-muted-foreground" />
-                      <div className="ml-4 space-y-1">
-                        <p className="text-sm font-medium">Networking Event</p>
-                        <p className="text-sm text-muted-foreground">
-                          Next Tuesday at 6:00 PM
-                        </p>
-                      </div>
-                    </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Button className="h-20 flex flex-col items-center justify-center space-y-2">
+                      <Plus className="h-6 w-6" />
+                      <span className="text-sm">New Listing</span>
+                    </Button>
+                    <Button variant="outline" className="h-20 flex flex-col items-center justify-center space-y-2">
+                      <Search className="h-6 w-6" />
+                      <span className="text-sm">Browse</span>
+                    </Button>
+                    <Button variant="outline" className="h-20 flex flex-col items-center justify-center space-y-2">
+                      <MessageSquare className="h-6 w-6" />
+                      <span className="text-sm">Messages</span>
+                    </Button>
+                    <Button variant="outline" className="h-20 flex flex-col items-center justify-center space-y-2">
+                      <TrendingUp className="h-6 w-6" />
+                      <span className="text-sm">Analytics</span>
+                    </Button>
                   </div>
                 </CardContent>
-              </Card>
-            </div>
-
-            {/* Quick Actions */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <Card className="cursor-pointer hover:bg-accent">
-                <Link href="/properties/create">
-                  <CardHeader>
-                    <CardTitle className="flex items-center text-sm font-medium">
-                      <Building className="mr-2 h-4 w-4" />
-                      Add Property
-                      <ArrowUpRight className="ml-auto h-4 w-4" />
-                    </CardTitle>
-                  </CardHeader>
-                </Link>
-              </Card>
-              <Card className="cursor-pointer hover:bg-accent">
-                <Link href="/services/create">
-                  <CardHeader>
-                    <CardTitle className="flex items-center text-sm font-medium">
-                      <Briefcase className="mr-2 h-4 w-4" />
-                      Add Service
-                      <ArrowUpRight className="ml-auto h-4 w-4" />
-                    </CardTitle>
-                  </CardHeader>
-                </Link>
-              </Card>
-              <Card className="cursor-pointer hover:bg-accent">
-                <Link href="/leisure/create">
-                  <CardHeader>
-                    <CardTitle className="flex items-center text-sm font-medium">
-                      <Compass className="mr-2 h-4 w-4" />
-                      Add Listing
-                      <ArrowUpRight className="ml-auto h-4 w-4" />
-                    </CardTitle>
-                  </CardHeader>
-                </Link>
-              </Card>
-              <Card className="cursor-pointer hover:bg-accent">
-                <Link href="/connect/add">
-                  <CardHeader>
-                    <CardTitle className="flex items-center text-sm font-medium">
-                      <Users className="mr-2 h-4 w-4" />
-                      Add Contact
-                      <ArrowUpRight className="ml-auto h-4 w-4" />
-                    </CardTitle>
-                  </CardHeader>
-                </Link>
               </Card>
             </div>
           </TabsContent>
 
-          <TabsContent value="analytics" className="space-y-4">
+          <TabsContent value="listings" className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold">My Listings</h2>
+              <div className="flex space-x-2">
+                <Button variant="outline" size="sm">
+                  <Filter className="h-4 w-4 mr-2" />
+                  Filter
+                </Button>
+                <Button size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Listing
+                </Button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {myListings.map((listing) => (
+                <Card key={listing.id}>
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle className="text-lg">{listing.title}</CardTitle>
+                        <CardDescription>{listing.category} • {listing.type}</CardDescription>
+                      </div>
+                      <Badge variant={listing.status === 'Active' ? 'default' : 'secondary'}>
+                        {listing.status}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">Views:</span>
+                        <span className="font-medium">{listing.views}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">Bookings:</span>
+                        <span className="font-medium">{listing.bookings}</span>
+                      </div>
+                      {listing.rating > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-500">Rating:</span>
+                          <div className="flex items-center">
+                            <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                            <span className="font-medium ml-1">{listing.rating}</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex space-x-2 mt-4">
+                      <Button variant="outline" size="sm" className="flex-1">
+                        Edit
+                      </Button>
+                      <Button variant="outline" size="sm" className="flex-1">
+                        View
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="connections" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Your Network</CardTitle>
+                <CardDescription>Manage your professional connections</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8">
+                  <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Connections Coming Soon</h3>
+                  <p className="text-gray-500 mb-4">
+                    Connect with other professionals, service providers, and businesses in your area.
+                  </p>
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Find Connections
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="analytics" className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle>Performance Analytics</CardTitle>
+                <CardDescription>Track your listings and engagement metrics</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="h-[400px] flex items-center justify-center text-muted-foreground">
-                  Analytics charts and graphs will be displayed here
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="notifications" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Notifications</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {/* Notification items would go here */}
-                  <p className="text-muted-foreground">Your notifications will appear here</p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="messages" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Messages</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {/* Message items would go here */}
-                  <p className="text-muted-foreground">Your messages will appear here</p>
+                <div className="text-center py-8">
+                  <TrendingUp className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Analytics Coming Soon</h3>
+                  <p className="text-gray-500 mb-4">
+                    Get detailed insights into your listing performance, user engagement, and revenue trends.
+                  </p>
+                  <Button variant="outline">
+                    Learn More
+                  </Button>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       </div>
-    </DashboardLayout>
-  )
+    </div>
+  );
 }
