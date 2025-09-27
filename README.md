@@ -1,6 +1,6 @@
-# GREIA - Life's Operating System
+# PAN - Pan Life Out
 
-GREIA is a comprehensive platform that unifies Properties, Services, Leisure, and Connect into a single, powerful ecosystem. Built with Next.js 13, TypeScript, and a modern tech stack, GREIA serves as the digital fabric of everyday life.
+PAN is a comprehensive platform that unifies Places, Professionals, Experiences, and Connect into a single, powerful ecosystem. Built with Next.js 13, TypeScript, and a modern tech stack, PAN serves as the first lifestyle app.
 
 ## Current Status
 
@@ -141,7 +141,7 @@ npx prisma generate
 ### Setup
 1. Clone the repository
 \`\`\`bash
-git clone https://github.com/d4rent/greia-los.git
+git clone https://github.com/archiveone/pan.git
 cd greia-los
 \`\`\`
 
@@ -169,4 +169,4 @@ pnpm dev
 Proprietary - All rights reserved
 
 ## Support
-For support, email support@greia.com
+For support, email info@pan.com
