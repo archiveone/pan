@@ -1,4 +1,4 @@
-# Greia Platform - Autonomous Agent Setup
+# PAN Platform - Autonomous Agent Setup
 
 ## Database Access
 - PostgreSQL running on localhost:5432
